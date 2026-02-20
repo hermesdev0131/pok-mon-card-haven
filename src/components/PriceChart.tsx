@@ -29,16 +29,17 @@ export function PriceChart({ data }: PriceChartProps) {
         <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$${v}`} />
         <Tooltip
           contentStyle={{
-            background: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
+            background: 'hsla(220, 10%, 10%, 0.9)',
+            border: '1px solid hsla(0, 0%, 100%, 0.06)',
             borderRadius: '0.5rem',
             fontSize: '12px',
+            backdropFilter: 'blur(12px)',
           }}
           formatter={(value) => [`R$ ${Number(value).toLocaleString('pt-BR')}`, '']}
         />
         <Legend />
         {hasRaw && <Line type="monotone" dataKey="raw" name="Raw" stroke="hsl(var(--muted-foreground))" strokeWidth={2} dot={{ r: 3 }} />}
-        {hasPsa9 && <Line type="monotone" dataKey="psa9" name="PSA 9" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />}
+        {hasPsa9 && <Line type="monotone" dataKey="psa9" name="PSA 9" stroke="hsl(199, 89%, 60%)" strokeWidth={2} dot={{ r: 3 }} />}
         {hasPsa10 && <Line type="monotone" dataKey="psa10" name="PSA 10" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 3 }} />}
         {hasBgs95 && <Line type="monotone" dataKey="bgs95" name="BGS 9.5" stroke="hsl(var(--success))" strokeWidth={2} dot={{ r: 3 }} />}
       </LineChart>

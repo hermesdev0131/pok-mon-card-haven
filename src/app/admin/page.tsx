@@ -34,7 +34,7 @@ export default function Admin() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map(({ icon: Icon, label, value }) => (
-          <Card key={label} className="border-border/50">
+          <Card key={label} className="glass">
             <CardContent className="flex items-center gap-4 p-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
                 <Icon className="h-5 w-5 text-accent" />

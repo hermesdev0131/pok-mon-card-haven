@@ -32,7 +32,7 @@ export function QnA({ questions }: { questions: Question[] }) {
       )}
 
       {questions.map((q) => (
-        <Card key={q.id} className="border-border/50">
+        <Card key={q.id} className="glass">
           <CardContent className="p-4 space-y-2">
             <div>
               <span className="font-medium text-sm">{q.userName}</span>

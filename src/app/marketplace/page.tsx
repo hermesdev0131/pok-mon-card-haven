@@ -58,7 +58,7 @@ export default function Marketplace() {
         </div>
 
         {showFilters && (
-          <div className="flex flex-wrap gap-4 rounded-lg border border-border p-4">
+          <div className="flex flex-wrap gap-4 rounded-lg glass p-4">
             <div className="space-y-1">
               <Label className="text-xs">Ordenar</Label>
               <Select value={sort} onValueChange={setSort}>
@@ -92,9 +92,9 @@ export default function Marketplace() {
 
       {/* Results */}
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {Array(8).fill(0).map((_, i) => (
-            <div key={i} className="aspect-[3/5] animate-pulse rounded-lg bg-secondary" />
+            <div key={i} className="aspect-[4/5] rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
           ))}
         </div>
       ) : cards.length === 0 ? (
@@ -102,7 +102,7 @@ export default function Marketplace() {
           <p className="text-muted-foreground">Nenhuma carta encontrada.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {cards.map((card) => (
             <CardListing key={card.id} card={card} />
           ))}

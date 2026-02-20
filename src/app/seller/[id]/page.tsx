@@ -35,7 +35,7 @@ export default function SellerProfilePage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center text-2xl font-bold text-muted-foreground">
+        <div className="h-16 w-16 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-2xl font-bold text-muted-foreground">
           {seller.name.charAt(0)}
         </div>
         <div>
@@ -45,7 +45,7 @@ export default function SellerProfilePage() {
             {seller.isNew && <Badge variant="secondary" className="text-xs">Novo</Badge>}
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-            <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-accent" />{seller.rating}</span>
+            <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-gold" />{seller.rating}</span>
             <span className="flex items-center gap-1"><ShoppingBag className="h-3.5 w-3.5" />{seller.totalSales} vendas</span>
             <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />Desde {new Date(seller.joinedAt).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}</span>
           </div>
@@ -62,11 +62,11 @@ export default function SellerProfilePage() {
       <h2 className="text-lg font-semibold mb-4">Avaliações ({reviews.length})</h2>
       <div className="space-y-3">
         {reviews.map(r => (
-          <Card key={r.id} className="border-border/50">
+          <Card key={r.id} className="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-medium text-sm">{r.buyerName}</span>
-                <div className="flex gap-0.5">{Array(r.rating).fill(0).map((_, i) => <Star key={i} className="h-3 w-3 fill-accent text-accent" />)}</div>
+                <div className="flex gap-0.5">{Array(r.rating).fill(0).map((_, i) => <Star key={i} className="h-3 w-3 fill-gold text-gold" />)}</div>
                 <span className="text-xs text-muted-foreground ml-auto">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
               </div>
               <p className="text-sm text-muted-foreground">{r.comment}</p>

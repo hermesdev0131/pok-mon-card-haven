@@ -103,7 +103,7 @@ export default function Sell() {
         <Card>
           <CardHeader><CardTitle className="text-lg">Imagens</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-border rounded-lg p-12 text-center cursor-pointer hover:border-accent/40 transition-colors">
+            <div className="border-2 border-dashed border-white/[0.08] rounded-lg p-12 text-center cursor-pointer hover:border-accent/40 hover:bg-accent/[0.02] transition-all">
               <ImagePlus className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">Arraste imagens ou clique para fazer upload</p>
               <p className="text-xs text-muted-foreground mt-1">PNG, JPG até 5MB · Frente e verso da carta + case</p>

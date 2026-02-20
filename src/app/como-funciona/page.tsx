@@ -13,13 +13,13 @@ export default function ComoFunciona() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-16">
       <div className="text-center mb-12">
-        <Shield className="mx-auto h-10 w-10 text-accent mb-4" />
+        <Shield className="mx-auto h-10 w-10 text-accent drop-shadow-[0_0_8px_hsl(var(--accent)/0.4)] mb-4" />
         <h1 className="text-3xl font-bold mb-3">Como funciona o GradedBR</h1>
         <p className="text-muted-foreground">Um processo pensado para proteger compradores e vendedores</p>
       </div>
       <div className="space-y-4">
         {steps.map(({ icon: Icon, title, desc }) => (
-          <Card key={title} className="border-border/50">
+          <Card key={title} className="glass">
             <CardContent className="flex items-start gap-4 p-6">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10">
                 <Icon className="h-5 w-5 text-accent" />

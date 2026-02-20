@@ -10,19 +10,19 @@ export default function Checkout() {
       <h1 className="text-2xl font-bold mb-6">Finalizar compra</h1>
 
       {/* Item summary */}
-      <Card className="border-border/50 mb-6">
+      <Card className="glass mb-6">
         <CardContent className="flex items-center gap-4 p-4">
-          <div className="h-20 w-16 rounded bg-secondary flex items-center justify-center text-3xl opacity-30">🃏</div>
+          <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30">🃏</div>
           <div className="flex-1">
             <p className="font-semibold">Charizard VMAX PSA 10</p>
             <p className="text-sm text-muted-foreground">Vendedor: CardMaster BR</p>
           </div>
-          <p className="text-xl font-bold">R$ 2.850</p>
+          <p className="text-xl font-bold text-accent">R$ 2.850</p>
         </CardContent>
       </Card>
 
       {/* Shipping */}
-      <Card className="border-border/50 mb-6">
+      <Card className="glass mb-6">
         <CardContent className="p-4 space-y-4">
           <h3 className="font-semibold">Calcular frete</h3>
           <div className="flex gap-2">
@@ -30,7 +30,7 @@ export default function Checkout() {
             <Button variant="outline" size="sm">Calcular</Button>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer hover:border-accent/40">
+            <div className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3 cursor-pointer hover:border-accent/40 transition-colors">
               <div className="flex items-center gap-2">
                 <Truck className="h-4 w-4 text-muted-foreground" />
                 <div>
@@ -40,7 +40,7 @@ export default function Checkout() {
               </div>
               <p className="font-semibold text-sm">R$ 28,90</p>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer hover:border-accent/40">
+            <div className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3 cursor-pointer hover:border-accent/40 transition-colors">
               <div className="flex items-center gap-2">
                 <Truck className="h-4 w-4 text-muted-foreground" />
                 <div>
@@ -55,7 +55,7 @@ export default function Checkout() {
       </Card>
 
       {/* Summary */}
-      <Card className="border-border/50 mb-6">
+      <Card className="glass mb-6">
         <CardContent className="p-4 space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
@@ -68,23 +68,23 @@ export default function Checkout() {
           <Separator />
           <div className="flex justify-between font-bold text-lg">
             <span>Total</span>
-            <span>R$ 2.878,90</span>
+            <span className="text-accent">R$ 2.878,90</span>
           </div>
         </CardContent>
       </Card>
 
-      <Button size="lg" className="w-full mb-4">
+      <Button size="lg" className="w-full mb-4 bg-accent text-accent-foreground hover:bg-accent/90 glow-accent">
         Pagar com Mercado Pago
       </Button>
 
       {/* Trust signals */}
       <div className="space-y-3">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Shield className="h-4 w-4 text-success shrink-0" />
+          <Shield className="h-4 w-4 text-accent shrink-0" />
           <span>Pagamento retido até confirmação do recebimento</span>
         </div>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <MessageCircle className="h-4 w-4 text-success shrink-0" />
+          <MessageCircle className="h-4 w-4 text-accent shrink-0" />
           <span>Suporte via WhatsApp em caso de problemas</span>
         </div>
       </div>

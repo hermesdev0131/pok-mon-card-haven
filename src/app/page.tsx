@@ -1,99 +1,198 @@
+"use client";
+
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardListing } from '@/components/CardListing';
+import { SellerCard } from '@/components/SellerCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Shield, Lock, CheckCircle, Star, ArrowRight, BarChart3 } from 'lucide-react';
+import { Shield, ArrowRight, Flame, Zap, Ghost, Moon, Star, Sparkles, ChevronRight } from 'lucide-react';
+import { cards, sellers } from '@/data/mock';
+
+const featuredCard = cards.find(c => c.id === 'c4')!; // Umbreon VMAX - most expensive
+const highlightCards = cards.filter(c => c.grade === 10).slice(0, 5);
+const recentCards = [...cards].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+const topSellers = sellers.filter(s => s.verified).sort((a, b) => b.totalSales - a.totalSales);
+
+const categories = [
+  { name: 'Fire', label: 'Fogo', icon: Flame, color: 'from-orange-500/20 to-red-600/10 border-orange-500/20', iconColor: 'text-orange-400', count: cards.filter(c => c.type === 'fire').length },
+  { name: 'Electric', label: 'Elétrico', icon: Zap, color: 'from-yellow-500/20 to-amber-600/10 border-yellow-500/20', iconColor: 'text-yellow-400', count: cards.filter(c => c.type === 'electric').length },
+  { name: 'Psychic', label: 'Psíquico', icon: Sparkles, color: 'from-pink-500/20 to-purple-600/10 border-pink-500/20', iconColor: 'text-pink-400', count: cards.filter(c => c.type === 'psychic').length },
+  { name: 'Dark', label: 'Sombrio', icon: Moon, color: 'from-purple-500/20 to-indigo-600/10 border-purple-500/20', iconColor: 'text-purple-400', count: cards.filter(c => c.type === 'dark').length },
+  { name: 'Ghost', label: 'Fantasma', icon: Ghost, color: 'from-indigo-500/20 to-violet-600/10 border-indigo-500/20', iconColor: 'text-indigo-400', count: cards.filter(c => c.type === 'ghost').length },
+  { name: 'Dragon', label: 'Dragão', icon: Flame, color: 'from-cyan-500/20 to-blue-600/10 border-cyan-500/20', iconColor: 'text-cyan-400', count: cards.filter(c => c.type === 'dragon').length },
+];
 
 export default function Home() {
   return (
     <>
-      {/* Hero */}
+      {/* Hero — Product-focused like Rare Candy */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Image src="/hero-cards.jpg" alt="Cartas Pokémon graduadas" fill className="object-cover opacity-20" priority />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/90 to-background" />
+        <div className="absolute inset-0 -z-10">
+          <div className="blob blob-accent w-[900px] h-[900px] -top-[400px] left-1/2 -translate-x-1/2 opacity-20 animate-float" />
+          <div className="blob blob-purple w-[500px] h-[500px] bottom-0 -left-[200px] animate-float-slow" />
+          <div className="blob blob-cyan w-[400px] h-[400px] -bottom-[100px] right-0 animate-float" />
         </div>
-        <div className="container relative mx-auto px-4 py-24 md:py-32">
-          <div className="mx-auto max-w-2xl text-center space-y-6">
-            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl lg:text-6xl">
-              Compre e venda cartas graduadas com{' '}
-              <span className="text-accent">confiança real</span>
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              Histórico de vendas transparente, vendedores verificados e pagamento protegido. O marketplace brasileiro que coleciona confiança.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Button size="lg" asChild>
-                <Link href="/marketplace">Explorar marketplace <ArrowRight className="ml-2 h-4 w-4" /></Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link href="/sell">Anunciar carta</Link>
-              </Button>
+
+        <div className="container relative mx-auto px-4 py-20 md:py-32">
+          <div className="grid gap-12 md:grid-cols-2 items-center">
+            {/* Left — Text */}
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm text-accent">
+                <Sparkles className="h-3.5 w-3.5" />
+                Marketplace #1 de cartas graduadas
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl leading-[1.1]">
+                Encontre cartas{' '}
+                <span className="text-accent text-glow-accent">raras e exclusivas</span>
+              </h1>
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
+                PSA, BGS, CGC — todas as grading companies. Preços transparentes, vendedores verificados e pagamento protegido.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row pt-2">
+                <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
+                  <Link href="/marketplace">Explorar marketplace <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+                <Button variant="outline" size="lg" className="border-accent/30 text-accent hover:bg-accent/10" asChild>
+                  <Link href="/sell">Vender carta</Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Right — Featured card spotlight */}
+            <div className="relative flex justify-center">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-[300px] w-[300px] rounded-full bg-accent/10 blur-[80px]" />
+              </div>
+              <Link href={`/card/${featuredCard.id}`} className="relative group">
+                <div className="glass glow-accent rounded-2xl p-6 space-y-4 transition-all duration-300 group-hover:shadow-[0_0_40px_hsl(var(--accent)/0.15)] group-hover:scale-[1.02]">
+                  <div className="aspect-[3/4] w-56 mx-auto bg-gradient-to-b from-secondary to-background rounded-xl flex items-center justify-center overflow-hidden">
+                    <div className="text-8xl opacity-40 group-hover:scale-110 transition-transform duration-500">🃏</div>
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-xs text-accent font-medium uppercase tracking-wider">Destaque</p>
+                    <h3 className="font-bold text-lg">{featuredCard.name}</h3>
+                    <p className="text-sm text-muted-foreground">{featuredCard.set} · {featuredCard.gradeCompany} {featuredCard.grade}</p>
+                    <p className="text-2xl font-bold text-accent text-glow-accent">
+                      R$ {featuredCard.price.toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Como funciona */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-2xl font-bold text-center mb-12">Como funciona</h2>
-        <div className="grid gap-8 md:grid-cols-3">
-          {[
-            { icon: BarChart3, title: 'Pesquise e compare', desc: 'Encontre a carta ideal com histórico real de preços e vendas anteriores.' },
-            { icon: Shield, title: 'Compre com segurança', desc: 'Pagamento retido até o comprador confirmar o recebimento.' },
-            { icon: CheckCircle, title: 'Receba verificado', desc: 'Vendedores com selo de confiança e avaliações reais de compradores.' },
-          ].map(({ icon: Icon, title, desc }) => (
-            <Card key={title} className="border-border/50 text-center">
-              <CardContent className="p-8 space-y-4">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
-                  <Icon className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="font-semibold text-lg">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-              </CardContent>
-            </Card>
+      {/* PSA 10 Highlights */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold">Destaques PSA 10</h2>
+            <p className="text-sm text-muted-foreground mt-1">Cartas com nota máxima de grading</p>
+          </div>
+          <Button variant="ghost" className="text-accent hover:text-accent/80 gap-1" asChild>
+            <Link href="/marketplace">Ver todas <ChevronRight className="h-4 w-4" /></Link>
+          </Button>
+        </div>
+        <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          {highlightCards.map(card => (
+            <CardListing key={card.id} card={card} />
           ))}
         </div>
       </section>
 
-      {/* Segurança */}
-      <section className="bg-secondary/50">
-        <div className="container mx-auto px-4 py-20">
-          <div className="mx-auto max-w-2xl text-center space-y-6">
-            <Lock className="mx-auto h-10 w-10 text-accent" />
-            <h2 className="text-2xl font-bold">Pagamento protegido</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              O valor da compra fica retido com segurança até que o comprador confirme o recebimento e verifique a carta. Só então o vendedor recebe o pagamento.
-            </p>
+      {/* Browse by Category */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold">Explorar por tipo</h2>
+            <p className="text-sm text-muted-foreground mt-1">Encontre cartas do seu tipo favorito</p>
+          </div>
+        </div>
+        <div className="grid gap-4 grid-cols-3 sm:grid-cols-3 lg:grid-cols-6">
+          {categories.map(({ label, icon: Icon, color, iconColor, count }) => (
+            <Link key={label} href="/marketplace">
+              <div className={`overflow-hidden rounded-2xl bg-gradient-to-br ${color} border border-white/[0.06] hover:scale-[1.03] transition-all duration-300 cursor-pointer p-5 text-center space-y-2`}>
+                <Icon className={`h-8 w-8 mx-auto ${iconColor}`} />
+                <p className="font-semibold text-sm">{label}</p>
+                <p className="text-xs text-muted-foreground">{count} {count === 1 ? 'carta' : 'cartas'}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Recently Listed */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold">Adicionadas recentemente</h2>
+            <p className="text-sm text-muted-foreground mt-1">As últimas cartas listadas no marketplace</p>
+          </div>
+          <Button variant="ghost" className="text-accent hover:text-accent/80 gap-1" asChild>
+            <Link href="/marketplace">Ver todas <ChevronRight className="h-4 w-4" /></Link>
+          </Button>
+        </div>
+        <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          {recentCards.map(card => (
+            <CardListing key={card.id} card={card} />
+          ))}
+        </div>
+      </section>
+
+      {/* Top Sellers */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-2xl font-bold">Vendedores verificados</h2>
+            <p className="text-sm text-muted-foreground mt-1">Compre de vendedores com selo de confiança</p>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {topSellers.map(seller => (
+            <SellerCard key={seller.id} seller={seller} />
+          ))}
+        </div>
+      </section>
+
+      {/* Trust Banner */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          <div className="blob blob-accent w-[400px] h-[400px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10" />
+        </div>
+        <div className="container mx-auto px-4 py-16">
+          <div className="glass rounded-2xl p-8 md:p-12">
+            <div className="grid gap-8 md:grid-cols-3 text-center">
+              <div className="space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
+                  <Shield className="h-6 w-6 text-accent" />
+                </div>
+                <h3 className="font-semibold">Pagamento protegido</h3>
+                <p className="text-sm text-muted-foreground">Valor retido até a confirmação do recebimento</p>
+              </div>
+              <div className="space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
+                  <Star className="h-6 w-6 text-accent" />
+                </div>
+                <h3 className="font-semibold">Vendedores verificados</h3>
+                <p className="text-sm text-muted-foreground">Todos passam por processo de validação</p>
+              </div>
+              <div className="space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
+                  <Sparkles className="h-6 w-6 text-accent" />
+                </div>
+                <h3 className="font-semibold">Preços transparentes</h3>
+                <p className="text-sm text-muted-foreground">Histórico real de vendas e gráficos de preço</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Depoimentos */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-2xl font-bold text-center mb-12">O que dizem nossos usuários</h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            { name: 'João M.', text: 'Comprei um Charizard PSA 10 e o processo foi impecável. Confiança total!' },
-            { name: 'Fernanda R.', text: 'Como vendedora, adoro a transparência do histórico de preços. Ajuda muito.' },
-            { name: 'Bruno M.', text: 'Melhor marketplace de cartas graduadas do Brasil. O selo verificado faz diferença.' },
-          ].map(({ name, text }) => (
-            <Card key={name} className="border-border/50">
-              <CardContent className="p-6 space-y-3">
-                <div className="flex gap-1">{Array(5).fill(0).map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}</div>
-                <p className="text-sm text-muted-foreground leading-relaxed">&ldquo;{text}&rdquo;</p>
-                <p className="font-medium text-sm">{name}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
       {/* FAQ */}
-      <section className="bg-secondary/50">
-        <div className="container mx-auto px-4 py-20">
-          <h2 className="text-2xl font-bold text-center mb-12">Perguntas frequentes</h2>
+      <section className="border-t border-white/[0.04]">
+        <div className="container mx-auto px-4 py-16">
+          <h2 className="text-2xl font-bold text-center mb-8">Perguntas frequentes</h2>
           <div className="mx-auto max-w-2xl">
             <Accordion type="single" collapsible>
               {[

@@ -14,8 +14,8 @@ export function GradeBadge({ grade, company, className }: GradeBadgeProps) {
       className={cn(
         'font-bold text-xs gap-1',
         isPerfect
-          ? 'bg-accent text-accent-foreground hover:bg-accent/90'
-          : 'bg-secondary text-secondary-foreground hover:bg-secondary/90',
+          ? 'bg-accent text-accent-foreground hover:bg-accent/90 animate-pulse-glow'
+          : 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border border-white/[0.06]',
         className
       )}
     >

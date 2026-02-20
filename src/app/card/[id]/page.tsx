@@ -6,8 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GradeBadge } from '@/components/GradeBadge';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { SalesHistoryTable } from '@/components/SalesHistoryTable';
-import { PriceChart } from '@/components/PriceChart';
 import { QnA } from '@/components/QnA';
+import dynamic from 'next/dynamic';
+
+const PriceChart = dynamic(() => import('@/components/PriceChart').then(m => ({ default: m.PriceChart })), {
+  ssr: false,
+  loading: () => <div className="h-64 rounded-lg bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />,
+});
 import { CardListing } from '@/components/CardListing';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -53,8 +58,8 @@ export default function CardDetailPage() {
     return (
       <div className="container mx-auto px-4 py-12">
         <div className="animate-pulse space-y-6">
-          <div className="h-96 rounded-lg bg-secondary" />
-          <div className="h-8 w-1/3 rounded bg-secondary" />
+          <div className="h-96 rounded-lg bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
+          <div className="h-8 w-1/3 rounded bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
         </div>
       </div>
     );
@@ -73,7 +78,7 @@ export default function CardDetailPage() {
       <div className="grid gap-8 lg:grid-cols-5">
         {/* Image */}
         <div className="lg:col-span-2">
-          <div className="aspect-[3/4] rounded-lg bg-secondary flex items-center justify-center sticky top-24">
+          <div className="aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center sticky top-24 border border-white/[0.06]">
             <span className="text-8xl opacity-20">🃏</span>
           </div>
         </div>
@@ -93,9 +98,9 @@ export default function CardDetailPage() {
             <p className="text-muted-foreground">{card.set} · #{card.number}</p>
           </div>
 
-          <div className="text-3xl font-extrabold">R$ {card.price.toLocaleString('pt-BR')}</div>
+          <div className="text-3xl font-extrabold text-accent text-glow-accent">R$ {card.price.toLocaleString('pt-BR')}</div>
 
-          <Button size="lg" className="w-full sm:w-auto gap-2" asChild>
+          <Button size="lg" className="w-full sm:w-auto gap-2 bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
             <Link href={`/checkout/o-new`}>
               <Shield className="h-4 w-4" /> Comprar com pagamento protegido
             </Link>
@@ -103,9 +108,9 @@ export default function CardDetailPage() {
 
           {/* Seller */}
           {seller && (
-            <Card className="border-border/50">
+            <Card className="glass">
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center text-xl font-bold text-muted-foreground">
+                <div className="h-12 w-12 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-xl font-bold text-muted-foreground">
                   {seller.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -114,7 +119,7 @@ export default function CardDetailPage() {
                     {seller.verified && <VerifiedBadge />}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                    <span className="flex items-center gap-1"><Star className="h-3 w-3 text-accent" />{seller.rating}</span>
+                    <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold" />{seller.rating}</span>
                     <span className="flex items-center gap-1"><ShoppingBag className="h-3 w-3" />{seller.totalSales} vendas</span>
                   </div>
                 </div>
