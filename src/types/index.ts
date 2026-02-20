@@ -13,6 +13,7 @@ export interface Card {
   createdAt: string;
   type: CardType;
   freeShipping?: boolean;
+  tags?: string[];
 }
 
 export interface Seller {

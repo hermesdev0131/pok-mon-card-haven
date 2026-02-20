@@ -8,14 +8,18 @@ export const sellers: Seller[] = [
 ];
 
 export const cards: Card[] = [
-  { id: 'c1', name: 'Charizard VMAX', set: 'Darkness Ablaze', number: '020/189', grade: 10, gradeCompany: 'PSA', price: 2850, images: [], sellerId: 's1', createdAt: '2024-12-01', type: 'fire' },
-  { id: 'c2', name: 'Pikachu VMAX Rainbow', set: 'Vivid Voltage', number: '188/185', grade: 10, gradeCompany: 'PSA', price: 1200, images: [], sellerId: 's2', createdAt: '2024-12-05', type: 'electric' },
-  { id: 'c3', name: 'Mew VMAX Alt Art', set: 'Fusion Strike', number: '268/264', grade: 9.5, gradeCompany: 'BGS', price: 3500, images: [], sellerId: 's1', createdAt: '2024-11-28', type: 'psychic', freeShipping: true },
-  { id: 'c4', name: 'Umbreon VMAX Alt Art', set: 'Evolving Skies', number: '215/203', grade: 9, gradeCompany: 'PSA', price: 8900, images: [], sellerId: 's4', createdAt: '2024-11-15', type: 'dark' },
-  { id: 'c5', name: 'Rayquaza VMAX Alt Art', set: 'Evolving Skies', number: '218/203', grade: 9.5, gradeCompany: 'CGC', price: 4200, images: [], sellerId: 's3', createdAt: '2024-12-10', type: 'dragon' },
-  { id: 'c6', name: 'Giratina VSTAR Alt Art', set: 'Lost Origin', number: '131/196', grade: 10, gradeCompany: 'PSA', price: 2100, images: [], sellerId: 's4', createdAt: '2024-12-08', type: 'ghost' },
-  { id: 'c7', name: 'Lugia VSTAR Alt Art', set: 'Silver Tempest', number: '186/195', grade: 10, gradeCompany: 'PSA', price: 5600, images: [], sellerId: 's2', createdAt: '2024-11-20', type: 'flying', freeShipping: true },
-  { id: 'c8', name: 'Charizard ex SAR', set: 'Pokémon 151', number: '199/165', grade: 10, gradeCompany: 'PSA', price: 3200, images: [], sellerId: 's4', createdAt: '2024-12-12', type: 'fire' },
+  { id: 'c1', name: 'Charizard VMAX', set: 'Darkness Ablaze', number: '020/189', grade: 10, gradeCompany: 'PSA', price: 2850, images: [], sellerId: 's1', createdAt: '2024-12-01', type: 'fire', tags: ['graduada'] },
+  { id: 'c2', name: 'Pikachu VMAX Rainbow', set: 'Vivid Voltage', number: '188/185', grade: 10, gradeCompany: 'PSA', price: 1200, images: [], sellerId: 's2', createdAt: '2024-12-05', type: 'electric', tags: ['graduada'] },
+  { id: 'c3', name: 'Mew VMAX Alt Art', set: 'Fusion Strike', number: '268/264', grade: 9.5, gradeCompany: 'BGS', price: 3500, images: [], sellerId: 's1', createdAt: '2024-11-28', type: 'psychic', freeShipping: true, tags: ['alt-art', 'graduada'] },
+  { id: 'c4', name: 'Umbreon VMAX Alt Art', set: 'Evolving Skies', number: '215/203', grade: 9, gradeCompany: 'PSA', price: 8900, images: [], sellerId: 's4', createdAt: '2024-11-15', type: 'dark', tags: ['alt-art', 'graduada'] },
+  { id: 'c5', name: 'Rayquaza VMAX Alt Art', set: 'Evolving Skies', number: '218/203', grade: 9.5, gradeCompany: 'CGC', price: 4200, images: [], sellerId: 's3', createdAt: '2024-12-10', type: 'dragon', tags: ['alt-art', 'graduada'] },
+  { id: 'c6', name: 'Giratina VSTAR Alt Art', set: 'Lost Origin', number: '131/196', grade: 10, gradeCompany: 'PSA', price: 2100, images: [], sellerId: 's4', createdAt: '2024-12-08', type: 'ghost', tags: ['alt-art', 'graduada'] },
+  { id: 'c7', name: 'Lugia VSTAR Alt Art', set: 'Silver Tempest', number: '186/195', grade: 10, gradeCompany: 'PSA', price: 5600, images: [], sellerId: 's2', createdAt: '2024-11-20', type: 'flying', freeShipping: true, tags: ['alt-art', 'graduada'] },
+  { id: 'c8', name: 'Charizard ex SAR', set: 'Pokémon 151', number: '199/165', grade: 10, gradeCompany: 'PSA', price: 3200, images: [], sellerId: 's4', createdAt: '2024-12-12', type: 'fire', tags: ['graduada'] },
+  { id: 'c9', name: 'Charizard Base Set', set: 'Base Set', number: '4/102', grade: 8, gradeCompany: 'PSA', price: 15000, images: [], sellerId: 's4', createdAt: '2024-12-02', type: 'fire', tags: ['vintage', 'graduada'] },
+  { id: 'c10', name: 'Blastoise Base Set', set: 'Base Set', number: '2/102', grade: 9, gradeCompany: 'PSA', price: 6500, images: [], sellerId: 's1', createdAt: '2024-11-25', type: 'water', tags: ['vintage', 'graduada'] },
+  { id: 'c11', name: 'Venusaur Base Set', set: 'Base Set', number: '15/102', grade: 7, gradeCompany: 'BGS', price: 3800, images: [], sellerId: 's2', createdAt: '2024-12-03', type: 'grass', tags: ['vintage', 'graduada'] },
+  { id: 'c12', name: 'Pikachu Illustrator', set: 'Promo', number: 'ILLUS', grade: 9, gradeCompany: 'PSA', price: 120000, images: [], sellerId: 's4', createdAt: '2024-11-10', type: 'electric', tags: ['vintage', 'graduada'] },
 ];
 
 export const salesHistory: Record<string, SaleRecord[]> = {
