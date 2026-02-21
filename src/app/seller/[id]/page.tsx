@@ -1,28 +1,30 @@
 "use client";
 
-import { CardListing } from '@/components/CardListing';
+import { GradeBadge } from '@/components/GradeBadge';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getSeller, getSellerCards, getSellerReviews } from '@/lib/api';
-import { Star, ShoppingBag, Calendar } from 'lucide-react';
-import type { Card as CardType, Seller, Review } from '@/types';
+import { getSeller, getSellerListings, getSellerReviews } from '@/lib/api';
+import { cardBases } from '@/data/mock';
+import { Star, ShoppingBag, Calendar, Truck } from 'lucide-react';
+import Link from 'next/link';
+import type { Listing, Seller, Review } from '@/types';
 
 export default function SellerProfilePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [seller, setSeller] = useState<Seller | null>(null);
-  const [cards, setCards] = useState<CardType[]>([]);
+  const [sellerListings, setSellerListings] = useState<Listing[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([getSeller(id), getSellerCards(id), getSellerReviews(id)]).then(([s, c, r]) => {
+    Promise.all([getSeller(id), getSellerListings(id), getSellerReviews(id)]).then(([s, l, r]) => {
       setSeller(s);
-      setCards(c);
+      setSellerListings(l);
       setReviews(r);
       setLoading(false);
     });
@@ -52,10 +54,42 @@ export default function SellerProfilePage() {
         </div>
       </div>
 
-      {/* Cards */}
-      <h2 className="text-lg font-semibold mb-4">Anúncios ({cards.length})</h2>
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mb-12">
-        {cards.map(c => <CardListing key={c.id} card={c} />)}
+      {/* Listings */}
+      <h2 className="text-lg font-semibold mb-4">Anúncios ({sellerListings.length})</h2>
+      <div className="space-y-3 mb-12">
+        {sellerListings.map(listing => {
+          const cardBase = cardBases.find(cb => cb.id === listing.cardBaseId);
+          if (!cardBase) return null;
+          return (
+            <Link
+              key={listing.id}
+              href={`/card/${cardBase.id}`}
+              className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
+            >
+              <div className="h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] flex items-center justify-center shrink-0">
+                <span className="text-xl opacity-40">🃏</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">{cardBase.name}</p>
+                <p className="text-xs text-muted-foreground">{cardBase.set} · #{cardBase.number}</p>
+              </div>
+              <div className="shrink-0">
+                <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-bold text-accent">R$ {listing.price.toLocaleString('pt-BR')}</p>
+                {listing.freeShipping && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                    <Truck className="h-2.5 w-2.5" /> Frete grátis
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+        {sellerListings.length === 0 && (
+          <p className="text-sm text-muted-foreground py-8 text-center">Nenhum anúncio ativo.</p>
+        )}
       </div>
 
       {/* Reviews */}

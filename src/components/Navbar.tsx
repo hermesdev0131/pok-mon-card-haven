@@ -8,8 +8,8 @@ import { useState } from 'react';
 const categories = [
   { label: 'PSA 10', href: '/marketplace/psa10' },
   { label: 'Cartas Graduadas', href: '/marketplace' },
-  { label: 'Vintage', href: '/marketplace/vintage' },
-  { label: 'Alt Art', href: '/marketplace/alt-art' },
+  { label: 'Últimos Anúncios', href: '/marketplace/ultimos-anuncios' },
+  { label: 'Últimas Vendas', href: '/marketplace/ultimas-vendas' },
   { label: 'Vendedores', href: '/vendedores' },
 ];
 

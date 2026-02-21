@@ -1,19 +1,41 @@
 export type CardType = 'fire' | 'electric' | 'psychic' | 'dark' | 'dragon' | 'ghost' | 'flying' | 'grass' | 'water' | 'normal';
 
-export interface Card {
+export type GradeCompany = 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'Mana Fix' | 'BGA' | 'Capy' | 'Taverna';
+
+// The Pokemon card itself — generic, not a specific graded copy
+export interface CardBase {
   id: string;
   name: string;
   set: string;
+  setCode: string;
   number: string;
+  type: CardType;
+  rarity?: string;
+  imageUrl?: string; // official/generic card art
+}
+
+// A specific graded copy listed for sale by a seller
+export interface Listing {
+  id: string;
+  cardBaseId: string;
+  sellerId: string;
   grade: number;
-  gradeCompany: 'PSA' | 'BGS' | 'CGC';
+  gradeCompany: GradeCompany;
   price: number;
   images: string[];
-  sellerId: string;
-  createdAt: string;
-  type: CardType;
   freeShipping?: boolean;
+  language?: string; // 'PT' | 'EN' | 'JP' etc.
   tags?: string[];
+  status: 'active' | 'sold' | 'reserved' | 'cancelled';
+  createdAt: string;
+}
+
+// Aggregated info for a card base (used in catalog grid)
+export interface CardBaseWithStats {
+  cardBase: CardBase;
+  listingCount: number;
+  lowestPrice: number;
+  highestPrice: number;
 }
 
 export interface Seller {
@@ -69,10 +91,14 @@ export interface Review {
   date: string;
 }
 
+// MVP languages
+export type CardLanguage = 'PT' | 'EN' | 'JP';
+
+// Normalized price point — one record per month/language/company/grade combination
 export interface PricePoint {
   month: string;
-  raw?: number;
-  psa9?: number;
-  psa10?: number;
-  bgs95?: number;
+  language: CardLanguage;
+  company: string;  // 'NM' | 'PSA' | 'CGC' | 'Beckett' | 'TAG' | etc.
+  grade: number;    // 0 for NM (ungraded), 7-10 for graded
+  avgPrice: number;
 }

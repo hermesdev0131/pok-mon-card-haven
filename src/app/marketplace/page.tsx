@@ -1,37 +1,32 @@
 "use client";
 
-import { CardListing } from '@/components/CardListing';
+import { CardBaseCard } from '@/components/CardBaseCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getCards } from '@/lib/api';
-import type { Card } from '@/types';
+import { getCardBasesWithStats } from '@/lib/api';
+import type { CardBaseWithStats } from '@/types';
 
 export default function Marketplace() {
-  const [cards, setCards] = useState<Card[]>([]);
+  const [items, setItems] = useState<CardBaseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('newest');
-  const [grade, setGrade] = useState('');
-  const [verified, setVerified] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     setLoading(true);
-    getCards({
+    getCardBasesWithStats({
       search,
-      grade: grade ? Number(grade) : undefined,
-      verified: verified || undefined,
       sort: sort === 'price_asc' ? 'price_asc' : sort === 'price_desc' ? 'price_desc' : undefined,
     }).then((data) => {
-      setCards(data);
+      setItems(data);
       setLoading(false);
     });
-  }, [search, sort, grade, verified]);
+  }, [search, sort]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -70,22 +65,6 @@ export default function Marketplace() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Grade</Label>
-              <Select value={grade} onValueChange={setGrade}>
-                <SelectTrigger className="w-[120px]"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="9.5">9.5</SelectItem>
-                  <SelectItem value="9">9</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end gap-2">
-              <Switch id="verified" checked={verified} onCheckedChange={setVerified} />
-              <Label htmlFor="verified" className="text-xs">Apenas verificados</Label>
-            </div>
           </div>
         )}
       </div>
@@ -97,14 +76,14 @@ export default function Marketplace() {
             <div key={i} className="aspect-[4/5] rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
           ))}
         </div>
-      ) : cards.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <p className="text-muted-foreground">Nenhuma carta encontrada.</p>
         </div>
       ) : (
         <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {cards.map((card) => (
-            <CardListing key={card.id} card={card} />
+          {items.map((item) => (
+            <CardBaseCard key={item.cardBase.id} item={item} />
           ))}
         </div>
       )}

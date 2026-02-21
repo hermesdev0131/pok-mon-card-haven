@@ -1,7 +1,7 @@
 "use client";
 
 import { SellerCard } from '@/components/SellerCard';
-import { sellers, cards } from '@/data/mock';
+import { sellers, listings } from '@/data/mock';
 import { Users } from 'lucide-react';
 
 const sortedSellers = [...sellers].sort((a, b) => b.totalSales - a.totalSales);
@@ -23,12 +23,12 @@ export default function VendedoresPage() {
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {sortedSellers.map(seller => {
-          const sellerCards = cards.filter(c => c.sellerId === seller.id);
+          const sellerListingCount = listings.filter(l => l.sellerId === seller.id && l.status === 'active').length;
           return (
             <div key={seller.id} className="space-y-3">
               <SellerCard seller={seller} />
-              {sellerCards.length > 0 && (
-                <p className="text-xs text-muted-foreground px-1">{sellerCards.length} {sellerCards.length === 1 ? 'carta ativa' : 'cartas ativas'}</p>
+              {sellerListingCount > 0 && (
+                <p className="text-xs text-muted-foreground px-1">{sellerListingCount} {sellerListingCount === 1 ? 'anúncio ativo' : 'anúncios ativos'}</p>
               )}
             </div>
           );

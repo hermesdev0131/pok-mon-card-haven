@@ -1,10 +1,28 @@
 "use client";
 
-import { CardListing } from '@/components/CardListing';
-import { cards } from '@/data/mock';
+import { CardBaseCard } from '@/components/CardBaseCard';
+import { cardBases, listings } from '@/data/mock';
 import { Award } from 'lucide-react';
+import type { CardBaseWithStats } from '@/types';
 
-const psa10Cards = cards.filter(c => c.grade === 10).sort((a, b) => b.price - a.price);
+// Find card bases that have at least one PSA 10 listing
+const psa10Stats: CardBaseWithStats[] = cardBases
+  .map(cb => {
+    const psa10Listings = listings.filter(
+      l => l.cardBaseId === cb.id && l.status === 'active' && l.gradeCompany === 'PSA' && l.grade === 10
+    );
+    const allActive = listings.filter(l => l.cardBaseId === cb.id && l.status === 'active');
+    const prices = allActive.map(l => l.price);
+    return {
+      cardBase: cb,
+      listingCount: allActive.length,
+      lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
+      highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
+      hasPsa10: psa10Listings.length > 0,
+    };
+  })
+  .filter(s => s.hasPsa10)
+  .map(({ hasPsa10: _, ...rest }) => rest);
 
 export default function PSA10Page() {
   return (
@@ -16,14 +34,14 @@ export default function PSA10Page() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">PSA 10 — Nota Máxima</h1>
-            <p className="text-sm text-muted-foreground">{psa10Cards.length} cartas com grading perfeito</p>
+            <p className="text-sm text-muted-foreground">{psa10Stats.length} cartas com anúncios PSA 10</p>
           </div>
         </div>
       </div>
 
       <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {psa10Cards.map(card => (
-          <CardListing key={card.id} card={card} />
+        {psa10Stats.map(item => (
+          <CardBaseCard key={item.cardBase.id} item={item} />
         ))}
       </div>
     </div>

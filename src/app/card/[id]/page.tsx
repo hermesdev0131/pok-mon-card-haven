@@ -1,58 +1,74 @@
 "use client";
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GradeBadge } from '@/components/GradeBadge';
-import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { Badge } from '@/components/ui/badge';
 import { SalesHistoryTable } from '@/components/SalesHistoryTable';
 import { QnA } from '@/components/QnA';
+import { ListingTable } from '@/components/ListingTable';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
 const PriceChart = dynamic(() => import('@/components/PriceChart').then(m => ({ default: m.PriceChart })), {
   ssr: false,
   loading: () => <div className="h-64 rounded-lg bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />,
 });
-import { CardListing } from '@/components/CardListing';
-import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+
 import { useParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { getCard, getSeller, getSalesHistory, getPriceHistory, getQuestions, getCards } from '@/lib/api';
-import { Shield, Star, ShoppingBag, Truck } from 'lucide-react';
-import type { Card as CardType, Seller, SaleRecord, PricePoint, Question } from '@/types';
+import { useState, useEffect, useMemo } from 'react';
+import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getQuestions } from '@/lib/api';
+import { sellers as allSellers } from '@/data/mock';
+import { ArrowDown, ArrowUp, Minus, ShoppingCart } from 'lucide-react';
+import type { CardBase, Listing, Seller, SaleRecord, PricePoint, Question } from '@/types';
 
 export default function CardDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const [card, setCard] = useState<CardType | null>(null);
-  const [seller, setSeller] = useState<Seller | null>(null);
+
+  const [cardBase, setCardBase] = useState<CardBase | null>(null);
+  const [cardListings, setCardListings] = useState<Listing[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [prices, setPrices] = useState<PricePoint[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [similar, setSimilar] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     Promise.all([
-      getCard(id),
+      getCardBase(id),
+      getListingsForCard(id),
       getSalesHistory(id),
       getPriceHistory(id),
       getQuestions(id),
-    ]).then(([c, s, p, q]) => {
-      setCard(c);
+    ]).then(([cb, ls, s, p, q]) => {
+      setCardBase(cb);
+      setCardListings(ls);
       setSales(s);
       setPrices(p);
       setQuestions(q);
-      if (c) {
-        getSeller(c.sellerId).then(setSeller);
-        getCards().then(all => setSimilar(all.filter(a => a.id !== c.id).slice(0, 4)));
-      }
       setLoading(false);
     });
   }, [id]);
+
+  // Build seller lookup for the listings
+  const sellersMap = useMemo(() => {
+    const map: Record<string, Seller> = {};
+    cardListings.forEach(l => {
+      const seller = allSellers.find(s => s.id === l.sellerId);
+      if (seller) map[seller.id] = seller;
+    });
+    return map;
+  }, [cardListings]);
+
+  // Price stats
+  const priceStats = useMemo(() => {
+    if (cardListings.length === 0) return null;
+    const listingPrices = cardListings.map(l => l.price);
+    const min = Math.min(...listingPrices);
+    const max = Math.max(...listingPrices);
+    const avg = Math.round(listingPrices.reduce((a, b) => a + b, 0) / listingPrices.length);
+    return { min, max, avg };
+  }, [cardListings]);
 
   if (loading) {
     return (
@@ -65,7 +81,7 @@ export default function CardDetailPage() {
     );
   }
 
-  if (!card) {
+  if (!cardBase) {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
         <p className="text-muted-foreground">Carta não encontrada.</p>
@@ -76,83 +92,124 @@ export default function CardDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid gap-8 lg:grid-cols-5">
-        {/* Image */}
+        {/* Left — Generic card image */}
         <div className="lg:col-span-2">
-          <div className="aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center sticky top-24 border border-white/[0.06]">
-            <span className="text-8xl opacity-20">🃏</span>
+          <div className="sticky top-24 space-y-3">
+            <div className="relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-white/[0.06] overflow-hidden">
+              {cardBase.imageUrl ? (
+                <Image
+                  src={cardBase.imageUrl}
+                  alt={cardBase.name}
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 1024px) 100vw, 40vw"
+                  priority
+                />
+              ) : (
+                <span className="text-8xl opacity-20">🃏</span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground/50 text-center italic">
+              *Imagem meramente ilustrativa
+            </p>
+
+            {/* Card metadata */}
+            <div className="glass rounded-xl p-4 space-y-2">
+              {cardBase.rarity && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Raridade</span>
+                  <span className="font-medium">{cardBase.rarity}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Set</span>
+                <span className="font-medium">{cardBase.set}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Código</span>
+                <span className="font-medium uppercase">{cardBase.setCode}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Número</span>
+                <span className="font-medium">{cardBase.number}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Details */}
+        {/* Right — Card info + Tabs */}
         <div className="lg:col-span-3 space-y-6">
+          {/* Header */}
           <div>
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <GradeBadge grade={card.grade} company={card.gradeCompany} />
-              {card.freeShipping && (
-                <Badge variant="outline" className="text-success border-success/30 gap-1 text-xs">
-                  <Truck className="h-3 w-3" /> Frete grátis
-                </Badge>
-              )}
-            </div>
-            <h1 className="text-2xl font-bold md:text-3xl">{card.name}</h1>
-            <p className="text-muted-foreground">{card.set} · #{card.number}</p>
+            <h1 className="text-2xl font-bold md:text-3xl">
+              {cardBase.name} ({cardBase.number})
+            </h1>
+            <p className="text-muted-foreground mt-1">{cardBase.set}</p>
           </div>
 
-          <div className="text-3xl font-extrabold text-accent text-glow-accent">R$ {card.price.toLocaleString('pt-BR')}</div>
+          {/* Listing count + Price range */}
+          <div className="glass rounded-xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-accent border-accent/30 gap-1.5">
+                <ShoppingCart className="h-3 w-3" />
+                {cardListings.length} {cardListings.length === 1 ? 'anúncio' : 'anúncios'}
+              </Badge>
+            </div>
 
-          <Button size="lg" className="w-full sm:w-auto gap-2 bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
-            <Link href={`/checkout/o-new`}>
-              <Shield className="h-4 w-4" /> Comprar com pagamento protegido
-            </Link>
-          </Button>
-
-          {/* Seller */}
-          {seller && (
-            <Card className="glass">
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="h-12 w-12 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-xl font-bold text-muted-foreground">
-                  {seller.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold truncate">{seller.name}</span>
-                    {seller.verified && <VerifiedBadge />}
+            {priceStats && (
+              <div className="grid grid-cols-3 gap-3 pt-1">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-1">
+                    <ArrowDown className="h-3 w-3 text-accent" /> Menor
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                    <span className="flex items-center gap-1"><Star className="h-3 w-3 text-gold" />{seller.rating}</span>
-                    <span className="flex items-center gap-1"><ShoppingBag className="h-3 w-3" />{seller.totalSales} vendas</span>
-                  </div>
+                  <p className="font-bold text-accent">
+                    R$ {priceStats.min.toLocaleString('pt-BR')}
+                  </p>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/seller/${seller.id}`}>Ver perfil</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+                <div className="text-center border-x border-white/[0.06]">
+                  <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-1">
+                    <Minus className="h-3 w-3" /> Média
+                  </div>
+                  <p className="font-bold">
+                    R$ {priceStats.avg.toLocaleString('pt-BR')}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-1">
+                    <ArrowUp className="h-3 w-3 text-orange-400" /> Maior
+                  </div>
+                  <p className="font-bold text-orange-400">
+                    R$ {priceStats.max.toLocaleString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
-          {/* Tabs */}
-          <Tabs defaultValue="sales" className="mt-8">
+          {/* Tabs — Buy Now is default */}
+          <Tabs defaultValue="buy" className="mt-4">
             <TabsList className="w-full justify-start">
+              <TabsTrigger value="buy">Comprar Agora ({cardListings.length})</TabsTrigger>
               <TabsTrigger value="sales">Histórico de vendas</TabsTrigger>
               <TabsTrigger value="prices">Gráfico de preços</TabsTrigger>
               <TabsTrigger value="questions">Perguntas ({questions.length})</TabsTrigger>
             </TabsList>
-            <TabsContent value="sales"><SalesHistoryTable sales={sales} /></TabsContent>
-            <TabsContent value="prices"><PriceChart data={prices} /></TabsContent>
-            <TabsContent value="questions"><QnA questions={questions} /></TabsContent>
+
+            <TabsContent value="buy">
+              <ListingTable listings={cardListings} sellers={sellersMap} />
+            </TabsContent>
+            <TabsContent value="sales">
+              <SalesHistoryTable sales={sales} />
+            </TabsContent>
+            <TabsContent value="prices">
+              <PriceChart data={prices} />
+            </TabsContent>
+            <TabsContent value="questions">
+              <QnA questions={questions} />
+            </TabsContent>
           </Tabs>
         </div>
       </div>
-
-      {/* Similar */}
-      {similar.length > 0 && (
-        <section className="mt-16">
-          <h2 className="text-xl font-bold mb-6">Cartas semelhantes</h2>
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-            {similar.map(c => <CardListing key={c.id} card={c} />)}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
