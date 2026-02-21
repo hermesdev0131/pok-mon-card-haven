@@ -112,28 +112,6 @@ export default function CardDetailPage() {
             <p className="text-[11px] text-muted-foreground/50 text-center italic">
               *Imagem meramente ilustrativa
             </p>
-
-            {/* Card metadata */}
-            <div className="glass rounded-xl p-4 space-y-2">
-              {cardBase.rarity && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Raridade</span>
-                  <span className="font-medium">{cardBase.rarity}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Set</span>
-                <span className="font-medium">{cardBase.set}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Código</span>
-                <span className="font-medium uppercase">{cardBase.setCode}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Número</span>
-                <span className="font-medium">{cardBase.number}</span>
-              </div>
-            </div>
           </div>
         </div>
 
