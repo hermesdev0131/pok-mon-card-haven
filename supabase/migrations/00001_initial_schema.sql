@@ -139,15 +139,17 @@ alter table seller_profiles enable row level security;
 -- Normalized card data — the Pokemon card itself, not a specific graded copy.
 -- Unique constraint on (set_code, number) prevents duplicates.
 create table card_bases (
-  id          uuid primary key default gen_random_uuid(),
-  name        text not null,               -- "Charizard VMAX"
-  set_name    text not null,               -- "Shiny Star V"
-  set_code    text not null,               -- "SSV"
-  number      text not null,               -- "307/190"
-  type        text not null default 'normal' references card_types(code),
-  rarity      text,                        -- "Secret Rare", "Alt Art", etc.
-  image_url   text,                        -- official card image
-  created_at  timestamptz not null default now(),
+  id              uuid primary key default gen_random_uuid(),
+  name            text not null,               -- "Charizard VMAX"
+  set_name        text not null,               -- "Shiny Star V"
+  set_code        text not null,               -- "SSV"
+  number          text not null,               -- "307/190"
+  type            text not null default 'normal' references card_types(code),
+  rarity          text,                        -- "Secret Rare", "Alt Art", etc.
+  image_url       text,                        -- official card image
+  language_group  text not null default 'INT'  -- 'INT' = EN/PT (same sets), 'JP' = Japanese (own sets)
+                  check (language_group in ('INT', 'JP')),
+  created_at      timestamptz not null default now(),
 
   unique (set_code, number)
 );

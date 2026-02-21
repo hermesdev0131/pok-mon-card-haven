@@ -21,6 +21,9 @@ export interface GradeCompanyRow {
   sortOrder: number;
 }
 
+// Language group for card bases: INT = international (EN/PT share sets), JP = Japanese (own sets)
+export type CardLanguageGroup = 'INT' | 'JP';
+
 // The Pokemon card itself — generic, not a specific graded copy
 export interface CardBase {
   id: string;
@@ -31,6 +34,7 @@ export interface CardBase {
   type: CardType;
   rarity?: string;
   imageUrl?: string; // official/generic card art
+  languageGroup: CardLanguageGroup; // INT = EN/PT sets, JP = Japanese sets
 }
 
 // A specific graded copy listed for sale by a seller
@@ -73,7 +77,9 @@ export interface SaleRecord {
   price: number;
   grade: number;
   gradeCompany: string;
+  sellerName: string;
   buyerName: string;
+  language: CardLanguage;
 }
 
 export type OrderStatus = 'aguardando_pagamento' | 'pago' | 'enviado' | 'entregue' | 'disputa' | 'cancelado';

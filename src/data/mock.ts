@@ -10,20 +10,29 @@ export const sellers: Seller[] = [
 ];
 
 // Card bases — the generic Pokemon card, not a specific graded copy
+// INT = EN/PT (same sets), JP = Japanese (own sets/numbering)
 // Images from Pokemon TCG API: https://images.pokemontcg.io/{setId}/{number}.png
 export const cardBases: CardBase[] = [
-  { id: 'cb1', name: 'Charizard VMAX', set: 'Darkness Ablaze', setCode: 'DAA', number: '020/189', type: 'fire', rarity: 'VMAX', imageUrl: 'https://images.pokemontcg.io/swsh3/20.png' },
-  { id: 'cb2', name: 'Pikachu VMAX Rainbow', set: 'Vivid Voltage', setCode: 'VV', number: '188/185', type: 'electric', rarity: 'Secret Rare', imageUrl: 'https://images.pokemontcg.io/swsh4/188.png' },
-  { id: 'cb3', name: 'Mew VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '268/264', type: 'psychic', rarity: 'Alt Art', imageUrl: 'https://images.pokemontcg.io/swsh8/268.png' },
-  { id: 'cb4', name: 'Umbreon VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '215/203', type: 'dark', rarity: 'Alt Art', imageUrl: 'https://images.pokemontcg.io/swsh7/215.png' },
-  { id: 'cb5', name: 'Rayquaza VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '218/203', type: 'dragon', rarity: 'Alt Art', imageUrl: 'https://images.pokemontcg.io/swsh7/218.png' },
-  { id: 'cb6', name: 'Giratina VSTAR Alt Art', set: 'Lost Origin', setCode: 'LOR', number: '131/196', type: 'ghost', rarity: 'Alt Art', imageUrl: 'https://images.pokemontcg.io/swsh11/131.png' },
-  { id: 'cb7', name: 'Lugia VSTAR Alt Art', set: 'Silver Tempest', setCode: 'SIT', number: '186/195', type: 'flying', rarity: 'Alt Art', imageUrl: 'https://images.pokemontcg.io/swsh12/186.png' },
-  { id: 'cb8', name: 'Charizard ex SAR', set: 'Pokémon 151', setCode: '151', number: '199/165', type: 'fire', rarity: 'SAR', imageUrl: 'https://images.pokemontcg.io/sv3pt5/199.png' },
-  { id: 'cb9', name: 'Charizard Base Set', set: 'Base Set', setCode: 'BS', number: '4/102', type: 'fire', rarity: 'Holo Rare', imageUrl: 'https://images.pokemontcg.io/base1/4.png' },
-  { id: 'cb10', name: 'Blastoise Base Set', set: 'Base Set', setCode: 'BS', number: '2/102', type: 'water', rarity: 'Holo Rare', imageUrl: 'https://images.pokemontcg.io/base1/2.png' },
-  { id: 'cb11', name: 'Venusaur Base Set', set: 'Base Set', setCode: 'BS', number: '15/102', type: 'grass', rarity: 'Holo Rare', imageUrl: 'https://images.pokemontcg.io/base1/15.png' },
-  { id: 'cb12', name: 'Gengar VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '271/264', type: 'ghost', rarity: 'Alt Art', imageUrl: 'https://images.pokemontcg.io/swsh8/271.png' },
+  // ── International (EN/PT) ──
+  { id: 'cb1', name: 'Charizard VMAX', set: 'Darkness Ablaze', setCode: 'DAA', number: '020/189', type: 'fire', rarity: 'VMAX', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh3/20.png' },
+  { id: 'cb2', name: 'Pikachu VMAX Rainbow', set: 'Vivid Voltage', setCode: 'VV', number: '188/185', type: 'electric', rarity: 'Secret Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh4/188.png' },
+  { id: 'cb3', name: 'Mew VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '268/264', type: 'psychic', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh8/268.png' },
+  { id: 'cb4', name: 'Umbreon VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '215/203', type: 'dark', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh7/215.png' },
+  { id: 'cb5', name: 'Rayquaza VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '218/203', type: 'dragon', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh7/218.png' },
+  { id: 'cb6', name: 'Giratina VSTAR Alt Art', set: 'Lost Origin', setCode: 'LOR', number: '131/196', type: 'ghost', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh11/131.png' },
+  { id: 'cb7', name: 'Lugia VSTAR Alt Art', set: 'Silver Tempest', setCode: 'SIT', number: '186/195', type: 'flying', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh12/186.png' },
+  { id: 'cb8', name: 'Charizard ex SAR', set: 'Pokémon 151', setCode: '151', number: '199/165', type: 'fire', rarity: 'SAR', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/sv3pt5/199.png' },
+  { id: 'cb9', name: 'Charizard Base Set', set: 'Base Set', setCode: 'BS', number: '4/102', type: 'fire', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/base1/4.png' },
+  { id: 'cb10', name: 'Blastoise Base Set', set: 'Base Set', setCode: 'BS', number: '2/102', type: 'water', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/base1/2.png' },
+  { id: 'cb11', name: 'Venusaur Base Set', set: 'Base Set', setCode: 'BS', number: '15/102', type: 'grass', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/base1/15.png' },
+  { id: 'cb12', name: 'Gengar VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '271/264', type: 'ghost', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh8/271.png' },
+
+  // ── Japanese (own sets/numbering) ──
+  { id: 'cb1-jp', name: 'Charizard VMAX', set: 'Starter Set VMAX Charizard', setCode: 'sA', number: '002/021', type: 'fire', rarity: 'VMAX', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh3/20.png' },
+  { id: 'cb3-jp', name: 'Mew VMAX Alt Art', set: 'Fusion Arts', setCode: 's8', number: '114/100', type: 'psychic', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh8/268.png' },
+  { id: 'cb4-jp', name: 'Umbreon VMAX Alt Art', set: 'Eevee Heroes', setCode: 's6a', number: '095/069', type: 'dark', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh7/215.png' },
+  { id: 'cb7-jp', name: 'Lugia VSTAR Alt Art', set: 'Paradigm Trigger', setCode: 's12', number: '118/098', type: 'flying', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh12/186.png' },
+  { id: 'cb8-jp', name: 'Charizard ex SAR', set: 'Pokémon Card 151', setCode: 'sv2a', number: '185/165', type: 'fire', rarity: 'SAR', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/sv3pt5/199.png' },
 ];
 
 // Listings — specific graded copies for sale. Multiple sellers can list the same card base.
@@ -32,21 +41,21 @@ export const listings: Listing[] = [
   { id: 'l1', cardBaseId: 'cb1', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 2850, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-01' },
   { id: 'l2', cardBaseId: 'cb1', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 1800, images: [], freeShipping: true, language: 'EN', tags: ['graduada'], status: 'active', createdAt: '2024-12-08' },
   { id: 'l3', cardBaseId: 'cb1', sellerId: 's5', grade: 10, gradeCompany: 'CGC', price: 2600, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-10' },
-  { id: 'l4', cardBaseId: 'cb1', sellerId: 's6', grade: 9, gradeCompany: 'TAG', price: 1500, images: [], freeShipping: false, language: 'JP', tags: ['graduada'], status: 'active', createdAt: '2024-12-12' },
+  { id: 'l4', cardBaseId: 'cb1-jp', sellerId: 's6', grade: 9, gradeCompany: 'TAG', price: 1500, images: [], freeShipping: false, language: 'JP', tags: ['graduada'], status: 'active', createdAt: '2024-12-12' },
 
   // cb2 — Pikachu VMAX Rainbow (2 listings)
   { id: 'l5', cardBaseId: 'cb2', sellerId: 's2', grade: 10, gradeCompany: 'PSA', price: 1200, images: [], freeShipping: false, language: 'EN', tags: ['graduada'], status: 'active', createdAt: '2024-12-05' },
   { id: 'l6', cardBaseId: 'cb2', sellerId: 's1', grade: 9.5, gradeCompany: 'Beckett', price: 1050, images: [], freeShipping: true, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-09' },
 
   // cb3 — Mew VMAX Alt Art (2 listings)
-  { id: 'l7', cardBaseId: 'cb3', sellerId: 's1', grade: 9.5, gradeCompany: 'Beckett', price: 3500, images: [], freeShipping: true, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-11-28' },
+  { id: 'l7', cardBaseId: 'cb3-jp', sellerId: 's1', grade: 9.5, gradeCompany: 'Beckett', price: 3500, images: [], freeShipping: true, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-11-28' },
   { id: 'l8', cardBaseId: 'cb3', sellerId: 's4', grade: 10, gradeCompany: 'PSA', price: 4200, images: [], freeShipping: false, language: 'EN', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-03' },
 
   // cb4 — Umbreon VMAX Alt Art (5 listings)
   { id: 'l9', cardBaseId: 'cb4', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 8900, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-11-15' },
   { id: 'l10', cardBaseId: 'cb4', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 13500, images: [], freeShipping: true, language: 'EN', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-01' },
   { id: 'l11', cardBaseId: 'cb4', sellerId: 's5', grade: 9, gradeCompany: 'Beckett', price: 8600, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-05' },
-  { id: 'l12', cardBaseId: 'cb4', sellerId: 's2', grade: 9.5, gradeCompany: 'CGC', price: 10500, images: [], freeShipping: false, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-08' },
+  { id: 'l12', cardBaseId: 'cb4-jp', sellerId: 's2', grade: 9.5, gradeCompany: 'CGC', price: 10500, images: [], freeShipping: false, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-08' },
   { id: 'l13', cardBaseId: 'cb4', sellerId: 's6', grade: 8, gradeCompany: 'TAG', price: 6200, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-10' },
 
   // cb5 — Rayquaza VMAX Alt Art (2 listings)
@@ -60,10 +69,10 @@ export const listings: Listing[] = [
   // cb7 — Lugia VSTAR Alt Art (3 listings)
   { id: 'l18', cardBaseId: 'cb7', sellerId: 's2', grade: 10, gradeCompany: 'PSA', price: 5600, images: [], freeShipping: true, language: 'EN', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-11-20' },
   { id: 'l19', cardBaseId: 'cb7', sellerId: 's5', grade: 9, gradeCompany: 'Beckett', price: 4100, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-02' },
-  { id: 'l20', cardBaseId: 'cb7', sellerId: 's3', grade: 9.5, gradeCompany: 'CGC', price: 4800, images: [], freeShipping: false, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-06' },
+  { id: 'l20', cardBaseId: 'cb7-jp', sellerId: 's3', grade: 9.5, gradeCompany: 'CGC', price: 4800, images: [], freeShipping: false, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-06' },
 
   // cb8 — Charizard ex SAR (2 listings)
-  { id: 'l21', cardBaseId: 'cb8', sellerId: 's4', grade: 10, gradeCompany: 'PSA', price: 3200, images: [], freeShipping: false, language: 'JP', tags: ['graduada'], status: 'active', createdAt: '2024-12-12' },
+  { id: 'l21', cardBaseId: 'cb8-jp', sellerId: 's4', grade: 10, gradeCompany: 'PSA', price: 3200, images: [], freeShipping: false, language: 'JP', tags: ['graduada'], status: 'active', createdAt: '2024-12-12' },
   { id: 'l22', cardBaseId: 'cb8', sellerId: 's1', grade: 9, gradeCompany: 'PSA', price: 2400, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-14' },
 
   // cb9 — Charizard Base Set (1 listing)
@@ -84,33 +93,48 @@ export const listings: Listing[] = [
 // Sales history keyed by card base ID
 export const salesHistory: Record<string, SaleRecord[]> = {
   cb1: [
-    { date: '2024-11-15', price: 2700, grade: 10, gradeCompany: 'PSA', buyerName: 'João M.' },
-    { date: '2024-10-22', price: 2650, grade: 10, gradeCompany: 'PSA', buyerName: 'Pedro S.' },
-    { date: '2024-09-10', price: 2500, grade: 9, gradeCompany: 'PSA', buyerName: 'Ana L.' },
-    { date: '2024-08-05', price: 2800, grade: 10, gradeCompany: 'PSA', buyerName: 'Lucas R.' },
-    { date: '2024-07-18', price: 1800, grade: 9, gradeCompany: 'PSA', buyerName: 'Mariana F.' },
+    { date: '2024-11-15', price: 2700, grade: 10, gradeCompany: 'PSA', sellerName: 'CardMaster BR', buyerName: 'João M.', language: 'PT' },
+    { date: '2024-10-22', price: 2650, grade: 10, gradeCompany: 'PSA', sellerName: 'PokéCollector SP', buyerName: 'Pedro S.', language: 'PT' },
+    { date: '2024-09-10', price: 2500, grade: 9, gradeCompany: 'PSA', sellerName: 'CardMaster BR', buyerName: 'Ana L.', language: 'EN' },
+    { date: '2024-08-05', price: 2800, grade: 10, gradeCompany: 'PSA', sellerName: 'Graded Cards BR', buyerName: 'Lucas R.', language: 'EN' },
+    { date: '2024-07-18', price: 1800, grade: 9, gradeCompany: 'PSA', sellerName: 'PokéCollector SP', buyerName: 'Mariana F.', language: 'PT' },
   ],
   cb4: [
-    { date: '2024-11-01', price: 8500, grade: 9, gradeCompany: 'PSA', buyerName: 'Carlos T.' },
-    { date: '2024-09-15', price: 8200, grade: 9, gradeCompany: 'PSA', buyerName: 'Fernanda R.' },
-    { date: '2024-08-20', price: 9100, grade: 10, gradeCompany: 'PSA', buyerName: 'Bruno M.' },
+    { date: '2024-11-01', price: 8500, grade: 9, gradeCompany: 'PSA', sellerName: 'Graded Cards BR', buyerName: 'Carlos T.', language: 'PT' },
+    { date: '2024-09-15', price: 8200, grade: 9, gradeCompany: 'PSA', sellerName: 'CardMaster BR', buyerName: 'Fernanda R.', language: 'EN' },
+    { date: '2024-08-20', price: 9100, grade: 10, gradeCompany: 'PSA', sellerName: 'TCG Premium', buyerName: 'Bruno M.', language: 'PT' },
   ],
   cb8: [
-    { date: '2024-12-01', price: 3100, grade: 10, gradeCompany: 'PSA', buyerName: 'Rafael S.' },
-    { date: '2024-11-10', price: 2900, grade: 10, gradeCompany: 'PSA', buyerName: 'Camila T.' },
+    { date: '2024-11-10', price: 2900, grade: 10, gradeCompany: 'PSA', sellerName: 'PokéCollector SP', buyerName: 'Camila T.', language: 'PT' },
+  ],
+  'cb8-jp': [
+    { date: '2024-12-01', price: 3100, grade: 10, gradeCompany: 'PSA', sellerName: 'CardMaster BR', buyerName: 'Rafael S.', language: 'JP' },
   ],
 };
 
 // Price history keyed by card base ID — each point includes language for filtering
 export const priceHistory: Record<string, PricePoint[]> = {
   cb1: [
-    // PT — Charizard VMAX (Brazilian market)
+    // PT — Charizard VMAX — NM (ungraded near-mint)
     { month: 'Jul 24', language: 'PT', company: 'NM', grade: 0, avgPrice: 800 },
     { month: 'Ago 24', language: 'PT', company: 'NM', grade: 0, avgPrice: 850 },
     { month: 'Set 24', language: 'PT', company: 'NM', grade: 0, avgPrice: 820 },
     { month: 'Out 24', language: 'PT', company: 'NM', grade: 0, avgPrice: 900 },
     { month: 'Nov 24', language: 'PT', company: 'NM', grade: 0, avgPrice: 880 },
     { month: 'Dez 24', language: 'PT', company: 'NM', grade: 0, avgPrice: 950 },
+    // PT — PSA grades 7-10
+    { month: 'Jul 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 1100 },
+    { month: 'Ago 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 1150 },
+    { month: 'Set 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 1120 },
+    { month: 'Out 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 1200 },
+    { month: 'Nov 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 1180 },
+    { month: 'Dez 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 1250 },
+    { month: 'Jul 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 1400 },
+    { month: 'Ago 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 1450 },
+    { month: 'Set 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 1500 },
+    { month: 'Out 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 1550 },
+    { month: 'Nov 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 1600 },
+    { month: 'Dez 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 1650 },
     { month: 'Jul 24', language: 'PT', company: 'PSA', grade: 9, avgPrice: 1800 },
     { month: 'Ago 24', language: 'PT', company: 'PSA', grade: 9, avgPrice: 1900 },
     { month: 'Set 24', language: 'PT', company: 'PSA', grade: 9, avgPrice: 2000 },
@@ -123,11 +147,40 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'PT', company: 'PSA', grade: 10, avgPrice: 2650 },
     { month: 'Nov 24', language: 'PT', company: 'PSA', grade: 10, avgPrice: 2700 },
     { month: 'Dez 24', language: 'PT', company: 'PSA', grade: 10, avgPrice: 2850 },
-    { month: 'Set 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 1600 },
-    { month: 'Out 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 1650 },
-    { month: 'Nov 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 1700 },
-    { month: 'Dez 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 1750 },
-    // EN — Charizard VMAX (English, ~25-35% more expensive)
+    // PT — CGC grades 8-10
+    { month: 'Jul 24', language: 'PT', company: 'CGC', grade: 8, avgPrice: 1350 },
+    { month: 'Ago 24', language: 'PT', company: 'CGC', grade: 8, avgPrice: 1400 },
+    { month: 'Set 24', language: 'PT', company: 'CGC', grade: 8, avgPrice: 1380 },
+    { month: 'Out 24', language: 'PT', company: 'CGC', grade: 8, avgPrice: 1450 },
+    { month: 'Nov 24', language: 'PT', company: 'CGC', grade: 8, avgPrice: 1500 },
+    { month: 'Dez 24', language: 'PT', company: 'CGC', grade: 8, avgPrice: 1520 },
+    { month: 'Jul 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 1750 },
+    { month: 'Ago 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 1800 },
+    { month: 'Set 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 1900 },
+    { month: 'Out 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 1950 },
+    { month: 'Nov 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 2050 },
+    { month: 'Dez 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 2100 },
+    { month: 'Set 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 2600 },
+    { month: 'Out 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 2550 },
+    { month: 'Nov 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 2650 },
+    { month: 'Dez 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 2700 },
+    // PT — Mana Fix grades 8-9
+    { month: 'Set 24', language: 'PT', company: 'Mana Fix', grade: 8, avgPrice: 1200 },
+    { month: 'Out 24', language: 'PT', company: 'Mana Fix', grade: 8, avgPrice: 1250 },
+    { month: 'Nov 24', language: 'PT', company: 'Mana Fix', grade: 8, avgPrice: 1280 },
+    { month: 'Dez 24', language: 'PT', company: 'Mana Fix', grade: 8, avgPrice: 1300 },
+    { month: 'Set 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 1550 },
+    { month: 'Out 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 1600 },
+    { month: 'Nov 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 1650 },
+    { month: 'Dez 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 1700 },
+    // PT — BGA grades 9-10
+    { month: 'Out 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 1500 },
+    { month: 'Nov 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 1550 },
+    { month: 'Dez 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 1600 },
+    { month: 'Out 24', language: 'PT', company: 'BGA', grade: 10, avgPrice: 2200 },
+    { month: 'Nov 24', language: 'PT', company: 'BGA', grade: 10, avgPrice: 2300 },
+    { month: 'Dez 24', language: 'PT', company: 'BGA', grade: 10, avgPrice: 2350 },
+    // EN — NM + PSA
     { month: 'Jul 24', language: 'EN', company: 'NM', grade: 0, avgPrice: 1050 },
     { month: 'Ago 24', language: 'EN', company: 'NM', grade: 0, avgPrice: 1100 },
     { month: 'Set 24', language: 'EN', company: 'NM', grade: 0, avgPrice: 1080 },
@@ -146,16 +199,43 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 3500 },
     { month: 'Nov 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 3600 },
     { month: 'Dez 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 3750 },
-    // JP — Charizard VMAX (Japanese, lower than EN but close to PT)
+    // EN — CGC 9-10
+    { month: 'Jul 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2200 },
+    { month: 'Ago 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2350 },
+    { month: 'Set 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2400 },
+    { month: 'Out 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2500 },
+    { month: 'Nov 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2600 },
+    { month: 'Dez 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2700 },
+  ],
+  'cb1-jp': [
+    // JP — Charizard VMAX (Starter Set VMAX Charizard)
     { month: 'Jul 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2200 },
     { month: 'Ago 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2250 },
     { month: 'Set 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2300 },
     { month: 'Out 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2150 },
     { month: 'Nov 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2350 },
     { month: 'Dez 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2400 },
+    { month: 'Jul 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 1400 },
+    { month: 'Ago 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 1450 },
+    { month: 'Set 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 1500 },
+    { month: 'Out 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 1480 },
+    { month: 'Nov 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 1550 },
+    { month: 'Dez 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 1600 },
   ],
   cb4: [
-    // PT — Umbreon VMAX Alt Art (Brazilian market)
+    // PT — Umbreon VMAX Alt Art — PSA grades 7-10
+    { month: 'Jul 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 4500 },
+    { month: 'Ago 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 4700 },
+    { month: 'Set 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 4900 },
+    { month: 'Out 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 4800 },
+    { month: 'Nov 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 5100 },
+    { month: 'Dez 24', language: 'PT', company: 'PSA', grade: 7, avgPrice: 5300 },
+    { month: 'Jul 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 5800 },
+    { month: 'Ago 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 6100 },
+    { month: 'Set 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 6400 },
+    { month: 'Out 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 6200 },
+    { month: 'Nov 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 6600 },
+    { month: 'Dez 24', language: 'PT', company: 'PSA', grade: 8, avgPrice: 6900 },
     { month: 'Jul 24', language: 'PT', company: 'PSA', grade: 9, avgPrice: 7500 },
     { month: 'Ago 24', language: 'PT', company: 'PSA', grade: 9, avgPrice: 7800 },
     { month: 'Set 24', language: 'PT', company: 'PSA', grade: 9, avgPrice: 8200 },
@@ -168,11 +248,27 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'PT', company: 'PSA', grade: 10, avgPrice: 12800 },
     { month: 'Nov 24', language: 'PT', company: 'PSA', grade: 10, avgPrice: 13200 },
     { month: 'Dez 24', language: 'PT', company: 'PSA', grade: 10, avgPrice: 13500 },
-    { month: 'Set 24', language: 'PT', company: 'Beckett', grade: 9, avgPrice: 7900 },
-    { month: 'Out 24', language: 'PT', company: 'Beckett', grade: 9, avgPrice: 8100 },
-    { month: 'Nov 24', language: 'PT', company: 'Beckett', grade: 9, avgPrice: 8300 },
-    { month: 'Dez 24', language: 'PT', company: 'Beckett', grade: 9, avgPrice: 8600 },
-    // EN — Umbreon VMAX Alt Art (English, ~30-40% more expensive)
+    // PT — CGC 9-10
+    { month: 'Jul 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 7200 },
+    { month: 'Ago 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 7500 },
+    { month: 'Set 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 7800 },
+    { month: 'Out 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 7600 },
+    { month: 'Nov 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 8000 },
+    { month: 'Dez 24', language: 'PT', company: 'CGC', grade: 9, avgPrice: 8400 },
+    { month: 'Set 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 11500 },
+    { month: 'Out 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 11800 },
+    { month: 'Nov 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 12200 },
+    { month: 'Dez 24', language: 'PT', company: 'CGC', grade: 10, avgPrice: 12600 },
+    // PT — Mana Fix 9
+    { month: 'Set 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 6800 },
+    { month: 'Out 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 7000 },
+    { month: 'Nov 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 7200 },
+    { month: 'Dez 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 7500 },
+    // PT — BGA 9
+    { month: 'Out 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 6500 },
+    { month: 'Nov 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 6800 },
+    { month: 'Dez 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 7100 },
+    // EN — PSA 9-10
     { month: 'Jul 24', language: 'EN', company: 'PSA', grade: 9, avgPrice: 10200 },
     { month: 'Ago 24', language: 'EN', company: 'PSA', grade: 9, avgPrice: 10500 },
     { month: 'Set 24', language: 'EN', company: 'PSA', grade: 9, avgPrice: 11000 },
@@ -185,7 +281,15 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 17200 },
     { month: 'Nov 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 18000 },
     { month: 'Dez 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 18500 },
-    // JP — Umbreon VMAX Alt Art (Japanese)
+  ],
+  'cb4-jp': [
+    // JP — Umbreon VMAX Alt Art (Eevee Heroes) — PSA 9-10
+    { month: 'Jul 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7000 },
+    { month: 'Ago 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7300 },
+    { month: 'Set 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7600 },
+    { month: 'Out 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7400 },
+    { month: 'Nov 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7800 },
+    { month: 'Dez 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 8200 },
     { month: 'Jul 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 9500 },
     { month: 'Ago 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 9800 },
     { month: 'Set 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 10200 },
