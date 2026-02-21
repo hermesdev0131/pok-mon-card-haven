@@ -88,12 +88,12 @@ export default function Home() {
                         src={featuredCard.cardBase.imageUrl}
                         alt={featuredCard.cardBase.name}
                         fill
-                        className="object-contain p-3 group-hover:scale-110 transition-transform duration-500"
+                        className="object-contain p-3 group-hover:scale-[1.03] transition-transform duration-500"
                         sizes="224px"
                         priority
                       />
                     ) : (
-                      <div className="text-8xl opacity-40 group-hover:scale-110 transition-transform duration-500">🃏</div>
+                      <div className="text-8xl opacity-40 group-hover:scale-[1.03] transition-transform duration-500">🃏</div>
                     )}
                   </div>
                   <div className="text-center space-y-2">

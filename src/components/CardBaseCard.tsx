@@ -19,11 +19,11 @@ export function CardBaseCard({ item }: CardBaseCardProps) {
               src={cardBase.imageUrl}
               alt={cardBase.name}
               fill
-              className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
+              className="object-contain p-2 group-hover:scale-[1.03] transition-transform duration-500"
               sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
             />
           ) : (
-            <div className="text-7xl opacity-30 group-hover:scale-110 transition-transform duration-500">🃏</div>
+            <div className="text-7xl opacity-30 group-hover:scale-[1.03] transition-transform duration-500">🃏</div>
           )}
 
           {/* Rarity — top-left, solid accent */}

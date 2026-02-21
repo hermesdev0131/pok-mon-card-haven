@@ -95,13 +95,13 @@ export default function CardDetailPage() {
         {/* Left — Card image */}
         <div>
           <div className="sticky top-24 space-y-3">
-            <div className="relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-white/[0.06] overflow-hidden">
+            <div className="group/img relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-white/[0.06] overflow-hidden">
               {cardBase.imageUrl ? (
                 <Image
                   src={cardBase.imageUrl}
                   alt={cardBase.name}
                   fill
-                  className="object-contain p-3"
+                  className="object-contain p-3 group-hover/img:scale-[1.03] transition-transform duration-500"
                   sizes="400px"
                   priority
                 />
