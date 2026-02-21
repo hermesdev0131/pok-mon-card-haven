@@ -44,7 +44,7 @@ export async function getCardBasesWithStats(filters?: {
 }
 
 export async function getCardBase(id: string) {
-  await delay(200);
+  await delay(50);
   return cardBases.find(cb => cb.id === id) || null;
 }
 

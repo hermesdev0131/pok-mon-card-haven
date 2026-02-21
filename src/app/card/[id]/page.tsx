@@ -101,7 +101,7 @@ export default function CardDetailPage() {
                   src={cardBase.imageUrl}
                   alt={cardBase.name}
                   fill
-                  quality={95}
+                  unoptimized
                   className="object-contain p-3 group-hover/img:scale-[1.03] transition-transform duration-500"
                   sizes="400px"
                   priority
