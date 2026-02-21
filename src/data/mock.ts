@@ -23,7 +23,7 @@ export const cardBases: CardBase[] = [
   { id: 'cb9', name: 'Charizard Base Set', set: 'Base Set', setCode: 'BS', number: '4/102', type: 'fire', rarity: 'Holo Rare', imageUrl: 'https://images.pokemontcg.io/base1/4.png' },
   { id: 'cb10', name: 'Blastoise Base Set', set: 'Base Set', setCode: 'BS', number: '2/102', type: 'water', rarity: 'Holo Rare', imageUrl: 'https://images.pokemontcg.io/base1/2.png' },
   { id: 'cb11', name: 'Venusaur Base Set', set: 'Base Set', setCode: 'BS', number: '15/102', type: 'grass', rarity: 'Holo Rare', imageUrl: 'https://images.pokemontcg.io/base1/15.png' },
-  { id: 'cb12', name: 'Pikachu Illustrator', set: 'Promo', setCode: 'PROMO', number: 'ILLUS', type: 'electric', rarity: 'Promo' },
+  { id: 'cb12', name: 'Gengar VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '271/264', type: 'ghost', rarity: 'Alt Art', imageUrl: 'https://images.pokemontcg.io/swsh8/271.png' },
 ];
 
 // Listings — specific graded copies for sale. Multiple sellers can list the same card base.
@@ -76,8 +76,9 @@ export const listings: Listing[] = [
   // cb11 — Venusaur Base Set (1 listing)
   { id: 'l26', cardBaseId: 'cb11', sellerId: 's2', grade: 7, gradeCompany: 'Beckett', price: 3800, images: [], freeShipping: false, language: 'EN', tags: ['vintage', 'graduada'], status: 'active', createdAt: '2024-12-03' },
 
-  // cb12 — Pikachu Illustrator (1 listing)
-  { id: 'l27', cardBaseId: 'cb12', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 120000, images: [], freeShipping: true, language: 'JP', tags: ['vintage', 'graduada'], status: 'active', createdAt: '2024-11-10' },
+  // cb12 — Gengar VMAX Alt Art (2 listings)
+  { id: 'l27', cardBaseId: 'cb12', sellerId: 's4', grade: 10, gradeCompany: 'PSA', price: 4800, images: [], freeShipping: true, language: 'EN', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-11-10' },
+  { id: 'l28', cardBaseId: 'cb12', sellerId: 's1', grade: 9, gradeCompany: 'CGC', price: 3200, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-05' },
 ];
 
 // Sales history keyed by card base ID

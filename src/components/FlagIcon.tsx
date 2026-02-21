@@ -18,7 +18,7 @@ export function FlagIcon({ code, className }: FlagIconProps) {
   return (
     <svg
       viewBox="0 0 640 480"
-      className={cn("inline-block w-6 h-4 rounded-sm shrink-0", className)}
+      className={cn("inline-block w-6 h-4 rounded-sm shrink-0 overflow-hidden", className)}
       role="img"
       aria-label={flag.label}
     >
@@ -27,28 +27,48 @@ export function FlagIcon({ code, className }: FlagIconProps) {
   );
 }
 
-// MVP languages: PT (Brazil), EN (USA), JP (Japan)
+// Accurate flag SVGs based on lipis/flag-icons (MIT license)
+// Simplified for small display sizes — details invisible at 24×16px are omitted
 const FLAGS: Record<string, { label: string; paths: React.ReactNode }> = {
   PT: {
-    label: 'Português',
+    label: 'Português (Brasil)',
     paths: (
-      <>
-        <rect width="640" height="480" fill="#009B3A" />
-        <polygon points="320,39 610,240 320,441 30,240" fill="#FEDF00" />
-        <circle cx="320" cy="240" r="95" fill="#002776" />
-        <path d="M196,240 C196,240 258,295 320,295 C382,295 444,240 444,240 C444,240 382,210 320,210 C258,210 196,240 196,240Z" fill="#FFF" />
-      </>
+      <g strokeWidth="1pt">
+        {/* Green field */}
+        <path fill="#229e45" fillRule="evenodd" d="M0 0h640v480H0z" />
+        {/* Yellow diamond */}
+        <path fill="#f8e509" fillRule="evenodd" d="m321.4 436 301.5-195.7L319.6 44 17.1 240.7z" />
+        {/* Blue globe */}
+        <path fill="#2b49a3" fillRule="evenodd" d="M452.8 240c0 70.3-57.1 127.3-127.6 127.3A127.4 127.4 0 1 1 452.8 240" />
+        {/* White curved band */}
+        <path fill="#fff" fillRule="evenodd" d="M444.4 285.8a125 125 0 0 0 5.8-19.8c-67.8-59.5-143.3-90-238.7-83.7a125 125 0 0 0-8.5 20.9c113-10.8 196 39.2 241.4 82.6" />
+      </g>
     ),
   },
   EN: {
-    label: 'English',
+    label: 'English (US)',
     paths: (
       <>
-        <rect width="640" height="480" fill="#B22234" />
-        {[0, 2, 4, 6, 8, 10, 12].map(i => (
-          <rect key={i} y={i * (480 / 13)} width="640" height={480 / 13} fill={i % 2 === 0 ? '#B22234' : '#FFF'} />
+        {/* Red background */}
+        <path fill="#bd3d44" d="M0 0h640v480H0" />
+        {/* White stripes */}
+        <path stroke="#fff" strokeWidth="37" d="M0 55.3h640M0 129h640M0 203h640M0 277h640M0 351h640M0 425h640" />
+        {/* Blue canton */}
+        <path fill="#192f5d" d="M0 0h364.8v258.5H0" />
+        {/* Simplified stars — 5-pointed stars in grid pattern */}
+        {[
+          [30, 23], [91, 23], [152, 23], [213, 23], [274, 23], [335, 23],
+          [60, 49], [121, 49], [182, 49], [243, 49], [305, 49],
+          [30, 75], [91, 75], [152, 75], [213, 75], [274, 75], [335, 75],
+          [60, 101], [121, 101], [182, 101], [243, 101], [305, 101],
+          [30, 127], [91, 127], [152, 127], [213, 127], [274, 127], [335, 127],
+          [60, 153], [121, 153], [182, 153], [243, 153], [305, 153],
+          [30, 179], [91, 179], [152, 179], [213, 179], [274, 179], [335, 179],
+          [60, 205], [121, 205], [182, 205], [243, 205], [305, 205],
+          [30, 231], [91, 231], [152, 231], [213, 231], [274, 231], [335, 231],
+        ].map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="8" fill="#fff" />
         ))}
-        <rect width="256" height={480 * 7 / 13} fill="#3C3B6E" />
       </>
     ),
   },
@@ -56,8 +76,10 @@ const FLAGS: Record<string, { label: string; paths: React.ReactNode }> = {
     label: '日本語',
     paths: (
       <>
-        <rect width="640" height="480" fill="#FFF" />
-        <circle cx="320" cy="240" r="120" fill="#BC002D" />
+        {/* White field */}
+        <path fill="#fff" d="M0 0h640v480H0z" />
+        {/* Red circle (Hinomaru) */}
+        <circle cx="320" cy="240" r="150" fill="#bc002d" />
       </>
     ),
   },

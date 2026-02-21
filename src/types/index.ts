@@ -1,6 +1,25 @@
-export type CardType = 'fire' | 'electric' | 'psychic' | 'dark' | 'dragon' | 'ghost' | 'flying' | 'grass' | 'water' | 'normal';
+// Card types — matches card_types lookup table. New types can be added via admin.
+export type CardType = 'fire' | 'water' | 'grass' | 'electric' | 'psychic' | 'fighting' | 'dark' | 'steel' | 'dragon' | 'fairy' | 'ghost' | 'flying' | 'normal' | 'colorless';
 
+// Grade companies — matches grade_companies lookup table. New companies can be added via admin.
 export type GradeCompany = 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'Mana Fix' | 'BGA' | 'Capy' | 'Taverna';
+
+// Lookup table row types (for fetching from Supabase)
+export interface CardTypeRow {
+  code: string;
+  label: string;
+  color: string | null;
+  sortOrder: number;
+}
+
+export interface GradeCompanyRow {
+  code: string;
+  name: string;
+  logoUrl: string | null;
+  website: string | null;
+  active: boolean;
+  sortOrder: number;
+}
 
 // The Pokemon card itself — generic, not a specific graded copy
 export interface CardBase {
@@ -24,7 +43,7 @@ export interface Listing {
   price: number;
   images: string[];
   freeShipping?: boolean;
-  language?: string; // 'PT' | 'EN' | 'JP' etc.
+  language: CardLanguage;
   tags?: string[];
   status: 'active' | 'sold' | 'reserved' | 'cancelled';
   createdAt: string;

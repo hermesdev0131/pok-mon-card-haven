@@ -78,7 +78,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
 
                   {/* Language */}
                   <TableCell>
-                    <FlagIcon code={listing.language || 'PT'} />
+                    <FlagIcon code={listing.language} />
                   </TableCell>
 
                   {/* Price */}

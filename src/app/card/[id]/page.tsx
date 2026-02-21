@@ -91,9 +91,9 @@ export default function CardDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="grid gap-8 lg:grid-cols-5">
-        {/* Left — Generic card image */}
-        <div className="lg:col-span-2">
+      <div className="grid gap-8 lg:grid-cols-[400px_1fr]">
+        {/* Left — Card image */}
+        <div>
           <div className="sticky top-24 space-y-3">
             <div className="relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-white/[0.06] overflow-hidden">
               {cardBase.imageUrl ? (
@@ -101,8 +101,8 @@ export default function CardDetailPage() {
                   src={cardBase.imageUrl}
                   alt={cardBase.name}
                   fill
-                  className="object-contain p-4"
-                  sizes="(max-width: 1024px) 100vw, 40vw"
+                  className="object-contain p-3"
+                  sizes="400px"
                   priority
                 />
               ) : (
@@ -138,7 +138,7 @@ export default function CardDetailPage() {
         </div>
 
         {/* Right — Card info + Tabs */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="space-y-6">
           {/* Header */}
           <div>
             <h1 className="text-2xl font-bold md:text-3xl">

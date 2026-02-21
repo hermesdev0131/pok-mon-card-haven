@@ -5,7 +5,42 @@
 -- Prices stored as INTEGER in centavos (R$150.00 = 15000)
 -- UUIDs for all primary keys
 -- RLS enabled on every table
+-- Safe to re-run: drops all objects first
 -- ============================================================
+
+-- =========================
+-- 0. CLEANUP (safe re-run)
+-- =========================
+-- Drop tables in reverse dependency order
+drop table if exists platform_config cascade;
+drop table if exists admin_event_log cascade;
+drop table if exists disputes cascade;
+drop table if exists messages cascade;
+drop table if exists questions cascade;
+drop table if exists reviews cascade;
+drop table if exists confirmed_sales cascade;
+drop table if exists orders cascade;
+drop table if exists listings cascade;
+drop table if exists card_bases cascade;
+drop table if exists seller_profiles cascade;
+drop table if exists profiles cascade;
+drop table if exists grade_companies cascade;
+drop table if exists card_types cascade;
+
+-- Drop enums (including legacy ones from previous schema versions)
+drop type if exists dispute_status;
+drop type if exists order_status;
+drop type if exists listing_status;
+drop type if exists grade_company;
+drop type if exists card_type;
+
+-- Drop functions
+drop function if exists handle_updated_at() cascade;
+drop function if exists handle_new_user() cascade;
+drop function if exists prevent_confirmed_sale_mutation() cascade;
+drop function if exists recalculate_seller_rating() cascade;
+drop function if exists increment_seller_sales() cascade;
+drop function if exists is_admin() cascade;
 
 -- =========================
 -- 1. EXTENSIONS
@@ -16,14 +51,7 @@ create extension if not exists "moddatetime";
 -- =========================
 -- 2. CUSTOM TYPES (ENUMS)
 -- =========================
-
-create type card_type as enum (
-  'fire', 'electric', 'psychic', 'dark', 'dragon',
-  'ghost', 'flying', 'grass', 'water', 'normal',
-  'fighting', 'steel', 'fairy', 'colorless'
-);
-
-create type grade_company as enum ('PSA', 'CGC', 'Beckett', 'TAG', 'ARS', 'Mana Fix', 'BGA', 'Capy', 'Taverna');
+-- Only internal system states are enums. Domain data uses lookup tables (see section 3).
 
 create type listing_status as enum ('active', 'sold', 'reserved', 'cancelled');
 
@@ -45,7 +73,31 @@ create type dispute_status as enum ('open', 'resolved_buyer', 'resolved_seller',
 -- 3. TABLES
 -- =========================
 
--- ----- 3.1 PROFILES -----
+-- ----- 3.1 LOOKUP: CARD TYPES -----
+-- Pokemon energy types. Lookup table instead of enum so admins can add/edit without migrations.
+create table card_types (
+  code        text primary key,               -- 'fire', 'electric', etc.
+  label       text not null,                  -- display name: 'Fogo', 'Elétrico'
+  color       text,                           -- hex or tailwind class for UI
+  sort_order  smallint not null default 0
+);
+
+alter table card_types enable row level security;
+
+-- ----- 3.2 LOOKUP: GRADE COMPANIES -----
+-- Grading companies. Lookup table so new companies can be added via admin panel.
+create table grade_companies (
+  code        text primary key,               -- 'PSA', 'CGC', etc.
+  name        text not null,                  -- full name: 'Professional Sports Authenticator'
+  logo_url    text,
+  website     text,
+  active      boolean not null default true,
+  sort_order  smallint not null default 0
+);
+
+alter table grade_companies enable row level security;
+
+-- ----- 3.3 PROFILES -----
 -- Extends Supabase auth.users. Created via trigger on signup.
 create table profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
@@ -64,7 +116,7 @@ create table profiles (
 
 alter table profiles enable row level security;
 
--- ----- 3.2 SELLER PROFILES -----
+-- ----- 3.4 SELLER PROFILES -----
 -- Additional data for users who sell cards.
 create table seller_profiles (
   id                    uuid primary key references profiles(id) on delete cascade,
@@ -83,7 +135,7 @@ create table seller_profiles (
 
 alter table seller_profiles enable row level security;
 
--- ----- 3.3 CARD BASES -----
+-- ----- 3.5 CARD BASES -----
 -- Normalized card data — the Pokemon card itself, not a specific graded copy.
 -- Unique constraint on (set_code, number) prevents duplicates.
 create table card_bases (
@@ -92,7 +144,7 @@ create table card_bases (
   set_name    text not null,               -- "Shiny Star V"
   set_code    text not null,               -- "SSV"
   number      text not null,               -- "307/190"
-  type        card_type not null default 'normal',
+  type        text not null default 'normal' references card_types(code),
   rarity      text,                        -- "Secret Rare", "Alt Art", etc.
   image_url   text,                        -- official card image
   created_at  timestamptz not null default now(),
@@ -102,15 +154,16 @@ create table card_bases (
 
 alter table card_bases enable row level security;
 
--- ----- 3.4 LISTINGS -----
+-- ----- 3.6 LISTINGS -----
 -- A specific graded card copy listed for sale.
 create table listings (
   id              uuid primary key default gen_random_uuid(),
   seller_id       uuid not null references profiles(id) on delete cascade,
   card_base_id    uuid not null references card_bases(id) on delete restrict,
   grade           numeric(3,1) not null check (grade >= 1 and grade <= 10),  -- 1.0 to 10.0
-  grade_company   grade_company not null,
+  grade_company   text not null references grade_companies(code),
   cert_number     text,                    -- grading certificate number
+  language        text not null default 'PT' check (language in ('PT', 'EN', 'JP')),
   price           integer not null check (price > 0),  -- centavos
   status          listing_status not null default 'active',
   free_shipping   boolean not null default false,
@@ -131,7 +184,7 @@ create index idx_listings_tags       on listings using gin(tags);
 
 alter table listings enable row level security;
 
--- ----- 3.5 ORDERS -----
+-- ----- 3.7 ORDERS -----
 -- Purchase transaction. One order per listing.
 create table orders (
   id                      uuid primary key default gen_random_uuid(),
@@ -178,7 +231,7 @@ create index idx_orders_created  on orders(created_at desc);
 
 alter table orders enable row level security;
 
--- ----- 3.6 CONFIRMED SALES -----
+-- ----- 3.8 CONFIRMED SALES -----
 -- IMMUTABLE record created when order reaches COMPLETED.
 -- Powers the price history charts. No UPDATE or DELETE allowed.
 create table confirmed_sales (
@@ -188,7 +241,8 @@ create table confirmed_sales (
   buyer_id        uuid not null references profiles(id) on delete restrict,
   seller_id       uuid not null references profiles(id) on delete restrict,
   grade           numeric(3,1) not null,
-  grade_company   grade_company not null,
+  grade_company   text not null references grade_companies(code),
+  language        text not null default 'PT' check (language in ('PT', 'EN', 'JP')),
   sale_price      integer not null,             -- centavos
   sold_at         timestamptz not null,
   created_at      timestamptz not null default now(),
@@ -202,7 +256,7 @@ create index idx_confirmed_sales_sold_at on confirmed_sales(sold_at desc);
 
 alter table confirmed_sales enable row level security;
 
--- ----- 3.7 REVIEWS -----
+-- ----- 3.9 REVIEWS -----
 -- Buyer reviews seller after order completion. One review per order.
 create table reviews (
   id            uuid primary key default gen_random_uuid(),
@@ -222,7 +276,7 @@ create index idx_reviews_seller on reviews(seller_id);
 
 alter table reviews enable row level security;
 
--- ----- 3.8 QUESTIONS -----
+-- ----- 3.10 QUESTIONS -----
 -- Public Q&A on listings.
 create table questions (
   id            uuid primary key default gen_random_uuid(),
@@ -238,7 +292,7 @@ create index idx_questions_listing on questions(listing_id);
 
 alter table questions enable row level security;
 
--- ----- 3.9 MESSAGES -----
+-- ----- 3.11 MESSAGES -----
 -- Private messages between buyer and seller within an order.
 create table messages (
   id          uuid primary key default gen_random_uuid(),
@@ -254,7 +308,7 @@ create index idx_messages_created on messages(created_at);
 
 alter table messages enable row level security;
 
--- ----- 3.10 DISPUTES -----
+-- ----- 3.12 DISPUTES -----
 -- Opened when buyer or seller has a problem with an order.
 create table disputes (
   id            uuid primary key default gen_random_uuid(),
@@ -274,7 +328,7 @@ create table disputes (
 
 alter table disputes enable row level security;
 
--- ----- 3.11 ADMIN EVENT LOG -----
+-- ----- 3.13 ADMIN EVENT LOG -----
 -- Audit trail for admin actions. Append-only.
 create table admin_event_log (
   id          uuid primary key default gen_random_uuid(),
@@ -290,7 +344,7 @@ create index idx_admin_log_created on admin_event_log(created_at desc);
 
 alter table admin_event_log enable row level security;
 
--- ----- 3.12 PLATFORM CONFIG -----
+-- ----- 3.14 PLATFORM CONFIG -----
 -- Key-value store for platform settings.
 create table platform_config (
   key         text primary key,
@@ -422,14 +476,28 @@ begin
 end;
 $$ language plpgsql security definer stable;
 
--- ----- 5.1 PROFILES -----
+-- ----- 5.1 CARD TYPES -----
+create policy "Card types are publicly readable"
+  on card_types for select using (true);
+
+create policy "Only admins can manage card types"
+  on card_types for all using (is_admin());
+
+-- ----- 5.2 GRADE COMPANIES -----
+create policy "Grade companies are publicly readable"
+  on grade_companies for select using (true);
+
+create policy "Only admins can manage grade companies"
+  on grade_companies for all using (is_admin());
+
+-- ----- 5.3 PROFILES -----
 create policy "Profiles are publicly readable"
   on profiles for select using (true);
 
 create policy "Users can update own profile"
   on profiles for update using (auth.uid() = id);
 
--- ----- 5.2 SELLER PROFILES -----
+-- ----- 5.4 SELLER PROFILES -----
 create policy "Seller profiles are publicly readable"
   on seller_profiles for select using (true);
 
@@ -439,7 +507,7 @@ create policy "Sellers can update own profile"
 create policy "Users can create their own seller profile"
   on seller_profiles for insert with check (auth.uid() = id);
 
--- ----- 5.3 CARD BASES -----
+-- ----- 5.5 CARD BASES -----
 create policy "Card bases are publicly readable"
   on card_bases for select using (true);
 
@@ -449,7 +517,7 @@ create policy "Only admins can insert card bases"
 create policy "Only admins can update card bases"
   on card_bases for update using (is_admin());
 
--- ----- 5.4 LISTINGS -----
+-- ----- 5.6 LISTINGS -----
 create policy "Active listings are publicly readable"
   on listings for select using (true);
 
@@ -459,7 +527,7 @@ create policy "Sellers can create own listings"
 create policy "Sellers can update own listings"
   on listings for update using (auth.uid() = seller_id);
 
--- ----- 5.5 ORDERS -----
+-- ----- 5.7 ORDERS -----
 create policy "Users can view own orders (buyer or seller)"
   on orders for select using (
     auth.uid() = buyer_id or auth.uid() = seller_id or is_admin()
@@ -473,14 +541,14 @@ create policy "Order participants can update orders"
     auth.uid() = buyer_id or auth.uid() = seller_id or is_admin()
   );
 
--- ----- 5.6 CONFIRMED SALES -----
+-- ----- 5.8 CONFIRMED SALES -----
 create policy "Confirmed sales are publicly readable"
   on confirmed_sales for select using (true);
 
 -- Insert only via server (service_role key) — no client insert policy
 -- UPDATE and DELETE blocked by trigger
 
--- ----- 5.7 REVIEWS -----
+-- ----- 5.9 REVIEWS -----
 create policy "Reviews are publicly readable"
   on reviews for select using (true);
 
@@ -490,7 +558,7 @@ create policy "Buyers can create reviews for their orders"
 create policy "Sellers can reply to reviews"
   on reviews for update using (auth.uid() = seller_id);
 
--- ----- 5.8 QUESTIONS -----
+-- ----- 5.10 QUESTIONS -----
 create policy "Questions are publicly readable"
   on questions for select using (true);
 
@@ -506,7 +574,7 @@ create policy "Listing owners can answer questions"
     )
   );
 
--- ----- 5.9 MESSAGES -----
+-- ----- 5.11 MESSAGES -----
 create policy "Order participants can view messages"
   on messages for select using (
     exists (
@@ -527,7 +595,7 @@ create policy "Order participants can send messages"
     )
   );
 
--- ----- 5.10 DISPUTES -----
+-- ----- 5.12 DISPUTES -----
 create policy "Order participants can view disputes"
   on disputes for select using (
     exists (
@@ -551,14 +619,14 @@ create policy "Order participants can open disputes"
 create policy "Only admins can update disputes"
   on disputes for update using (is_admin());
 
--- ----- 5.11 ADMIN EVENT LOG -----
+-- ----- 5.13 ADMIN EVENT LOG -----
 create policy "Only admins can view admin log"
   on admin_event_log for select using (is_admin());
 
 create policy "Only admins can insert admin log"
   on admin_event_log for insert with check (is_admin());
 
--- ----- 5.12 PLATFORM CONFIG -----
+-- ----- 5.14 PLATFORM CONFIG -----
 create policy "Platform config is publicly readable"
   on platform_config for select using (true);
 
@@ -573,6 +641,36 @@ create policy "Only admins can insert platform config"
 -- 6. SEED: PLATFORM CONFIG
 -- =========================
 
+-- 6.1 Card Types
+insert into card_types (code, label, color, sort_order) values
+  ('fire',      'Fogo',       '#f97316', 1),
+  ('water',     'Água',       '#3b82f6', 2),
+  ('grass',     'Planta',     '#22c55e', 3),
+  ('electric',  'Elétrico',   '#eab308', 4),
+  ('psychic',   'Psíquico',   '#ec4899', 5),
+  ('fighting',  'Lutador',    '#b45309', 6),
+  ('dark',      'Sombrio',    '#6366f1', 7),
+  ('steel',     'Metálico',   '#94a3b8', 8),
+  ('dragon',    'Dragão',     '#06b6d4', 9),
+  ('fairy',     'Fada',       '#f472b6', 10),
+  ('ghost',     'Fantasma',   '#8b5cf6', 11),
+  ('flying',    'Voador',     '#67e8f9', 12),
+  ('normal',    'Normal',     '#a8a29e', 13),
+  ('colorless', 'Incolor',    '#d4d4d4', 14);
+
+-- 6.2 Grade Companies
+insert into grade_companies (code, name, logo_url, website, active, sort_order) values
+  ('PSA',      'Professional Sports Authenticator', null, 'https://www.psacard.com',        true, 1),
+  ('CGC',      'Certified Guaranty Company',        null, 'https://www.cgccards.com',       true, 2),
+  ('Beckett',  'Beckett Grading Services',          null, 'https://www.beckett.com/grading', true, 3),
+  ('TAG',      'TAG Grading',                       null, 'https://www.taggrading.com.br',  true, 4),
+  ('ARS',      'ARS Grading',                       null, 'https://www.arsgrading.com.br',  true, 5),
+  ('Mana Fix', 'Mana Fix Grading',                  null, null,                              true, 6),
+  ('BGA',      'BGA Grading',                       null, null,                              true, 7),
+  ('Capy',     'Capy Grading',                      null, null,                              true, 8),
+  ('Taverna',  'Taverna Grading',                    null, null,                              true, 9);
+
+-- 6.3 Platform Config
 insert into platform_config (key, value) values
   ('commission_rate', '"10.00"'),
   ('auto_complete_days', '7'),
