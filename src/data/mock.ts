@@ -11,28 +11,29 @@ export const sellers: Seller[] = [
 
 // Card bases — the generic Pokemon card, not a specific graded copy
 // INT = EN/PT (same sets), JP = Japanese (own sets/numbering)
-// Images from Pokemon TCG API: https://images.pokemontcg.io/{setId}/{number}.png
+// Images: high-res from TCGdex, stored locally in /public/cards/{en,jp}/
 export const cardBases: CardBase[] = [
   // ── International (EN/PT) ──
-  { id: 'cb1', name: 'Charizard VMAX', set: 'Darkness Ablaze', setCode: 'DAA', number: '020/189', type: 'fire', rarity: 'VMAX', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh3/20.png' },
-  { id: 'cb2', name: 'Pikachu VMAX Rainbow', set: 'Vivid Voltage', setCode: 'VV', number: '188/185', type: 'electric', rarity: 'Secret Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh4/188.png' },
-  { id: 'cb3', name: 'Mew VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '268/264', type: 'psychic', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh8/268.png' },
-  { id: 'cb4', name: 'Umbreon VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '215/203', type: 'dark', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh7/215.png' },
-  { id: 'cb5', name: 'Rayquaza VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '218/203', type: 'dragon', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh7/218.png' },
-  { id: 'cb6', name: 'Giratina VSTAR Alt Art', set: 'Lost Origin', setCode: 'LOR', number: '131/196', type: 'ghost', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh11/131.png' },
-  { id: 'cb7', name: 'Lugia VSTAR Alt Art', set: 'Silver Tempest', setCode: 'SIT', number: '186/195', type: 'flying', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh12/186.png' },
-  { id: 'cb8', name: 'Charizard ex SAR', set: 'Pokémon 151', setCode: '151', number: '199/165', type: 'fire', rarity: 'SAR', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/sv3pt5/199.png' },
-  { id: 'cb9', name: 'Charizard Base Set', set: 'Base Set', setCode: 'BS', number: '4/102', type: 'fire', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/base1/4.png' },
-  { id: 'cb10', name: 'Blastoise Base Set', set: 'Base Set', setCode: 'BS', number: '2/102', type: 'water', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/base1/2.png' },
-  { id: 'cb11', name: 'Venusaur Base Set', set: 'Base Set', setCode: 'BS', number: '15/102', type: 'grass', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/base1/15.png' },
-  { id: 'cb12', name: 'Gengar VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '271/264', type: 'ghost', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: 'https://images.pokemontcg.io/swsh8/271.png' },
+  { id: 'cb1', name: 'Charizard VMAX', set: 'Darkness Ablaze', setCode: 'DAA', number: '020/189', type: 'fire', rarity: 'VMAX', languageGroup: 'INT', imageUrl: '/cards/en/charizard-vmax-swsh3-20.png' },
+  { id: 'cb2', name: 'Pikachu VMAX Rainbow', set: 'Vivid Voltage', setCode: 'VV', number: '188/185', type: 'electric', rarity: 'Secret Rare', languageGroup: 'INT', imageUrl: '/cards/en/pikachu-vmax-swsh4-188.png' },
+  { id: 'cb3', name: 'Mew VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '268/264', type: 'psychic', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: '/cards/en/mew-vmax-swsh8-268.png' },
+  { id: 'cb4', name: 'Umbreon VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '215/203', type: 'dark', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: '/cards/en/umbreon-vmax-swsh7-215.png' },
+  { id: 'cb5', name: 'Rayquaza VMAX Alt Art', set: 'Evolving Skies', setCode: 'EVS', number: '218/203', type: 'dragon', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: '/cards/en/rayquaza-vmax-swsh7-218.png' },
+  { id: 'cb6', name: 'Giratina VSTAR Alt Art', set: 'Lost Origin', setCode: 'LOR', number: '131/196', type: 'ghost', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: '/cards/en/giratina-vstar-swsh11-131.png' },
+  { id: 'cb7', name: 'Lugia VSTAR Alt Art', set: 'Silver Tempest', setCode: 'SIT', number: '186/195', type: 'flying', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: '/cards/en/lugia-vstar-swsh12-186.png' },
+  { id: 'cb8', name: 'Charizard ex SAR', set: 'Pokémon 151', setCode: '151', number: '199/165', type: 'fire', rarity: 'SAR', languageGroup: 'INT', imageUrl: '/cards/en/charizard-ex-sv3pt5-199.png' },
+  { id: 'cb9', name: 'Charizard Base Set', set: 'Base Set', setCode: 'BS', number: '4/102', type: 'fire', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: '/cards/en/charizard-base-4.png' },
+  { id: 'cb10', name: 'Blastoise Base Set', set: 'Base Set', setCode: 'BS', number: '2/102', type: 'water', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: '/cards/en/blastoise-base-2.png' },
+  { id: 'cb11', name: 'Venusaur Base Set', set: 'Base Set', setCode: 'BS', number: '15/102', type: 'grass', rarity: 'Holo Rare', languageGroup: 'INT', imageUrl: '/cards/en/venusaur-base-15.png' },
+  { id: 'cb12', name: 'Gengar VMAX Alt Art', set: 'Fusion Strike', setCode: 'FST', number: '271/264', type: 'ghost', rarity: 'Alt Art', languageGroup: 'INT', imageUrl: '/cards/en/gengar-vmax-swsh8-271.png' },
 
   // ── Japanese (own sets/numbering) ──
-  { id: 'cb1-jp', name: 'Charizard VMAX', set: 'Starter Set VMAX Charizard', setCode: 'sA', number: '002/021', type: 'fire', rarity: 'VMAX', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh3/20.png' },
-  { id: 'cb3-jp', name: 'Mew VMAX Alt Art', set: 'Fusion Arts', setCode: 's8', number: '114/100', type: 'psychic', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh8/268.png' },
-  { id: 'cb4-jp', name: 'Umbreon VMAX Alt Art', set: 'Eevee Heroes', setCode: 's6a', number: '095/069', type: 'dark', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh7/215.png' },
-  { id: 'cb7-jp', name: 'Lugia VSTAR Alt Art', set: 'Paradigm Trigger', setCode: 's12', number: '118/098', type: 'flying', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/swsh12/186.png' },
-  { id: 'cb8-jp', name: 'Charizard ex SAR', set: 'Pokémon Card 151', setCode: 'sv2a', number: '185/165', type: 'fire', rarity: 'SAR', languageGroup: 'JP', imageUrl: 'https://images.pokemontcg.io/sv3pt5/199.png' },
+  // Images: TCGdex JP when available, EN fallback when JP not indexed
+  { id: 'cb1-jp', name: 'Charizard VMAX', set: 'Starter Set VMAX Charizard', setCode: 'sA', number: '002/021', type: 'fire', rarity: 'VMAX', languageGroup: 'JP', imageUrl: '/cards/en/charizard-vmax-swsh3-20.png' },
+  { id: 'cb3-jp', name: 'Mew VMAX Alt Art', set: 'Fusion Arts', setCode: 's8', number: '114/100', type: 'psychic', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: '/cards/jp/mew-vmax-s12a-054.png' },
+  { id: 'cb4-jp', name: 'Umbreon VMAX Alt Art', set: 'Eevee Heroes', setCode: 's6a', number: '095/069', type: 'dark', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: '/cards/en/umbreon-vmax-swsh7-215.png' },
+  { id: 'cb7-jp', name: 'Lugia VSTAR Alt Art', set: 'Paradigm Trigger', setCode: 's12', number: '118/098', type: 'flying', rarity: 'Alt Art', languageGroup: 'JP', imageUrl: '/cards/jp/lugia-vstar-s12-118.png' },
+  { id: 'cb8-jp', name: 'Charizard ex SAR', set: 'Pokémon Card 151', setCode: 'sv2a', number: '185/165', type: 'fire', rarity: 'SAR', languageGroup: 'JP', imageUrl: '/cards/jp/charizard-ex-sv2a-185.png' },
 ];
 
 // Listings — specific graded copies for sale. Multiple sellers can list the same card base.

@@ -88,6 +88,7 @@ export default function Home() {
                         src={featuredCard.cardBase.imageUrl}
                         alt={featuredCard.cardBase.name}
                         fill
+                        quality={95}
                         className="object-contain p-3 group-hover:scale-[1.03] transition-transform duration-500"
                         sizes="224px"
                         priority
