@@ -109,9 +109,7 @@ export default function CardDetailPage() {
                 <span className="text-8xl opacity-20">🃏</span>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground/50 text-center italic">
-              *Imagem meramente ilustrativa
-            </p>
+       
           </div>
         </div>
 
