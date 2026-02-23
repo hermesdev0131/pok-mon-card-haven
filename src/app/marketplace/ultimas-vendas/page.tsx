@@ -1,8 +1,9 @@
 "use client";
 
-import { salesHistory } from '@/data/mock';
-import { cardBases } from '@/data/mock';
-import { TrendingUp } from 'lucide-react';
+import { salesHistory, cardBases, sellers } from '@/data/mock';
+import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { TrendingUp, Star } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 // Flatten all sale records with card base info
@@ -14,6 +15,8 @@ const allSales = Object.entries(salesHistory).flatMap(([cardBaseId, records]) =>
     cardBaseId,
     cardName: cardBase.name,
     cardSet: cardBase.set,
+    imageUrl: cardBase.imageUrl,
+    seller: sellers.find(s => s.name === record.sellerName),
   }));
 }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -39,13 +42,29 @@ export default function UltimasVendasPage() {
             href={`/card/${sale.cardBaseId}`}
             className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
           >
-            <div className="h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] flex items-center justify-center shrink-0">
-              <span className="text-xl opacity-40">🃏</span>
+            <div className="relative h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] overflow-hidden shrink-0">
+              {sale.imageUrl ? (
+                <Image src={sale.imageUrl} alt={sale.cardName} fill className="object-contain p-0.5" sizes="40px" />
+              ) : (
+                <span className="flex items-center justify-center h-full text-xl opacity-40">🃏</span>
+              )}
             </div>
 
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{sale.cardName}</p>
-              <p className="text-xs text-muted-foreground">{sale.cardSet}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-muted-foreground">{sale.cardSet}</p>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  · {sale.sellerName} {sale.seller?.verified && <VerifiedBadge />}
+                </span>
+              </div>
+              {sale.seller && (
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                  <Star className="h-2.5 w-2.5 fill-gold text-gold" /> {sale.seller.rating}
+                  <span className="text-muted-foreground/40">·</span>
+                  {sale.seller.totalSales} vendas
+                </span>
+              )}
             </div>
 
             <div className="text-center shrink-0">

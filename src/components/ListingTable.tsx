@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { GradeBadge } from './GradeBadge';
 import { VerifiedBadge } from './VerifiedBadge';
 import { ListingPhotoModal } from './ListingPhotoModal';
+import { QnA } from './QnA';
 import { Button } from '@/components/ui/button';
 import { FlagIcon } from './FlagIcon';
-import { Truck, ShoppingCart, Image as ImageIcon, Star } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Truck, ShoppingCart, Image as ImageIcon, Star, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
-import type { Listing, Seller } from '@/types';
+import { getQuestionsForListing } from '@/lib/api';
+import type { Listing, Seller, Question } from '@/types';
 
 interface ListingTableProps {
   listings: Listing[];
@@ -18,6 +21,16 @@ interface ListingTableProps {
 
 export function ListingTable({ listings, sellers }: ListingTableProps) {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [qnaListing, setQnaListing] = useState<Listing | null>(null);
+  const [qnaQuestions, setQnaQuestions] = useState<Question[]>([]);
+
+  useEffect(() => {
+    if (qnaListing) {
+      getQuestionsForListing(qnaListing.id).then(setQnaQuestions);
+    } else {
+      setQnaQuestions([]);
+    }
+  }, [qnaListing]);
 
   if (!listings.length) {
     return (
@@ -38,7 +51,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
               <TableHead>Grade</TableHead>
               <TableHead>Idioma</TableHead>
               <TableHead className="text-right">Preço</TableHead>
-              <TableHead className="text-center w-[100px]">Ações</TableHead>
+              <TableHead className="text-center w-[120px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -108,6 +121,15 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                         <ImageIcon className="h-4 w-4" />
                       </Button>
                       <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => setQnaListing(listing)}
+                        title="Perguntar ao vendedor"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                      <Button
                         size="icon"
                         className="h-8 w-8 bg-accent text-accent-foreground hover:bg-accent/90"
                         asChild
@@ -133,6 +155,18 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
         open={!!selectedListing}
         onClose={() => setSelectedListing(null)}
       />
+
+      {/* Q&A modal */}
+      <Dialog open={!!qnaListing} onOpenChange={(open) => !open && setQnaListing(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              Perguntas — {qnaListing && sellers[qnaListing.sellerId]?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <QnA questions={qnaQuestions} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -3,7 +3,8 @@
 import { GradeBadge } from '@/components/GradeBadge';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
 import { listings, cardBases, sellers } from '@/data/mock';
-import { Clock, Truck } from 'lucide-react';
+import { Clock, Truck, Star } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 const recentListings = [...listings]
@@ -37,8 +38,12 @@ export default function UltimosAnunciosPage() {
               href={`/card/${cardBase.id}`}
               className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
             >
-              <div className="h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] flex items-center justify-center shrink-0">
-                <span className="text-xl opacity-40">🃏</span>
+              <div className="relative h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] overflow-hidden shrink-0">
+                {cardBase.imageUrl ? (
+                  <Image src={cardBase.imageUrl} alt={cardBase.name} fill className="object-contain p-0.5" sizes="40px" />
+                ) : (
+                  <span className="flex items-center justify-center h-full text-xl opacity-40">🃏</span>
+                )}
               </div>
 
               <div className="flex-1 min-w-0">
@@ -51,6 +56,13 @@ export default function UltimosAnunciosPage() {
                     </span>
                   )}
                 </div>
+                {seller && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                    <Star className="h-2.5 w-2.5 fill-gold text-gold" /> {seller.rating}
+                    <span className="text-muted-foreground/40">·</span>
+                    {seller.totalSales} vendas
+                  </span>
+                )}
               </div>
 
               <div className="shrink-0">

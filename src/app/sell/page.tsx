@@ -101,13 +101,28 @@ export default function Sell() {
 
       {step === 3 && (
         <Card>
-          <CardHeader><CardTitle className="text-lg">Imagens</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-lg">Imagens da carta</CardTitle>
+            <p className="text-sm text-muted-foreground">Até 4 fotos · PNG, JPG até 5MB cada</p>
+          </CardHeader>
           <CardContent className="space-y-4">
-            <div className="border-2 border-dashed border-white/[0.08] rounded-lg p-12 text-center cursor-pointer hover:border-accent/40 hover:bg-accent/[0.02] transition-all">
-              <ImagePlus className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground">Arraste imagens ou clique para fazer upload</p>
-              <p className="text-xs text-muted-foreground mt-1">PNG, JPG até 5MB · Frente e verso da carta + case</p>
+            <div className="grid grid-cols-2 gap-3">
+              {(['Frente', 'Verso', 'Label', 'Case'] as const).map((label, i) => (
+                <div
+                  key={label}
+                  className="group relative aspect-[3/4] rounded-lg border-2 border-dashed border-white/[0.08] bg-white/[0.02] flex flex-col items-center justify-center cursor-pointer hover:border-accent/40 hover:bg-accent/[0.02] transition-all"
+                >
+                  <ImagePlus className="h-6 w-6 text-muted-foreground/40 group-hover:text-accent/60 transition-colors mb-2" />
+                  <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                  {i >= 2 && (
+                    <span className="text-[10px] text-muted-foreground/40 mt-0.5">Opcional</span>
+                  )}
+                </div>
+              ))}
             </div>
+            <p className="text-xs text-muted-foreground/60 text-center">
+              Frente e verso são obrigatórios. Label e case ajudam compradores a decidir.
+            </p>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(2)} className="flex-1">Voltar</Button>
               <Button className="flex-1">Publicar anúncio</Button>

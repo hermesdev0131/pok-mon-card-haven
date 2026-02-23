@@ -103,8 +103,9 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground">{featuredCard.cardBase.set} · #{featuredCard.cardBase.number}</p>
                     <p className="text-sm text-muted-foreground">{featuredCard.listingCount} anúncios</p>
                     <p className="text-2xl font-bold text-accent text-glow-accent">
-                      a partir de R$ {featuredCard.lowestPrice.toLocaleString('pt-BR')}
+                      R$ {featuredCard.lowestPrice.toLocaleString('pt-BR')}
                     </p>
+                    <p className="text-xs text-muted-foreground">a partir de</p>
                   </div>
                 </div>
               </Link>

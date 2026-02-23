@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SalesHistoryTable } from '@/components/SalesHistoryTable';
-import { QnA } from '@/components/QnA';
+
 import { ListingTable } from '@/components/ListingTable';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -14,10 +14,10 @@ const PriceChart = dynamic(() => import('@/components/PriceChart').then(m => ({ 
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
-import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getQuestions } from '@/lib/api';
+import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory } from '@/lib/api';
 import { sellers as allSellers } from '@/data/mock';
 
-import type { CardBase, Listing, Seller, SaleRecord, PricePoint, Question } from '@/types';
+import type { CardBase, Listing, Seller, SaleRecord, PricePoint } from '@/types';
 
 export default function CardDetailPage() {
   const params = useParams<{ id: string }>();
@@ -27,7 +27,6 @@ export default function CardDetailPage() {
   const [cardListings, setCardListings] = useState<Listing[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [prices, setPrices] = useState<PricePoint[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,13 +37,11 @@ export default function CardDetailPage() {
       getListingsForCard(id),
       getSalesHistory(id),
       getPriceHistory(id),
-      getQuestions(id),
-    ]).then(([cb, ls, s, p, q]) => {
+    ]).then(([cb, ls, s, p]) => {
       setCardBase(cb);
       setCardListings(ls);
       setSales(s);
       setPrices(p);
-      setQuestions(q);
       setLoading(false);
     });
   }, [id]);
@@ -125,7 +122,6 @@ export default function CardDetailPage() {
               <TabsTrigger value="buy">Comprar Agora ({cardListings.length})</TabsTrigger>
               <TabsTrigger value="sales">Histórico de vendas</TabsTrigger>
               <TabsTrigger value="prices">Gráfico de preços</TabsTrigger>
-              <TabsTrigger value="questions">Perguntas ({questions.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="buy">
@@ -136,9 +132,6 @@ export default function CardDetailPage() {
             </TabsContent>
             <TabsContent value="prices">
               <PriceChart data={prices} />
-            </TabsContent>
-            <TabsContent value="questions">
-              <QnA questions={questions} />
             </TabsContent>
           </Tabs>
         </div>

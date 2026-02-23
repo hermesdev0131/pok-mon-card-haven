@@ -110,9 +110,9 @@ export async function getPriceHistory(cardBaseId: string) {
 
 // ── Questions ──
 
-export async function getQuestions(cardBaseId: string) {
-  await delay(200);
-  return questions.filter(q => q.cardId === cardBaseId);
+export async function getQuestionsForListing(listingId: string) {
+  await delay(100);
+  return questions.filter(q => q.listingId === listingId);
 }
 
 // ── Orders ──

@@ -51,6 +51,7 @@ export function Footer() {
           <div>
             <h4 className="font-semibold text-sm mb-3">Institucional</h4>
             <nav className="flex flex-col gap-2">
+              <Link href="/sobre" className="text-sm text-muted-foreground transition-colors hover:text-accent">Sobre o GradedBR</Link>
               <Link href="/como-funciona" className="text-sm text-muted-foreground transition-colors hover:text-accent">Como funciona</Link>
               <Link href="/termos" className="text-sm text-muted-foreground transition-colors hover:text-accent">Termos de uso</Link>
               <Link href="/privacidade" className="text-sm text-muted-foreground transition-colors hover:text-accent">Privacidade</Link>

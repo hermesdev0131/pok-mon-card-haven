@@ -41,7 +41,10 @@ export function QnA({ questions }: { questions: Question[] }) {
             <p className="text-sm">{q.question}</p>
             {q.answer && (
               <div className="ml-4 pl-3 border-l-2 border-accent/40 mt-2">
-                <span className="text-xs font-medium text-accent">Resposta do vendedor</span>
+                <span className="text-xs font-medium text-accent">{q.sellerName}</span>
+                {q.answerDate && (
+                  <span className="text-xs text-muted-foreground ml-2">{new Date(q.answerDate).toLocaleDateString('pt-BR')}</span>
+                )}
                 <p className="text-sm text-muted-foreground mt-1">{q.answer}</p>
               </div>
             )}

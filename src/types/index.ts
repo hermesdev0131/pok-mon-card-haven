@@ -99,7 +99,9 @@ export interface Order {
 
 export interface Question {
   id: string;
-  cardId: string;
+  listingId: string;
+  sellerId: string;
+  sellerName: string;
   userName: string;
   question: string;
   answer?: string;

@@ -39,8 +39,8 @@ export const cardBases: CardBase[] = [
 // Listings — specific graded copies for sale. Multiple sellers can list the same card base.
 export const listings: Listing[] = [
   // cb1 — Charizard VMAX (4 listings)
-  { id: 'l1', cardBaseId: 'cb1', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 2850, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-01' },
-  { id: 'l2', cardBaseId: 'cb1', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 1800, images: [], freeShipping: true, language: 'EN', tags: ['graduada'], status: 'active', createdAt: '2024-12-08' },
+  { id: 'l1', cardBaseId: 'cb1', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 2850, images: ['/cards/en/charizard-vmax-swsh3-20.png', '/cards/en/charizard-vmax-swsh3-20.png'], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-01' },
+  { id: 'l2', cardBaseId: 'cb1', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 1800, images: ['/cards/en/charizard-vmax-swsh3-20.png'], freeShipping: true, language: 'EN', tags: ['graduada'], status: 'active', createdAt: '2024-12-08' },
   { id: 'l3', cardBaseId: 'cb1', sellerId: 's5', grade: 10, gradeCompany: 'CGC', price: 2600, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-10' },
   { id: 'l4', cardBaseId: 'cb1-jp', sellerId: 's6', grade: 9, gradeCompany: 'TAG', price: 1500, images: [], freeShipping: false, language: 'JP', tags: ['graduada'], status: 'active', createdAt: '2024-12-12' },
 
@@ -54,7 +54,7 @@ export const listings: Listing[] = [
 
   // cb4 — Umbreon VMAX Alt Art (5 listings)
   { id: 'l9', cardBaseId: 'cb4', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 8900, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-11-15' },
-  { id: 'l10', cardBaseId: 'cb4', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 13500, images: [], freeShipping: true, language: 'EN', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-01' },
+  { id: 'l10', cardBaseId: 'cb4', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 13500, images: ['/cards/en/umbreon-vmax-swsh7-215.png', '/cards/en/umbreon-vmax-swsh7-215.png', '/cards/en/umbreon-vmax-swsh7-215.png', '/cards/en/umbreon-vmax-swsh7-215.png'], freeShipping: true, language: 'EN', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-01' },
   { id: 'l11', cardBaseId: 'cb4', sellerId: 's5', grade: 9, gradeCompany: 'Beckett', price: 8600, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-05' },
   { id: 'l12', cardBaseId: 'cb4-jp', sellerId: 's2', grade: 9.5, gradeCompany: 'CGC', price: 10500, images: [], freeShipping: false, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-08' },
   { id: 'l13', cardBaseId: 'cb4', sellerId: 's6', grade: 8, gradeCompany: 'TAG', price: 6200, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-10' },
@@ -77,7 +77,7 @@ export const listings: Listing[] = [
   { id: 'l22', cardBaseId: 'cb8', sellerId: 's1', grade: 9, gradeCompany: 'PSA', price: 2400, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-14' },
 
   // cb9 — Charizard Base Set (1 listing)
-  { id: 'l23', cardBaseId: 'cb9', sellerId: 's4', grade: 8, gradeCompany: 'PSA', price: 15000, images: [], freeShipping: true, language: 'EN', tags: ['vintage', 'graduada'], status: 'active', createdAt: '2024-12-02' },
+  { id: 'l23', cardBaseId: 'cb9', sellerId: 's4', grade: 8, gradeCompany: 'PSA', price: 15000, images: ['/cards/en/charizard-base-4.png', '/cards/en/charizard-base-4.png', '/cards/en/charizard-base-4.png'], freeShipping: true, language: 'EN', tags: ['vintage', 'graduada'], status: 'active', createdAt: '2024-12-02' },
 
   // cb10 — Blastoise Base Set (2 listings)
   { id: 'l24', cardBaseId: 'cb10', sellerId: 's1', grade: 9, gradeCompany: 'PSA', price: 6500, images: [], freeShipping: false, language: 'EN', tags: ['vintage', 'graduada'], status: 'active', createdAt: '2024-11-25' },
@@ -309,10 +309,15 @@ export const orders: Order[] = [
 ];
 
 export const questions: Question[] = [
-  { id: 'q1', cardId: 'cb1', userName: 'Pedro S.', question: 'A carta tem algum defeito visível no case?', answer: 'Não, o case está em perfeito estado, sem riscos ou marcas.', questionDate: '2024-12-05', answerDate: '2024-12-05' },
-  { id: 'q2', cardId: 'cb1', userName: 'Ana L.', question: 'Aceita troca por outra PSA 10?', answer: 'No momento estou aceitando apenas venda direta.', questionDate: '2024-12-08', answerDate: '2024-12-09' },
-  { id: 'q3', cardId: 'cb1', userName: 'Lucas R.', question: 'Qual o prazo de envio após o pagamento?', questionDate: '2024-12-12' },
-  { id: 'q4', cardId: 'cb4', userName: 'Carlos T.', question: 'Essa é a versão alt art com o Umbreon no fundo noturno?', answer: 'Sim, é a versão alt art 215/203, considerada uma das mais bonitas do set.', questionDate: '2024-11-20', answerDate: '2024-11-20' },
+  // l1 — Charizard VMAX PSA 10 by CardMaster BR
+  { id: 'q1', listingId: 'l1', sellerId: 's1', sellerName: 'CardMaster BR', userName: 'Pedro S.', question: 'A carta tem algum defeito visível no case?', answer: 'Não, o case está em perfeito estado, sem riscos ou marcas.', questionDate: '2024-12-05', answerDate: '2024-12-05' },
+  { id: 'q2', listingId: 'l1', sellerId: 's1', sellerName: 'CardMaster BR', userName: 'Ana L.', question: 'Aceita troca por outra PSA 10?', answer: 'No momento estou aceitando apenas venda direta.', questionDate: '2024-12-08', answerDate: '2024-12-09' },
+  // l2 — Charizard VMAX PSA 9 by Graded Cards BR
+  { id: 'q3', listingId: 'l2', sellerId: 's4', sellerName: 'Graded Cards BR', userName: 'Lucas R.', question: 'Qual o prazo de envio após o pagamento?', questionDate: '2024-12-12' },
+  // l10 — Umbreon VMAX PSA 10 by CardMaster BR
+  { id: 'q4', listingId: 'l10', sellerId: 's1', sellerName: 'CardMaster BR', userName: 'Carlos T.', question: 'Essa é a versão alt art com o Umbreon no fundo noturno?', answer: 'Sim, é a versão alt art 215/203, considerada uma das mais bonitas do set.', questionDate: '2024-11-20', answerDate: '2024-11-20' },
+  // l9 — Umbreon VMAX PSA 9 by Graded Cards BR
+  { id: 'q5', listingId: 'l9', sellerId: 's4', sellerName: 'Graded Cards BR', userName: 'Fernanda M.', question: 'O subgrade de centralização está acima de 8?', answer: 'Sim, o subgrade de centering é 8.5.', questionDate: '2024-12-01', answerDate: '2024-12-02' },
 ];
 
 export const reviews: Review[] = [
