@@ -25,7 +25,7 @@ const COLORS = [
 
 const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   PT: 'Português',
-  EN: 'English',
+  EN: 'Inglês',
   JP: '日本語',
 };
 

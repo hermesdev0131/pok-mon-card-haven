@@ -7,7 +7,7 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { ListingPhotoModal } from './ListingPhotoModal';
 import { Button } from '@/components/ui/button';
 import { FlagIcon } from './FlagIcon';
-import { Truck, ShoppingCart, Image as ImageIcon } from 'lucide-react';
+import { Truck, ShoppingCart, Image as ImageIcon, Star } from 'lucide-react';
 import Link from 'next/link';
 import type { Listing, Seller } from '@/types';
 
@@ -62,6 +62,13 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                           </Link>
                           {seller?.verified && <VerifiedBadge />}
                         </div>
+                        {seller && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <Star className="h-2.5 w-2.5 fill-gold text-gold" /> {seller.rating}
+                            <span className="text-muted-foreground/40">·</span>
+                            {seller.totalSales} vendas
+                          </span>
+                        )}
                         {listing.freeShipping && (
                           <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
                             <Truck className="h-2.5 w-2.5" /> Frete grátis

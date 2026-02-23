@@ -1,7 +1,6 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { SalesHistoryTable } from '@/components/SalesHistoryTable';
 import { QnA } from '@/components/QnA';
 import { ListingTable } from '@/components/ListingTable';
@@ -17,7 +16,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getQuestions } from '@/lib/api';
 import { sellers as allSellers } from '@/data/mock';
-import { ArrowDown, ArrowUp, Minus, ShoppingCart } from 'lucide-react';
+
 import type { CardBase, Listing, Seller, SaleRecord, PricePoint, Question } from '@/types';
 
 export default function CardDetailPage() {
@@ -58,16 +57,6 @@ export default function CardDetailPage() {
       if (seller) map[seller.id] = seller;
     });
     return map;
-  }, [cardListings]);
-
-  // Price stats
-  const priceStats = useMemo(() => {
-    if (cardListings.length === 0) return null;
-    const listingPrices = cardListings.map(l => l.price);
-    const min = Math.min(...listingPrices);
-    const max = Math.max(...listingPrices);
-    const avg = Math.round(listingPrices.reduce((a, b) => a + b, 0) / listingPrices.length);
-    return { min, max, avg };
   }, [cardListings]);
 
   if (loading) {
@@ -121,46 +110,13 @@ export default function CardDetailPage() {
             <h1 className="text-2xl font-bold md:text-3xl">
               {cardBase.name} ({cardBase.number})
             </h1>
-            <p className="text-muted-foreground mt-1">{cardBase.set}</p>
-          </div>
-
-          {/* Listing count + Price range */}
-          <div className="glass rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-accent border-accent/30 gap-1.5">
-                <ShoppingCart className="h-3 w-3" />
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-muted-foreground">{cardBase.set}</p>
+              <span className="text-muted-foreground/30">·</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-[11px] font-medium text-accent">
                 {cardListings.length} {cardListings.length === 1 ? 'anúncio' : 'anúncios'}
-              </Badge>
+              </span>
             </div>
-
-            {priceStats && (
-              <div className="grid grid-cols-3 gap-3 pt-1">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-1">
-                    <ArrowDown className="h-3 w-3 text-accent" /> Menor
-                  </div>
-                  <p className="font-bold text-accent">
-                    R$ {priceStats.min.toLocaleString('pt-BR')}
-                  </p>
-                </div>
-                <div className="text-center border-x border-white/[0.06]">
-                  <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-1">
-                    <Minus className="h-3 w-3" /> Média
-                  </div>
-                  <p className="font-bold">
-                    R$ {priceStats.avg.toLocaleString('pt-BR')}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-1">
-                    <ArrowUp className="h-3 w-3 text-orange-400" /> Maior
-                  </div>
-                  <p className="font-bold text-orange-400">
-                    R$ {priceStats.max.toLocaleString('pt-BR')}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Tabs — Buy Now is default */}

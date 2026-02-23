@@ -93,7 +93,7 @@ export default function Admin() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Rating</TableHead>
+                  <TableHead>Avaliação</TableHead>
                   <TableHead>Vendas</TableHead>
                   <TableHead>Membro desde</TableHead>
                   <TableHead className="text-right">Verificado</TableHead>
