@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Search, Menu, X, User, ShoppingBag, Sparkles } from 'lucide-react';
 import { useState } from 'react';
@@ -15,6 +16,7 @@ const categories = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl">
@@ -66,15 +68,24 @@ export function Navbar() {
       <div className="border-b border-white/[0.06] hidden md:block">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-1 h-10 -mb-px">
-            {categories.map(({ label, href }) => (
-              <Link
-                key={label}
-                href={href}
-                className="px-3.5 h-full flex items-center text-[13px] font-medium text-muted-foreground hover:text-foreground border-b-2 border-transparent hover:border-accent/50 transition-all duration-200"
-              >
-                {label}
-              </Link>
-            ))}
+            {categories.map(({ label, href }) => {
+              const isActive = href === '/marketplace'
+                ? pathname === '/marketplace'
+                : pathname === href || pathname.startsWith(href + '/');
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  className={`px-3.5 h-full flex items-center text-[13px] font-medium border-b-2 transition-all duration-200 ${
+                    isActive
+                      ? 'text-accent border-accent'
+                      : 'text-muted-foreground hover:text-foreground border-transparent hover:border-accent/50'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
             <Link
               href="/como-funciona"
               className="ml-auto px-3.5 h-full flex items-center gap-1.5 text-[13px] font-medium text-accent hover:text-accent/80 transition-colors"
@@ -102,16 +113,25 @@ export function Navbar() {
 
           {/* Mobile category tabs */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {categories.map(({ label, href }) => (
-              <Link
-                key={label}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className="px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-xs font-medium text-muted-foreground hover:text-foreground hover:border-accent/30 transition-colors"
-              >
-                {label}
-              </Link>
-            ))}
+            {categories.map(({ label, href }) => {
+              const isActive = href === '/marketplace'
+                ? pathname === '/marketplace'
+                : pathname === href || pathname.startsWith(href + '/');
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    isActive
+                      ? 'bg-accent/10 border border-accent/30 text-accent'
+                      : 'bg-white/[0.06] border border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-accent/30'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Mobile nav links */}
