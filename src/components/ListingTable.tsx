@@ -83,7 +83,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                           </span>
                         )}
                         {listing.freeShipping && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-accent mt-1">
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-accent mt-2">
                             <Truck className="h-2.5 w-2.5" /> Frete grátis
                           </span>
                         )}
