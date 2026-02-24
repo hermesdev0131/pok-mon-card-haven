@@ -76,14 +76,14 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                           {seller?.verified && <VerifiedBadge />}
                         </div>
                         {seller && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <Star className="h-2.5 w-2.5 fill-gold text-gold" /> {seller.rating}
+                          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Star className="h-3 w-3 fill-gold text-gold" /> {seller.rating}
                             <span className="text-muted-foreground/40">·</span>
                             {seller.totalSales} vendas
                           </span>
                         )}
                         {listing.freeShipping && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-accent mt-1">
                             <Truck className="h-2.5 w-2.5" /> Frete grátis
                           </span>
                         )}

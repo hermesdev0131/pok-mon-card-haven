@@ -1,7 +1,9 @@
 "use client";
 
 import { salesHistory, cardBases, sellers } from '@/data/mock';
+import { GradeBadge } from '@/components/GradeBadge';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { FlagIcon } from '@/components/FlagIcon';
 import { TrendingUp, Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -59,18 +61,17 @@ export default function UltimasVendasPage() {
                 </span>
               </div>
               {sale.seller && (
-                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                  <Star className="h-2.5 w-2.5 fill-gold text-gold" /> {sale.seller.rating}
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                  <Star className="h-3 w-3 fill-gold text-gold" /> {sale.seller.rating}
                   <span className="text-muted-foreground/40">·</span>
                   {sale.seller.totalSales} vendas
                 </span>
               )}
             </div>
 
-            <div className="text-center shrink-0">
-              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold ${sale.grade === 10 ? 'bg-accent/10 text-accent' : 'bg-secondary text-secondary-foreground'}`}>
-                {sale.gradeCompany} {sale.grade}
-              </div>
+            <div className="shrink-0 flex items-center gap-2">
+              <FlagIcon code={sale.language} />
+              <GradeBadge grade={sale.grade} company={sale.gradeCompany} />
             </div>
 
             <div className="text-right shrink-0">

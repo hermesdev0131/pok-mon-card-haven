@@ -2,6 +2,7 @@
 
 import { GradeBadge } from '@/components/GradeBadge';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { FlagIcon } from '@/components/FlagIcon';
 import { listings, cardBases, sellers } from '@/data/mock';
 import { Clock, Truck, Star } from 'lucide-react';
 import Image from 'next/image';
@@ -57,15 +58,16 @@ export default function UltimosAnunciosPage() {
                   )}
                 </div>
                 {seller && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                    <Star className="h-2.5 w-2.5 fill-gold text-gold" /> {seller.rating}
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                    <Star className="h-3 w-3 fill-gold text-gold" /> {seller.rating}
                     <span className="text-muted-foreground/40">·</span>
                     {seller.totalSales} vendas
                   </span>
                 )}
               </div>
 
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-2">
+                <FlagIcon code={listing.language} />
                 <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
               </div>
 

@@ -174,13 +174,13 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 1600 },
     { month: 'Nov 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 1650 },
     { month: 'Dez 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 1700 },
-    // PT — BGA grades 9-10
-    { month: 'Out 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 1500 },
-    { month: 'Nov 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 1550 },
-    { month: 'Dez 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 1600 },
-    { month: 'Out 24', language: 'PT', company: 'BGA', grade: 10, avgPrice: 2200 },
-    { month: 'Nov 24', language: 'PT', company: 'BGA', grade: 10, avgPrice: 2300 },
-    { month: 'Dez 24', language: 'PT', company: 'BGA', grade: 10, avgPrice: 2350 },
+    // PT — TAG grades 9-10
+    { month: 'Out 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 1500 },
+    { month: 'Nov 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 1550 },
+    { month: 'Dez 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 1600 },
+    { month: 'Out 24', language: 'PT', company: 'TAG', grade: 10, avgPrice: 2200 },
+    { month: 'Nov 24', language: 'PT', company: 'TAG', grade: 10, avgPrice: 2300 },
+    { month: 'Dez 24', language: 'PT', company: 'TAG', grade: 10, avgPrice: 2350 },
     // EN — NM + PSA
     { month: 'Jul 24', language: 'EN', company: 'NM', grade: 0, avgPrice: 1050 },
     { month: 'Ago 24', language: 'EN', company: 'NM', grade: 0, avgPrice: 1100 },
@@ -207,9 +207,7 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2500 },
     { month: 'Nov 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2600 },
     { month: 'Dez 24', language: 'EN', company: 'CGC', grade: 9, avgPrice: 2700 },
-  ],
-  'cb1-jp': [
-    // JP — Charizard VMAX (Starter Set VMAX Charizard)
+    // JP — PSA 9-10
     { month: 'Jul 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2200 },
     { month: 'Ago 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2250 },
     { month: 'Set 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 2300 },
@@ -265,10 +263,10 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 7000 },
     { month: 'Nov 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 7200 },
     { month: 'Dez 24', language: 'PT', company: 'Mana Fix', grade: 9, avgPrice: 7500 },
-    // PT — BGA 9
-    { month: 'Out 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 6500 },
-    { month: 'Nov 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 6800 },
-    { month: 'Dez 24', language: 'PT', company: 'BGA', grade: 9, avgPrice: 7100 },
+    // PT — TAG 9
+    { month: 'Out 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 6500 },
+    { month: 'Nov 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 6800 },
+    { month: 'Dez 24', language: 'PT', company: 'TAG', grade: 9, avgPrice: 7100 },
     // EN — PSA 9-10
     { month: 'Jul 24', language: 'EN', company: 'PSA', grade: 9, avgPrice: 10200 },
     { month: 'Ago 24', language: 'EN', company: 'PSA', grade: 9, avgPrice: 10500 },
@@ -282,9 +280,7 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Out 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 17200 },
     { month: 'Nov 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 18000 },
     { month: 'Dez 24', language: 'EN', company: 'PSA', grade: 10, avgPrice: 18500 },
-  ],
-  'cb4-jp': [
-    // JP — Umbreon VMAX Alt Art (Eevee Heroes) — PSA 9-10
+    // JP — PSA 9-10
     { month: 'Jul 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7000 },
     { month: 'Ago 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7300 },
     { month: 'Set 24', language: 'JP', company: 'PSA', grade: 9, avgPrice: 7600 },
@@ -299,6 +295,10 @@ export const priceHistory: Record<string, PricePoint[]> = {
     { month: 'Dez 24', language: 'JP', company: 'PSA', grade: 10, avgPrice: 10800 },
   ],
 };
+
+// JP card pages reference the same JP data from the main entries
+priceHistory['cb1-jp'] = priceHistory.cb1.filter(d => d.language === 'JP');
+priceHistory['cb4-jp'] = priceHistory.cb4.filter(d => d.language === 'JP');
 
 export const orders: Order[] = [
   { id: 'o1', status: 'entregue', cardId: 'cb1', cardName: 'Charizard VMAX PSA 10', buyerId: 'u1', buyerName: 'João M.', sellerId: 's1', sellerName: 'CardMaster BR', price: 2700, createdAt: '2024-11-15' },

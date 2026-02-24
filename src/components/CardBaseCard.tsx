@@ -53,10 +53,10 @@ export function CardBaseCard({ item }: CardBaseCardProps) {
           <p className="text-[11px] text-muted-foreground line-clamp-1">{cardBase.set} · #{cardBase.number}</p>
 
           <div className="pt-1">
+            <p className="text-[10px] text-muted-foreground">a partir de</p>
             <p className="text-lg font-bold text-accent">
               R$ {lowestPrice.toLocaleString('pt-BR')}
             </p>
-            <p className="text-[10px] text-muted-foreground">a partir de</p>
           </div>
         </div>
       </div>
