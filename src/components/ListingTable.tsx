@@ -80,11 +80,14 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                             <Star className="h-3 w-3 fill-gold text-gold" /> {seller.rating}
                             <span className="text-muted-foreground/40">·</span>
                             {seller.totalSales} vendas
-                          </span>
-                        )}
-                        {listing.freeShipping && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-accent mt-2">
-                            <Truck className="h-2.5 w-2.5" /> Frete grátis
+                            {listing.freeShipping && (
+                              <>
+                                <span className="text-muted-foreground/40 ml-1">·</span>
+                                <span className="inline-flex items-center gap-0.5 text-[10px] text-accent ml-1">
+                                  <Truck className="h-2.5 w-2.5" /> Frete grátis
+                                </span>
+                              </>
+                            )}
                           </span>
                         )}
                       </div>
