@@ -75,65 +75,84 @@ export default function CardDetailPage() {
     );
   }
 
+  const cardImage = (
+    <div className="group/img relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-white/[0.06] overflow-hidden">
+      {cardBase.imageUrl ? (
+        <Image
+          src={cardBase.imageUrl}
+          alt={cardBase.name}
+          fill
+          unoptimized
+          className="object-contain p-3 group-hover/img:scale-[1.03] transition-transform duration-500"
+          sizes="(max-width: 1024px) 120px, 400px"
+          priority
+        />
+      ) : (
+        <span className="text-8xl opacity-20">🃏</span>
+      )}
+    </div>
+  );
+
+  const cardHeader = (
+    <div>
+      <h1 className="text-xl font-bold lg:text-3xl">
+        {cardBase.name} ({cardBase.number})
+      </h1>
+      <div className="flex flex-wrap items-center gap-2 mt-1">
+        <p className="text-sm text-muted-foreground">{cardBase.set}</p>
+        <span className="text-muted-foreground/30">·</span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-[11px] font-medium text-accent">
+          {cardListings.length} {cardListings.length === 1 ? 'anúncio' : 'anúncios'}
+        </span>
+      </div>
+    </div>
+  );
+
+  const cardTabs = (
+    <Tabs defaultValue="buy" className="mt-4">
+      <TabsList className="w-full justify-start overflow-x-auto overflow-y-hidden">
+        <TabsTrigger value="buy" className="shrink-0">Comprar ({cardListings.length})</TabsTrigger>
+        <TabsTrigger value="sales" className="shrink-0">Vendas</TabsTrigger>
+        <TabsTrigger value="prices" className="shrink-0">Preços</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="buy">
+        <ListingTable listings={cardListings} sellers={sellersMap} />
+      </TabsContent>
+      <TabsContent value="sales">
+        <SalesHistoryTable sales={sales} />
+      </TabsContent>
+      <TabsContent value="prices">
+        <PriceChart data={prices} />
+      </TabsContent>
+    </Tabs>
+  );
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid gap-8 lg:grid-cols-[400px_1fr]">
-        {/* Left — Card image */}
-        <div>
-          <div className="sticky top-24 space-y-3">
-            <div className="group/img relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-white/[0.06] overflow-hidden">
-              {cardBase.imageUrl ? (
-                <Image
-                  src={cardBase.imageUrl}
-                  alt={cardBase.name}
-                  fill
-                  unoptimized
-                  className="object-contain p-3 group-hover/img:scale-[1.03] transition-transform duration-500"
-                  sizes="400px"
-                  priority
-                />
-              ) : (
-                <span className="text-8xl opacity-20">🃏</span>
-              )}
-            </div>
-       
+    <div className="container mx-auto px-4 py-8 overflow-x-hidden">
+      {/* Mobile layout: compact image + title side by side, then tabs */}
+      <div className="lg:hidden space-y-4">
+        <div className="flex items-start gap-4">
+          <div className="w-[120px] shrink-0">
+            {cardImage}
+          </div>
+          <div className="flex-1 min-w-0 pt-1">
+            {cardHeader}
           </div>
         </div>
+        {cardTabs}
+      </div>
 
-        {/* Right — Card info + Tabs */}
-        <div className="space-y-6">
-          {/* Header */}
-          <div>
-            <h1 className="text-2xl font-bold md:text-3xl">
-              {cardBase.name} ({cardBase.number})
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm text-muted-foreground">{cardBase.set}</p>
-              <span className="text-muted-foreground/30">·</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-[11px] font-medium text-accent">
-                {cardListings.length} {cardListings.length === 1 ? 'anúncio' : 'anúncios'}
-              </span>
-            </div>
+      {/* Desktop layout: large image sidebar + content */}
+      <div className="hidden lg:grid grid-cols-[400px_1fr] gap-8">
+        <div>
+          <div className="sticky top-24">
+            {cardImage}
           </div>
-
-          {/* Tabs — Buy Now is default */}
-          <Tabs defaultValue="buy" className="mt-4">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="buy">Comprar Agora ({cardListings.length})</TabsTrigger>
-              <TabsTrigger value="sales">Histórico de vendas</TabsTrigger>
-              <TabsTrigger value="prices">Gráfico de preços</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="buy">
-              <ListingTable listings={cardListings} sellers={sellersMap} />
-            </TabsContent>
-            <TabsContent value="sales">
-              <SalesHistoryTable sales={sales} />
-            </TabsContent>
-            <TabsContent value="prices">
-              <PriceChart data={prices} />
-            </TabsContent>
-          </Tabs>
+        </div>
+        <div className="space-y-6">
+          {cardHeader}
+          {cardTabs}
         </div>
       </div>
     </div>

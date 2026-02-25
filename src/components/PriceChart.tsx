@@ -241,39 +241,53 @@ export function PriceChart({ data }: PriceChartProps) {
           <p className="text-muted-foreground text-sm">Selecione ao menos uma grading e nota para ver o gráfico.</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-            <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$${v}`} />
-            <Tooltip
-              contentStyle={{
-                background: 'hsla(220, 10%, 10%, 0.9)',
-                border: '1px solid hsla(0, 0%, 100%, 0.06)',
-                borderRadius: '0.5rem',
-                fontSize: '12px',
-                backdropFilter: 'blur(12px)',
-              }}
-              formatter={(value, name, props) => {
-                const count = props.payload[`${name}_count`];
-                const priceStr = `R$ ${Number(value).toLocaleString('pt-BR')}`;
-                return [count != null ? `${priceStr} (${count} ${count === 1 ? 'venda' : 'vendas'})` : priceStr, ''];
-              }}
-            />
-            {activeSeries.map(key => (
-              <Line
-                key={key}
-                type="monotone"
-                dataKey={key}
-                name={key}
-                stroke={colorMap[key]}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                connectNulls
+        <div>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+              <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$${v}`} />
+              <Tooltip
+                contentStyle={{
+                  background: 'hsla(220, 10%, 10%, 0.9)',
+                  border: '1px solid hsla(0, 0%, 100%, 0.06)',
+                  borderRadius: '0.5rem',
+                  fontSize: '12px',
+                  backdropFilter: 'blur(12px)',
+                  padding: '8px 12px',
+                }}
+                formatter={(value, name, props) => {
+                  const count = props.payload[`${name}_count`];
+                  const priceStr = `R$ ${Number(value).toLocaleString('pt-BR')}`;
+                  return [count != null ? `${priceStr} (${count} ${count === 1 ? 'venda' : 'vendas'})` : priceStr, name];
+                }}
+                itemStyle={{ padding: '2px 0' }}
               />
+              {activeSeries.map(key => (
+                <Line
+                  key={key}
+                  type="monotone"
+                  dataKey={key}
+                  name={key}
+                  stroke={colorMap[key]}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  connectNulls
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mt-3">
+            {activeSeries.map(key => (
+              <span key={key} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: colorMap[key] }} />
+                {key}
+              </span>
             ))}
-          </LineChart>
-        </ResponsiveContainer>
+          </div>
+        </div>
       )}
     </div>
   );
