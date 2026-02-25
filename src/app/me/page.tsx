@@ -7,7 +7,7 @@ import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getOrders } from '@/lib/api';
-import { Plus, User } from 'lucide-react';
+import { Plus, User, BadgeCheck } from 'lucide-react';
 import type { Order } from '@/types';
 
 export default function Profile() {
@@ -34,6 +34,19 @@ export default function Profile() {
           <Link href="/sell"><Plus className="h-4 w-4" /> Criar anúncio</Link>
         </Button>
       </div>
+
+      {/* Verified seller CTA */}
+      <Link
+        href="/como-funciona#selo-verificado"
+        className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-accent/[0.04] border border-accent/10 hover:border-accent/25 hover:bg-accent/[0.07] transition-all duration-200"
+      >
+        <BadgeCheck className="h-5 w-5 text-accent shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium">Quer o selo verificado?</p>
+          <p className="text-xs text-muted-foreground">Saiba como se tornar um vendedor verificado no GradedBR</p>
+        </div>
+        <span className="text-xs text-accent font-medium shrink-0">Saiba mais &rarr;</span>
+      </Link>
 
       <Tabs defaultValue="purchases">
         <TabsList>
