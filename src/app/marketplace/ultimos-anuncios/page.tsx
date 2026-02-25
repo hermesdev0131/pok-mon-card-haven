@@ -37,7 +37,7 @@ export default function UltimosAnunciosPage() {
             <Link
               key={listing.id}
               href={`/card/${cardBase.id}`}
-              className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
+              className="flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-2 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
             >
               <div className="relative h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] overflow-hidden shrink-0">
                 {cardBase.imageUrl ? (
@@ -50,9 +50,9 @@ export default function UltimosAnunciosPage() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{cardBase.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-muted-foreground">{cardBase.set}</p>
+                  <p className="text-xs text-muted-foreground truncate">{cardBase.set}</p>
                   {seller && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
                       · {seller.name} {seller.verified && <VerifiedBadge />}
                     </span>
                   )}
@@ -66,18 +66,19 @@ export default function UltimosAnunciosPage() {
                 )}
               </div>
 
-              <div className="shrink-0 flex items-center gap-2">
-                <FlagIcon code={listing.language} />
-                <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
-              </div>
-
-              <div className="text-right shrink-0">
-                <p className="font-bold text-accent">R$ {listing.price.toLocaleString('pt-BR')}</p>
-                {listing.freeShipping && (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
-                    <Truck className="h-2.5 w-2.5" /> Frete grátis
-                  </span>
-                )}
+              <div className="flex items-center justify-between gap-3 w-full sm:w-auto pl-14 sm:pl-0">
+                <div className="flex items-center gap-2">
+                  <FlagIcon code={listing.language} />
+                  <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-bold text-accent">R$ {listing.price.toLocaleString('pt-BR')}</p>
+                  {listing.freeShipping && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                      <Truck className="h-2.5 w-2.5" /> Frete grátis
+                    </span>
+                  )}
+                </div>
               </div>
             </Link>
           );

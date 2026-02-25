@@ -128,4 +128,5 @@ export interface PricePoint {
   company: string;  // 'NM' | 'PSA' | 'CGC' | 'Beckett' | 'TAG' | etc.
   grade: number;    // 0 for NM (ungraded), 7-10 for graded
   avgPrice: number;
+  salesCount: number; // number of cards sold that month
 }

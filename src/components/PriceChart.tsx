@@ -138,12 +138,14 @@ export function PriceChart({ data }: PriceChartProps) {
     return map;
   }, [allSeries]);
 
-  // Pivot data: { month, "PSA 10": 2800, "PSA 9": 1800, "NM": 800, ... }
+  // Pivot data: { month, "PSA 10": 2800, "PSA 10_count": 3, ... }
   const chartData = useMemo(() => {
     const byMonth: Record<string, Record<string, number>> = {};
     filteredData.forEach(d => {
       if (!byMonth[d.month]) byMonth[d.month] = {};
-      byMonth[d.month][getSeriesKey(d.company, d.grade)] = d.avgPrice;
+      const key = getSeriesKey(d.company, d.grade);
+      byMonth[d.month][key] = d.avgPrice;
+      byMonth[d.month][`${key}_count`] = d.salesCount;
     });
 
     // Get ordered months
@@ -252,7 +254,11 @@ export function PriceChart({ data }: PriceChartProps) {
                 fontSize: '12px',
                 backdropFilter: 'blur(12px)',
               }}
-              formatter={(value) => [`R$ ${Number(value).toLocaleString('pt-BR')}`, '']}
+              formatter={(value, name, props) => {
+                const count = props.payload[`${name}_count`];
+                const priceStr = `R$ ${Number(value).toLocaleString('pt-BR')}`;
+                return [count != null ? `${priceStr} (${count} ${count === 1 ? 'venda' : 'vendas'})` : priceStr, ''];
+              }}
             />
             {activeSeries.map(key => (
               <Line

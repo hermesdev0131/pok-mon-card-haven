@@ -42,7 +42,7 @@ export default function UltimasVendasPage() {
           <Link
             key={`${sale.cardBaseId}-${sale.date}-${i}`}
             href={`/card/${sale.cardBaseId}`}
-            className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
+            className="flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-2 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
           >
             <div className="relative h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] overflow-hidden shrink-0">
               {sale.imageUrl ? (
@@ -55,8 +55,8 @@ export default function UltimasVendasPage() {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{sale.cardName}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs text-muted-foreground">{sale.cardSet}</p>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <p className="text-xs text-muted-foreground truncate">{sale.cardSet}</p>
+                <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
                   · {sale.sellerName} {sale.seller?.verified && <VerifiedBadge />}
                 </span>
               </div>
@@ -69,16 +69,17 @@ export default function UltimasVendasPage() {
               )}
             </div>
 
-            <div className="shrink-0 flex items-center gap-2">
-              <FlagIcon code={sale.language} />
-              <GradeBadge grade={sale.grade} company={sale.gradeCompany} />
-            </div>
-
-            <div className="text-right shrink-0">
-              <p className="font-bold text-accent">R$ {sale.price.toLocaleString('pt-BR')}</p>
-              <p className="text-[11px] text-muted-foreground">
-                {new Date(sale.date).toLocaleDateString('pt-BR')}
-              </p>
+            <div className="flex items-center justify-between gap-3 w-full sm:w-auto pl-14 sm:pl-0">
+              <div className="flex items-center gap-2">
+                <FlagIcon code={sale.language} />
+                <GradeBadge grade={sale.grade} company={sale.gradeCompany} />
+              </div>
+              <div className="text-right shrink-0">
+                <p className="font-bold text-accent">R$ {sale.price.toLocaleString('pt-BR')}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {new Date(sale.date).toLocaleDateString('pt-BR')}
+                </p>
+              </div>
             </div>
           </Link>
         ))}
