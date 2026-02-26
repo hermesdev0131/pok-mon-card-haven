@@ -100,6 +100,7 @@ export type Database = {
           type: CardType;
           rarity: string | null;
           image_url: string | null;
+          language_group: 'INT' | 'JP';
           created_at: string;
         };
         Insert: {
@@ -111,6 +112,7 @@ export type Database = {
           type?: CardType;
           rarity?: string | null;
           image_url?: string | null;
+          language_group?: 'INT' | 'JP';
           created_at?: string;
         };
         Update: {
@@ -121,6 +123,7 @@ export type Database = {
           type?: CardType;
           rarity?: string | null;
           image_url?: string | null;
+          language_group?: 'INT' | 'JP';
         };
       };
       listings: {
@@ -130,7 +133,9 @@ export type Database = {
           card_base_id: string;
           grade: number;
           grade_company: GradeCompany;
+          pristine: boolean;
           cert_number: string | null;
+          language: 'PT' | 'EN' | 'JP';
           price: number;
           status: ListingStatus;
           free_shipping: boolean;
@@ -146,7 +151,9 @@ export type Database = {
           card_base_id: string;
           grade: number;
           grade_company: GradeCompany;
+          pristine?: boolean;
           cert_number?: string | null;
+          language?: 'PT' | 'EN' | 'JP';
           price: number;
           status?: ListingStatus;
           free_shipping?: boolean;
@@ -159,7 +166,9 @@ export type Database = {
         Update: {
           grade?: number;
           grade_company?: GradeCompany;
+          pristine?: boolean;
           cert_number?: string | null;
+          language?: 'PT' | 'EN' | 'JP';
           price?: number;
           status?: ListingStatus;
           free_shipping?: boolean;
@@ -238,6 +247,8 @@ export type Database = {
           seller_id: string;
           grade: number;
           grade_company: GradeCompany;
+          pristine: boolean;
+          language: 'PT' | 'EN' | 'JP';
           sale_price: number;
           sold_at: string;
           created_at: string;
@@ -250,6 +261,8 @@ export type Database = {
           seller_id: string;
           grade: number;
           grade_company: GradeCompany;
+          pristine?: boolean;
+          language?: 'PT' | 'EN' | 'JP';
           sale_price: number;
           sold_at: string;
           created_at?: string;
@@ -391,6 +404,13 @@ export type Database = {
           value?: Json;
           updated_at?: string;
         };
+      };
+    };
+    Views: Record<string, never>;
+    Functions: {
+      is_admin: {
+        Args: Record<string, never>;
+        Returns: boolean;
       };
     };
     Enums: {

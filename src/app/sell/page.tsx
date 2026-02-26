@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImagePlus, X } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { RequireAuth } from '@/components/RequireAuth';
 
 const IMAGE_SLOTS = ['Frente', 'Verso', 'Label', 'Case'] as const;
 
@@ -58,7 +59,8 @@ export default function Sell() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <RequireAuth role="seller">
+      <div className="container mx-auto max-w-2xl px-4 py-8">
       <h1 className="text-2xl font-bold mb-2">Criar anúncio</h1>
       <p className="text-sm text-muted-foreground mb-8">Preencha os dados da sua carta graduada</p>
 
@@ -208,6 +210,7 @@ export default function Sell() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </RequireAuth>
   );
 }

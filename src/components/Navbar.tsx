@@ -1,10 +1,11 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Search, Menu, X, User, ShoppingBag, Sparkles } from 'lucide-react';
+import { Search, Menu, X, User, ShoppingBag, Sparkles, LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const categories = [
   { label: 'PSA 10', href: '/marketplace/psa10' },
@@ -17,6 +18,15 @@ const categories = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { isAuthenticated, profile, loading, signOut } = useAuth();
+
+  async function handleSignOut() {
+    await signOut();
+    setMobileOpen(false);
+    router.push('/');
+    router.refresh();
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl">
@@ -49,12 +59,25 @@ export function Navbar() {
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
               <Link href="/sell"><ShoppingBag className="h-3.5 w-3.5" /> Anunciar</Link>
             </Button>
-            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" asChild>
-              <Link href="/me"><User className="h-4 w-4" /></Link>
-            </Button>
-            <Button size="sm" className="ml-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 h-8 text-xs" asChild>
-              <Link href="/login">Entrar</Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
+                  <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
+                </Button>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" onClick={handleSignOut} title="Sair">
+                  <LogOut className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" asChild>
+                  <Link href="/me"><User className="h-4 w-4" /></Link>
+                </Button>
+                <Button size="sm" className="ml-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 h-8 text-xs" asChild>
+                  <Link href="/login">Entrar</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile toggle */}
@@ -141,9 +164,15 @@ export function Navbar() {
             </Link>
             <Link href="/sell" className="text-sm font-medium" onClick={() => setMobileOpen(false)}>Anunciar carta</Link>
             <Link href="/me" className="text-sm font-medium" onClick={() => setMobileOpen(false)}>Minha conta</Link>
-            <Button size="sm" className="w-fit bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4" asChild>
-              <Link href="/login" onClick={() => setMobileOpen(false)}>Entrar</Link>
-            </Button>
+            {isAuthenticated ? (
+              <Button size="sm" variant="outline" className="w-fit rounded-full px-4 gap-1.5" onClick={handleSignOut}>
+                <LogOut className="h-3.5 w-3.5" /> Sair
+              </Button>
+            ) : (
+              <Button size="sm" className="w-fit bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4" asChild>
+                <Link href="/login" onClick={() => setMobileOpen(false)}>Entrar</Link>
+              </Button>
+            )}
           </nav>
         </div>
       )}

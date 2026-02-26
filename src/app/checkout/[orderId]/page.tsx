@@ -1,12 +1,16 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Shield, Truck, MessageCircle } from 'lucide-react';
+import { RequireAuth } from '@/components/RequireAuth';
 
 export default function Checkout() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <RequireAuth>
+      <div className="container mx-auto max-w-2xl px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Finalizar compra</h1>
 
       {/* Item summary */}
@@ -88,6 +92,7 @@ export default function Checkout() {
           <span>Suporte via WhatsApp em caso de problemas</span>
         </div>
       </div>
-    </div>
+      </div>
+    </RequireAuth>
   );
 }

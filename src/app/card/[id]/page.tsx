@@ -13,9 +13,8 @@ const PriceChart = dynamic(() => import('@/components/PriceChart').then(m => ({ 
 });
 
 import { useParams } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
-import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory } from '@/lib/api';
-import { sellers as allSellers } from '@/data/mock';
+import { useState, useEffect } from 'react';
+import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getSellersForListings } from '@/lib/api';
 
 import type { CardBase, Listing, Seller, SaleRecord, PricePoint } from '@/types';
 
@@ -27,6 +26,7 @@ export default function CardDetailPage() {
   const [cardListings, setCardListings] = useState<Listing[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [prices, setPrices] = useState<PricePoint[]>([]);
+  const [sellersMap, setSellersMap] = useState<Record<string, Seller>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,24 +37,18 @@ export default function CardDetailPage() {
       getListingsForCard(id),
       getSalesHistory(id),
       getPriceHistory(id),
-    ]).then(([cb, ls, s, p]) => {
+    ]).then(async ([cb, ls, s, p]) => {
       setCardBase(cb);
       setCardListings(ls);
       setSales(s);
       setPrices(p);
+      // Fetch sellers for the listings
+      const sellerIds = Array.from(new Set(ls.map(l => l.sellerId)));
+      const sellers = await getSellersForListings(sellerIds);
+      setSellersMap(sellers);
       setLoading(false);
     });
   }, [id]);
-
-  // Build seller lookup for the listings
-  const sellersMap = useMemo(() => {
-    const map: Record<string, Seller> = {};
-    cardListings.forEach(l => {
-      const seller = allSellers.find(s => s.id === l.sellerId);
-      if (seller) map[seller.id] = seller;
-    });
-    return map;
-  }, [cardListings]);
 
   if (loading) {
     return (

@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useEffect } from 'react';
-import { getOrders, getAllSellers } from '@/lib/api';
+import { getAllOrders, getAllSellers } from '@/lib/api';
 import { DollarSign, Package, Users, TrendingUp } from 'lucide-react';
+import { RequireAuth } from '@/components/RequireAuth';
 import type { Order, Seller } from '@/types';
 
 export default function Admin() {
@@ -16,7 +17,7 @@ export default function Admin() {
   const [sellers, setSellers] = useState<Seller[]>([]);
 
   useEffect(() => {
-    getOrders().then(setOrders);
+    getAllOrders().then(setOrders);
     getAllSellers().then(setSellers);
   }, []);
 
@@ -28,7 +29,8 @@ export default function Admin() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <RequireAuth role="admin">
+      <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Painel administrativo</h1>
 
       {/* Stats */}
@@ -71,7 +73,7 @@ export default function Admin() {
               <TableBody>
                 {orders.map(order => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                    <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}</TableCell>
                     <TableCell className="text-sm">{order.cardName}</TableCell>
                     <TableCell className="text-sm">{order.buyerName}</TableCell>
                     <TableCell className="text-sm">{order.sellerName}</TableCell>
@@ -116,6 +118,7 @@ export default function Admin() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </RequireAuth>
   );
 }

@@ -7,16 +7,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getSeller, getSellerListings, getSellerReviews } from '@/lib/api';
-import { cardBases } from '@/data/mock';
 import { Star, ShoppingBag, Calendar, Truck } from 'lucide-react';
 import Link from 'next/link';
-import type { Listing, Seller, Review } from '@/types';
+import type { CardBase, Listing, Seller, Review } from '@/types';
 
 export default function SellerProfilePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [seller, setSeller] = useState<Seller | null>(null);
-  const [sellerListings, setSellerListings] = useState<Listing[]>([]);
+  const [sellerListings, setSellerListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,8 +57,7 @@ export default function SellerProfilePage() {
       <h2 className="text-lg font-semibold mb-4">Anúncios ({sellerListings.length})</h2>
       <div className="space-y-3 mb-12">
         {sellerListings.map(listing => {
-          const cardBase = cardBases.find(cb => cb.id === listing.cardBaseId);
-          if (!cardBase) return null;
+          const { cardBase } = listing;
           return (
             <Link
               key={listing.id}

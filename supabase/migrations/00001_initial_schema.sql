@@ -164,6 +164,7 @@ create table listings (
   card_base_id    uuid not null references card_bases(id) on delete restrict,
   grade           numeric(3,1) not null check (grade >= 1 and grade <= 10),  -- 1.0 to 10.0
   grade_company   text not null references grade_companies(code),
+  pristine        boolean not null default false,  -- Pristine 10 (CGC, TAG, Beckett)
   cert_number     text,                    -- grading certificate number
   language        text not null default 'PT' check (language in ('PT', 'EN', 'JP')),
   price           integer not null check (price > 0),  -- centavos
@@ -244,6 +245,7 @@ create table confirmed_sales (
   seller_id       uuid not null references profiles(id) on delete restrict,
   grade           numeric(3,1) not null,
   grade_company   text not null references grade_companies(code),
+  pristine        boolean not null default false,  -- Pristine 10 (CGC, TAG, Beckett)
   language        text not null default 'PT' check (language in ('PT', 'EN', 'JP')),
   sale_price      integer not null,             -- centavos
   sold_at         timestamptz not null,

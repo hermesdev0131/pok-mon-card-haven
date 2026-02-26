@@ -7,39 +7,60 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import Image from 'next/image';
 import Link from 'next/link';
 import { Shield, ArrowRight, Flame, Zap, Ghost, Moon, Star, Sparkles, ChevronRight } from 'lucide-react';
-import { cardBases, listings, sellers } from '@/data/mock';
-import type { CardBaseWithStats } from '@/types';
+import { useState, useEffect } from 'react';
+import { getCardBasesWithStats, getAllSellers } from '@/lib/api';
+import type { CardBaseWithStats, Seller } from '@/types';
 
-// Build card base stats from mock data
-function buildStats(): CardBaseWithStats[] {
-  return cardBases.map(cb => {
-    const activeListings = listings.filter(l => l.cardBaseId === cb.id && l.status === 'active');
-    const prices = activeListings.map(l => l.price);
-    return {
-      cardBase: cb,
-      listingCount: activeListings.length,
-      lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
-      highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
-    };
-  }).filter(s => s.listingCount > 0);
-}
-
-const allStats = buildStats();
-const featuredCard = allStats.find(s => s.cardBase.id === 'cb4')!; // Umbreon VMAX
-const highlightCards = allStats.slice(0, 5);
-const recentCards = [...allStats].slice(0, 5);
-const topSellers = sellers.filter(s => s.verified).sort((a, b) => b.totalSales - a.totalSales);
-
-const categories = [
-  { name: 'Fire', label: 'Fogo', icon: Flame, color: 'from-orange-500/20 to-red-600/10 border-orange-500/20', iconColor: 'text-orange-400', count: cardBases.filter(c => c.type === 'fire').length },
-  { name: 'Electric', label: 'Elétrico', icon: Zap, color: 'from-yellow-500/20 to-amber-600/10 border-yellow-500/20', iconColor: 'text-yellow-400', count: cardBases.filter(c => c.type === 'electric').length },
-  { name: 'Psychic', label: 'Psíquico', icon: Sparkles, color: 'from-pink-500/20 to-purple-600/10 border-pink-500/20', iconColor: 'text-pink-400', count: cardBases.filter(c => c.type === 'psychic').length },
-  { name: 'Dark', label: 'Sombrio', icon: Moon, color: 'from-purple-500/20 to-indigo-600/10 border-purple-500/20', iconColor: 'text-purple-400', count: cardBases.filter(c => c.type === 'dark').length },
-  { name: 'Ghost', label: 'Fantasma', icon: Ghost, color: 'from-indigo-500/20 to-violet-600/10 border-indigo-500/20', iconColor: 'text-indigo-400', count: cardBases.filter(c => c.type === 'ghost').length },
-  { name: 'Dragon', label: 'Dragão', icon: Flame, color: 'from-cyan-500/20 to-blue-600/10 border-cyan-500/20', iconColor: 'text-cyan-400', count: cardBases.filter(c => c.type === 'dragon').length },
+const categoryDefs = [
+  { type: 'fire', label: 'Fogo', icon: Flame, color: 'from-orange-500/20 to-red-600/10 border-orange-500/20', iconColor: 'text-orange-400' },
+  { type: 'electric', label: 'Elétrico', icon: Zap, color: 'from-yellow-500/20 to-amber-600/10 border-yellow-500/20', iconColor: 'text-yellow-400' },
+  { type: 'psychic', label: 'Psíquico', icon: Sparkles, color: 'from-pink-500/20 to-purple-600/10 border-pink-500/20', iconColor: 'text-pink-400' },
+  { type: 'dark', label: 'Sombrio', icon: Moon, color: 'from-purple-500/20 to-indigo-600/10 border-purple-500/20', iconColor: 'text-purple-400' },
+  { type: 'ghost', label: 'Fantasma', icon: Ghost, color: 'from-indigo-500/20 to-violet-600/10 border-indigo-500/20', iconColor: 'text-indigo-400' },
+  { type: 'dragon', label: 'Dragão', icon: Flame, color: 'from-cyan-500/20 to-blue-600/10 border-cyan-500/20', iconColor: 'text-cyan-400' },
 ];
 
 export default function Home() {
+  const [allStats, setAllStats] = useState<CardBaseWithStats[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getCardBasesWithStats(), getAllSellers()]).then(([stats, s]) => {
+      setAllStats(stats);
+      setSellers(s);
+      setLoading(false);
+    });
+  }, []);
+
+  const featuredCard = allStats.find(s => s.cardBase.name.includes('Umbreon')) ?? allStats[0];
+  const highlightCards = allStats.slice(0, 5);
+  const recentCards = [...allStats].slice(0, 5);
+  const topSellers = sellers.filter(s => s.verified).sort((a, b) => b.totalSales - a.totalSales);
+
+  // Count cards by type from the stats
+  const typeCounts: Record<string, number> = {};
+  for (const s of allStats) {
+    const t = s.cardBase.type;
+    typeCounts[t] = (typeCounts[t] ?? 0) + 1;
+  }
+  const categories = categoryDefs.map(c => ({ ...c, count: typeCounts[c.type] ?? 0 }));
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-20">
+        <div className="animate-pulse space-y-12">
+          <div className="h-80 rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
+          <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {Array(5).fill(0).map((_, i) => (
+              <div key={i} className="aspect-[4/5] rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Hero — Product-focused like Rare Candy */}
@@ -80,34 +101,36 @@ export default function Home() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-[300px] w-[300px] rounded-full bg-accent/10 blur-[80px]" />
               </div>
-              <Link href={`/card/${featuredCard.cardBase.id}`} className="relative group">
-                <div className="glass glow-accent rounded-2xl p-6 space-y-4 transition-all duration-300 group-hover:shadow-[0_0_40px_hsl(var(--accent)/0.15)] group-hover:scale-[1.02]">
-                  <div className="relative aspect-[3/4] w-56 mx-auto bg-gradient-to-b from-secondary to-background rounded-xl flex items-center justify-center overflow-hidden">
-                    {featuredCard.cardBase.imageUrl ? (
-                      <Image
-                        src={featuredCard.cardBase.imageUrl}
-                        alt={featuredCard.cardBase.name}
-                        fill
-                        quality={95}
-                        className="object-contain p-3 group-hover:scale-[1.03] transition-transform duration-500"
-                        sizes="224px"
-                        priority
-                      />
-                    ) : (
-                      <div className="text-8xl opacity-40 group-hover:scale-[1.03] transition-transform duration-500">🃏</div>
-                    )}
+              {featuredCard && (
+                <Link href={`/card/${featuredCard.cardBase.id}`} className="relative group">
+                  <div className="glass glow-accent rounded-2xl p-6 space-y-4 transition-all duration-300 group-hover:shadow-[0_0_40px_hsl(var(--accent)/0.15)] group-hover:scale-[1.02]">
+                    <div className="relative aspect-[3/4] w-56 mx-auto bg-gradient-to-b from-secondary to-background rounded-xl flex items-center justify-center overflow-hidden">
+                      {featuredCard.cardBase.imageUrl ? (
+                        <Image
+                          src={featuredCard.cardBase.imageUrl}
+                          alt={featuredCard.cardBase.name}
+                          fill
+                          quality={95}
+                          className="object-contain p-3 group-hover:scale-[1.03] transition-transform duration-500"
+                          sizes="224px"
+                          priority
+                        />
+                      ) : (
+                        <div className="text-8xl opacity-40 group-hover:scale-[1.03] transition-transform duration-500">🃏</div>
+                      )}
+                    </div>
+                    <div className="text-center space-y-2">
+                      <p className="text-xs text-accent font-medium uppercase tracking-wider">Destaque</p>
+                      <h3 className="font-bold text-lg">{featuredCard.cardBase.name}</h3>
+                      <p className="text-sm text-muted-foreground">{featuredCard.cardBase.set} · #{featuredCard.cardBase.number}</p>
+                      <p className="text-sm text-muted-foreground">{featuredCard.listingCount} anúncios</p>
+                      <p className="text-2xl font-bold text-accent text-glow-accent">
+                        a partir de R$ {featuredCard.lowestPrice.toLocaleString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-center space-y-2">
-                    <p className="text-xs text-accent font-medium uppercase tracking-wider">Destaque</p>
-                    <h3 className="font-bold text-lg">{featuredCard.cardBase.name}</h3>
-                    <p className="text-sm text-muted-foreground">{featuredCard.cardBase.set} · #{featuredCard.cardBase.number}</p>
-                    <p className="text-sm text-muted-foreground">{featuredCard.listingCount} anúncios</p>
-                    <p className="text-2xl font-bold text-accent text-glow-accent">
-                      a partir de R$ {featuredCard.lowestPrice.toLocaleString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-              </Link>
+                </Link>
+              )}
             </div>
           </div>
         </div>
