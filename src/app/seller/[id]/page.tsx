@@ -9,9 +9,18 @@ import { useState, useEffect } from 'react';
 import { getSeller, getSellerListings, getSellerReviews } from '@/lib/api';
 import { Star, ShoppingBag, Calendar, Truck } from 'lucide-react';
 import Link from 'next/link';
+import { RequireAuth } from '@/components/RequireAuth';
 import type { CardBase, Listing, Seller, Review } from '@/types';
 
-export default function SellerProfilePage() {
+export default function SellerProfilePageGuarded() {
+  return (
+    <RequireAuth>
+      <SellerProfilePage />
+    </RequireAuth>
+  );
+}
+
+function SellerProfilePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [seller, setSeller] = useState<Seller | null>(null);

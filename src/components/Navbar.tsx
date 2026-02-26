@@ -163,7 +163,9 @@ export function Navbar() {
               <Sparkles className="h-3.5 w-3.5 text-accent" /> Como funciona
             </Link>
             <Link href="/sell" className="text-sm font-medium" onClick={() => setMobileOpen(false)}>Anunciar carta</Link>
-            <Link href="/me" className="text-sm font-medium" onClick={() => setMobileOpen(false)}>Minha conta</Link>
+            <Link href="/me" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+              <User className="h-3.5 w-3.5" /> {isAuthenticated ? (profile?.full_name?.split(' ')[0] ?? 'Minha conta') : 'Minha conta'}
+            </Link>
             {isAuthenticated ? (
               <Button size="sm" variant="outline" className="w-fit rounded-full px-4 gap-1.5" onClick={handleSignOut}>
                 <LogOut className="h-3.5 w-3.5" /> Sair

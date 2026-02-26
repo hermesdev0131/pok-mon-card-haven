@@ -15,10 +15,19 @@ const PriceChart = dynamic(() => import('@/components/PriceChart').then(m => ({ 
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getSellersForListings } from '@/lib/api';
+import { RequireAuth } from '@/components/RequireAuth';
 
 import type { CardBase, Listing, Seller, SaleRecord, PricePoint } from '@/types';
 
-export default function CardDetailPage() {
+export default function CardDetailPageGuarded() {
+  return (
+    <RequireAuth>
+      <CardDetailPage />
+    </RequireAuth>
+  );
+}
+
+function CardDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
 

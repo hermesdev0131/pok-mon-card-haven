@@ -21,6 +21,38 @@ type ConfirmedSaleRow = Database['public']['Tables']['confirmed_sales']['Row'];
 const supabase = createClient();
 
 // ════════════════════════════════════════════════
+// Helpers: batch-fetch profiles & seller_profiles
+// ════════════════════════════════════════════════
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchProfilesByIds(ids: string[]): Promise<Record<string, any>> {
+  if (!ids.length) return {};
+  const { data } = await supabase.from('profiles').select('*').in('id', Array.from(new Set(ids)));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const map: Record<string, any> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const p of (data ?? []) as any[]) map[p.id] = p;
+  return map;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchSellerProfilesByIds(ids: string[]): Promise<Record<string, any>> {
+  if (!ids.length) return {};
+  const unique = Array.from(new Set(ids));
+  const [{ data: sellers }, profiles] = await Promise.all([
+    supabase.from('seller_profiles').select('*').in('id', unique),
+    fetchProfilesByIds(unique),
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const map: Record<string, any> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const s of (sellers ?? []) as any[]) {
+    map[s.id] = { ...s, profiles: profiles[s.id] ?? {} };
+  }
+  return map;
+}
+
+// ════════════════════════════════════════════════
 // Mapper functions: DB rows → Frontend types
 // ════════════════════════════════════════════════
 
@@ -91,7 +123,7 @@ function mapOrderStatus(dbStatus: string): OrderStatus {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapOrder(row: any): Order {
+function mapOrder(row: any, buyerName: string, sellerName: string): Order {
   const listing = row.listing;
   const cardBase = listing?.card_base;
   const cardName = cardBase
@@ -103,42 +135,25 @@ function mapOrder(row: any): Order {
     cardId: listing?.card_base_id ?? '',
     cardName,
     buyerId: row.buyer_id,
-    buyerName: row.buyer?.full_name ?? 'Comprador',
+    buyerName,
     sellerId: row.seller_id,
-    sellerName: row.seller?.store_name ?? 'Vendedor',
+    sellerName,
     price: row.price,
     createdAt: row.created_at,
   };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapQuestion(row: any, sellerName: string): Question {
-  return {
-    id: row.id,
-    listingId: row.listing_id,
-    sellerId: '', // not used in UI, but kept for type compat
-    sellerName,
-    userName: row.user?.full_name ?? 'Usuário',
-    question: row.question,
-    answer: row.answer ?? undefined,
-    questionDate: row.created_at,
-    answerDate: row.answered_at ?? undefined,
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapReview(row: any): Review {
+function mapReview(row: any, buyerName: string): Review {
   return {
     id: row.id,
     sellerId: row.seller_id,
-    buyerName: row.buyer?.full_name ?? 'Comprador',
+    buyerName,
     rating: row.rating,
     comment: row.comment ?? '',
     date: row.created_at,
   };
 }
-
-
 
 // ════════════════════════════════════════════════
 // Card Bases
@@ -149,7 +164,6 @@ export async function getCardBasesWithStats(filters?: {
   type?: string;
   sort?: string;
 }): Promise<CardBaseWithStats[]> {
-  // Fetch card bases
   let cbQuery = supabase.from('card_bases').select('*');
   if (filters?.search) {
     const s = filters.search;
@@ -162,7 +176,6 @@ export async function getCardBasesWithStats(filters?: {
   const cardBaseRows = (cardRows ?? []) as CardBaseRow[];
   if (!cardBaseRows.length) return [];
 
-  // Fetch all active listings
   const { data: listingRows } = await supabase
     .from('listings')
     .select('*')
@@ -170,14 +183,12 @@ export async function getCardBasesWithStats(filters?: {
 
   const listingsArr = (listingRows ?? []) as ListingRow[];
 
-  // Group listings by card_base_id
   const listingsByCard: Record<string, number[]> = {};
   for (const l of listingsArr) {
     if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
     listingsByCard[l.card_base_id].push(l.price);
   }
 
-  // Build stats
   const stats: CardBaseWithStats[] = cardBaseRows
     .map(row => {
       const prices = listingsByCard[row.id] ?? [];
@@ -223,18 +234,26 @@ export async function getListingsForCard(cardBaseId: string): Promise<Listing[]>
 export async function getRecentListings(): Promise<
   (Listing & { cardBase: CardBase; seller?: Seller })[]
 > {
+  // card_bases join works (direct FK), but seller_profiles doesn't
   const { data } = await supabase
     .from('listings')
-    .select('*, card_bases(*), seller_profile:seller_profiles!seller_id(*, profiles!inner(full_name, avatar_url, created_at))')
+    .select('*, card_bases(*)')
     .eq('status', 'active' as string)
     .order('created_at', { ascending: false })
     .limit(30);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return ((data ?? []) as any[]).map(row => ({
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  // Batch-fetch sellers
+  const sellerIds = rows.map(r => r.seller_id);
+  const sellerMap = await fetchSellerProfilesByIds(sellerIds);
+
+  return rows.map(row => ({
     ...mapListing(row),
     cardBase: mapCardBase(row.card_bases),
-    seller: row.seller_profile ? mapSeller(row.seller_profile) : undefined,
+    seller: sellerMap[row.seller_id] ? mapSeller(sellerMap[row.seller_id]) : undefined,
   }));
 }
 
@@ -243,12 +262,13 @@ export async function getRecentListings(): Promise<
 // ════════════════════════════════════════════════
 
 export async function getSeller(id: string): Promise<Seller | null> {
-  const { data } = await supabase
-    .from('seller_profiles')
-    .select('*, profiles!inner(full_name, avatar_url, created_at)')
-    .eq('id', id)
-    .single();
-  return data ? mapSeller(data) : null;
+  const [{ data: sp }, profiles] = await Promise.all([
+    supabase.from('seller_profiles').select('*').eq('id', id).single(),
+    fetchProfilesByIds([id]),
+  ]);
+  if (!sp) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return mapSeller({ ...(sp as any), profiles: profiles[id] ?? {} });
 }
 
 export async function getSellerListings(sellerId: string): Promise<(Listing & { cardBase: CardBase })[]> {
@@ -268,30 +288,45 @@ export async function getSellerListings(sellerId: string): Promise<(Listing & { 
 export async function getSellerReviews(sellerId: string): Promise<Review[]> {
   const { data } = await supabase
     .from('reviews')
-    .select('*, buyer:profiles!buyer_id(full_name)')
+    .select('*')
     .eq('seller_id', sellerId)
     .order('created_at', { ascending: false });
-  return (data ?? []).map(mapReview);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const buyerIds = rows.map(r => r.buyer_id);
+  const profiles = await fetchProfilesByIds(buyerIds);
+
+  return rows.map(r => mapReview(r, profiles[r.buyer_id]?.full_name ?? 'Comprador'));
 }
 
 export async function getAllSellers(): Promise<Seller[]> {
-  const { data } = await supabase
-    .from('seller_profiles')
-    .select('*, profiles!inner(full_name, avatar_url, created_at)');
-  return (data ?? []).map(mapSeller);
+  const { data } = await supabase.from('seller_profiles').select('*');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const profiles = await fetchProfilesByIds(rows.map(r => r.id));
+  return rows.map(r => mapSeller({ ...r, profiles: profiles[r.id] ?? {} }));
 }
 
 /** All sellers with active listing count (for vendedores page) */
 export async function getSellersWithListingCount(): Promise<(Seller & { listingCount: number })[]> {
-  const [sellersRes, listingsRes] = await Promise.all([
-    supabase.from('seller_profiles').select('*, profiles!inner(full_name, avatar_url, created_at)'),
+  const [{ data: sellerRows }, { data: listingRows }] = await Promise.all([
+    supabase.from('seller_profiles').select('*'),
     supabase.from('listings').select('*').eq('status', 'active' as string),
   ]);
 
-  const sellers = (sellersRes.data ?? []).map(mapSeller);
-  const listings = (listingsRes.data ?? []) as ListingRow[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sRows = (sellerRows ?? []) as any[];
+  if (!sRows.length) return [];
 
-  // Count active listings per seller
+  const profiles = await fetchProfilesByIds(sRows.map(r => r.id));
+  const sellers = sRows.map(r => mapSeller({ ...r, profiles: profiles[r.id] ?? {} }));
+
+  const listings = (listingRows ?? []) as ListingRow[];
   const countMap: Record<string, number> = {};
   for (const l of listings) {
     countMap[l.seller_id] = (countMap[l.seller_id] ?? 0) + 1;
@@ -306,9 +341,15 @@ export async function getSellersWithListingCount(): Promise<(Seller & { listingC
 export async function getAllReviews(): Promise<Review[]> {
   const { data } = await supabase
     .from('reviews')
-    .select('*, buyer:profiles!buyer_id(full_name)')
+    .select('*')
     .order('created_at', { ascending: false });
-  return (data ?? []).map(mapReview);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const profiles = await fetchProfilesByIds(rows.map(r => r.buyer_id));
+  return rows.map(r => mapReview(r, profiles[r.buyer_id]?.full_name ?? 'Comprador'));
 }
 
 // ════════════════════════════════════════════════
@@ -325,18 +366,14 @@ export async function getSalesHistory(cardBaseId: string): Promise<SaleRecord[]>
   const rows = (data ?? []) as ConfirmedSaleRow[];
   if (!rows.length) return [];
 
-  // Batch-fetch buyer and seller names
   const buyerIds = Array.from(new Set(rows.map(r => r.buyer_id)));
   const sellerIds = Array.from(new Set(rows.map(r => r.seller_id)));
 
-  const [{ data: buyers }, { data: sellers }] = await Promise.all([
-    supabase.from('profiles').select('id, full_name').in('id', buyerIds),
+  const [profiles, { data: sellers }] = await Promise.all([
+    fetchProfilesByIds(buyerIds),
     supabase.from('seller_profiles').select('id, store_name').in('id', sellerIds),
   ]);
 
-  const buyerMap: Record<string, string> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const b of (buyers ?? []) as any[]) buyerMap[b.id] = b.full_name ?? 'Comprador';
   const sellerMap: Record<string, string> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const s of (sellers ?? []) as any[]) sellerMap[s.id] = s.store_name;
@@ -348,7 +385,7 @@ export async function getSalesHistory(cardBaseId: string): Promise<SaleRecord[]>
     gradeCompany: row.grade_company,
     pristine: row.pristine || undefined,
     sellerName: sellerMap[row.seller_id] ?? 'Vendedor',
-    buyerName: buyerMap[row.buyer_id] ?? 'Comprador',
+    buyerName: profiles[row.buyer_id]?.full_name ?? 'Comprador',
     language: row.language,
   }));
 }
@@ -363,7 +400,6 @@ export async function getPriceHistory(cardBaseId: string): Promise<PricePoint[]>
   const rows = (data ?? []) as ConfirmedSaleRow[];
   if (!rows.length) return [];
 
-  // Aggregate by month / language / company / grade
   const groups: Record<string, { total: number; count: number }> = {};
   for (const row of rows) {
     const d = new Date(row.sold_at);
@@ -402,26 +438,18 @@ export async function getRecentSales(): Promise<
   const rows = (data ?? []) as ConfirmedSaleRow[];
   if (!rows.length) return [];
 
-  // Batch-fetch related data
   const cardBaseIds = Array.from(new Set(rows.map(r => r.card_base_id)));
   const buyerIds = Array.from(new Set(rows.map(r => r.buyer_id)));
   const sellerIds = Array.from(new Set(rows.map(r => r.seller_id)));
 
-  const [{ data: cardBases }, { data: buyers }, { data: sellerProfiles }] = await Promise.all([
+  const [{ data: cardBases }, profiles, sellerMap] = await Promise.all([
     supabase.from('card_bases').select('*').in('id', cardBaseIds),
-    supabase.from('profiles').select('id, full_name').in('id', buyerIds),
-    supabase.from('seller_profiles').select('*, profiles!inner(full_name, avatar_url, created_at)').in('id', sellerIds),
+    fetchProfilesByIds(buyerIds),
+    fetchSellerProfilesByIds(sellerIds),
   ]);
 
   const cbMap: Record<string, CardBaseRow> = {};
   for (const cb of (cardBases ?? []) as CardBaseRow[]) cbMap[cb.id] = cb;
-  const buyerMap: Record<string, string> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const b of (buyers ?? []) as any[]) buyerMap[b.id] = b.full_name ?? 'Comprador';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sellerMap: Record<string, any> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const s of (sellerProfiles ?? []) as any[]) sellerMap[s.id] = s;
 
   return rows.map(row => {
     const cb = cbMap[row.card_base_id];
@@ -433,7 +461,7 @@ export async function getRecentSales(): Promise<
       gradeCompany: row.grade_company,
       pristine: row.pristine || undefined,
       sellerName: sp?.store_name ?? 'Vendedor',
-      buyerName: buyerMap[row.buyer_id] ?? 'Comprador',
+      buyerName: profiles[row.buyer_id]?.full_name ?? 'Comprador',
       language: row.language,
       cardBaseId: row.card_base_id,
       cardName: cb?.name ?? 'Carta',
@@ -449,38 +477,82 @@ export async function getRecentSales(): Promise<
 // ════════════════════════════════════════════════
 
 export async function getQuestionsForListing(listingId: string): Promise<Question[]> {
-  // Fetch questions with user name
   const { data: questions } = await supabase
     .from('questions')
-    .select('*, user:profiles!user_id(full_name)')
+    .select('*')
     .eq('listing_id', listingId)
     .order('created_at', { ascending: true });
 
-  if (!questions?.length) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (questions ?? []) as any[];
+  if (!rows.length) return [];
 
-  // Fetch the listing to get seller info
+  // Fetch the listing to get seller_id
   const { data: listing } = await supabase
     .from('listings')
-    .select('*, seller:seller_profiles!seller_id(store_name)')
+    .select('seller_id')
     .eq('id', listingId)
     .single();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sellerName = (listing as any)?.seller?.store_name ?? 'Vendedor';
+  // Batch-fetch user profiles + seller name
+  const userIds = rows.map(r => r.user_id);
+  const sellerId = (listing as any)?.seller_id;
 
-  return questions.map(q => mapQuestion(q, sellerName));
+  const [profiles, { data: sellerData }] = await Promise.all([
+    fetchProfilesByIds(userIds),
+    sellerId
+      ? supabase.from('seller_profiles').select('store_name').eq('id', sellerId).single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sellerName = (sellerData as any)?.store_name ?? 'Vendedor';
+
+  return rows.map(r => ({
+    id: r.id,
+    listingId: r.listing_id,
+    sellerId: sellerId ?? '',
+    sellerName,
+    userName: profiles[r.user_id]?.full_name ?? 'Usuário',
+    question: r.question,
+    answer: r.answer ?? undefined,
+    questionDate: r.created_at,
+    answerDate: r.answered_at ?? undefined,
+  }));
 }
 
 // ════════════════════════════════════════════════
 // Orders
 // ════════════════════════════════════════════════
 
+// Only join listings→card_bases (direct FKs in public schema)
 const ORDER_SELECT = `
   *,
-  listing:listings(card_base_id, grade, grade_company, card_base:card_bases(name)),
-  buyer:profiles!buyer_id(full_name),
-  seller:seller_profiles!seller_id(store_name)
+  listing:listings(card_base_id, grade, grade_company, card_base:card_bases(name))
 `;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function enrichOrders(rows: any[]): Promise<Order[]> {
+  if (!rows.length) return [];
+
+  const buyerIds = Array.from(new Set(rows.map(r => r.buyer_id)));
+  const sellerIds = Array.from(new Set(rows.map(r => r.seller_id)));
+
+  const [profiles, { data: sellers }] = await Promise.all([
+    fetchProfilesByIds(buyerIds),
+    supabase.from('seller_profiles').select('id, store_name').in('id', sellerIds),
+  ]);
+
+  const sellerMap: Record<string, string> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const s of (sellers ?? []) as any[]) sellerMap[s.id] = s.store_name;
+
+  return rows.map(row => mapOrder(
+    row,
+    profiles[row.buyer_id]?.full_name ?? 'Comprador',
+    sellerMap[row.seller_id] ?? 'Vendedor',
+  ));
+}
 
 /** Orders for the current user (buyer or seller) */
 export async function getMyOrders(): Promise<Order[]> {
@@ -493,7 +565,7 @@ export async function getMyOrders(): Promise<Order[]> {
     .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
     .order('created_at', { ascending: false });
 
-  return (data ?? []).map(mapOrder);
+  return enrichOrders((data ?? []) as any[]);
 }
 
 /** All orders (for admin page) */
@@ -503,7 +575,7 @@ export async function getAllOrders(): Promise<Order[]> {
     .select(ORDER_SELECT)
     .order('created_at', { ascending: false });
 
-  return (data ?? []).map(mapOrder);
+  return enrichOrders((data ?? []) as any[]);
 }
 
 export async function getOrder(id: string): Promise<Order | null> {
@@ -513,7 +585,9 @@ export async function getOrder(id: string): Promise<Order | null> {
     .eq('id', id)
     .single();
 
-  return data ? mapOrder(data) : null;
+  if (!data) return null;
+  const orders = await enrichOrders([data]);
+  return orders[0] ?? null;
 }
 
 // ════════════════════════════════════════════════
@@ -522,7 +596,6 @@ export async function getOrder(id: string): Promise<Order | null> {
 
 /** Card bases that have at least one PSA 10 active listing (for PSA10 page) */
 export async function getCardBasesWithPSA10(): Promise<CardBaseWithStats[]> {
-  // Fetch PSA 10 listing card_base_ids
   const { data: psa10Listings } = await supabase
     .from('listings')
     .select('*')
@@ -535,7 +608,6 @@ export async function getCardBasesWithPSA10(): Promise<CardBaseWithStats[]> {
 
   const psa10CardIds = Array.from(new Set(psa10Rows.map(l => l.card_base_id)));
 
-  // Fetch those card bases
   const { data: cardRows } = await supabase
     .from('card_bases')
     .select('*')
@@ -544,7 +616,6 @@ export async function getCardBasesWithPSA10(): Promise<CardBaseWithStats[]> {
   const cardRowsTyped = (cardRows ?? []) as CardBaseRow[];
   if (!cardRowsTyped.length) return [];
 
-  // Fetch all active listings for these cards (not just PSA 10)
   const { data: allListings } = await supabase
     .from('listings')
     .select('*')
@@ -572,16 +643,10 @@ export async function getCardBasesWithPSA10(): Promise<CardBaseWithStats[]> {
 /** Sellers map for a set of listings (for card detail page) */
 export async function getSellersForListings(sellerIds: string[]): Promise<Record<string, Seller>> {
   if (!sellerIds.length) return {};
-  const unique = Array.from(new Set(sellerIds));
-  const { data } = await supabase
-    .from('seller_profiles')
-    .select('*, profiles!inner(full_name, avatar_url, created_at)')
-    .in('id', unique);
-
-  const map: Record<string, Seller> = {};
-  for (const row of data ?? []) {
-    const seller = mapSeller(row);
-    map[seller.id] = seller;
+  const sellerMap = await fetchSellerProfilesByIds(sellerIds);
+  const result: Record<string, Seller> = {};
+  for (const [id, row] of Object.entries(sellerMap)) {
+    result[id] = mapSeller(row);
   }
-  return map;
+  return result;
 }
