@@ -74,7 +74,7 @@ export default function SellerProfilePage() {
                 <p className="text-xs text-muted-foreground">{cardBase.set} · #{cardBase.number}</p>
               </div>
               <div className="shrink-0">
-                <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
+                <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
               </div>
               <div className="text-right shrink-0">
                 <p className="font-bold text-accent">R$ {listing.price.toLocaleString('pt-BR')}</p>

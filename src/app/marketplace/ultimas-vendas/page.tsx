@@ -72,7 +72,7 @@ export default function UltimasVendasPage() {
             <div className="flex items-center justify-between gap-3 w-full sm:w-auto pl-14 sm:pl-0">
               <div className="flex items-center gap-2">
                 <FlagIcon code={sale.language} />
-                <GradeBadge grade={sale.grade} company={sale.gradeCompany} />
+                <GradeBadge grade={sale.grade} company={sale.gradeCompany} pristine={sale.pristine} />
               </div>
               <div className="text-right shrink-0">
                 <p className="font-bold text-accent">R$ {sale.price.toLocaleString('pt-BR')}</p>

@@ -44,6 +44,7 @@ export interface Listing {
   sellerId: string;
   grade: number;
   gradeCompany: GradeCompany;
+  pristine?: boolean; // Pristine 10 (CGC, TAG, Beckett)
   price: number;
   images: string[];
   freeShipping?: boolean;
@@ -77,6 +78,7 @@ export interface SaleRecord {
   price: number;
   grade: number;
   gradeCompany: string;
+  pristine?: boolean; // Pristine 10 (CGC, TAG, Beckett)
   sellerName: string;
   buyerName: string;
   language: CardLanguage;

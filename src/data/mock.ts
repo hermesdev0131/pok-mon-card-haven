@@ -41,7 +41,7 @@ export const listings: Listing[] = [
   // cb1 — Charizard VMAX (4 listings)
   { id: 'l1', cardBaseId: 'cb1', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 2850, images: ['/cards/en/charizard-vmax-swsh3-20.png', '/cards/en/charizard-vmax-swsh3-20.png'], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-01' },
   { id: 'l2', cardBaseId: 'cb1', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 1800, images: ['/cards/en/charizard-vmax-swsh3-20.png'], freeShipping: true, language: 'EN', tags: ['graduada'], status: 'active', createdAt: '2024-12-08' },
-  { id: 'l3', cardBaseId: 'cb1', sellerId: 's5', grade: 10, gradeCompany: 'CGC', price: 2600, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-10' },
+  { id: 'l3', cardBaseId: 'cb1', sellerId: 's5', grade: 10, gradeCompany: 'CGC', pristine: true, price: 3400, images: [], freeShipping: false, language: 'PT', tags: ['graduada'], status: 'active', createdAt: '2024-12-10' },
   { id: 'l4', cardBaseId: 'cb1-jp', sellerId: 's6', grade: 9, gradeCompany: 'TAG', price: 1500, images: [], freeShipping: false, language: 'JP', tags: ['graduada'], status: 'active', createdAt: '2024-12-12' },
 
   // cb2 — Pikachu VMAX Rainbow (2 listings)
@@ -56,7 +56,7 @@ export const listings: Listing[] = [
   { id: 'l9', cardBaseId: 'cb4', sellerId: 's4', grade: 9, gradeCompany: 'PSA', price: 8900, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-11-15' },
   { id: 'l10', cardBaseId: 'cb4', sellerId: 's1', grade: 10, gradeCompany: 'PSA', price: 13500, images: ['/cards/en/umbreon-vmax-swsh7-215.png', '/cards/en/umbreon-vmax-swsh7-215.png', '/cards/en/umbreon-vmax-swsh7-215.png', '/cards/en/umbreon-vmax-swsh7-215.png'], freeShipping: true, language: 'EN', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-01' },
   { id: 'l11', cardBaseId: 'cb4', sellerId: 's5', grade: 9, gradeCompany: 'Beckett', price: 8600, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-05' },
-  { id: 'l12', cardBaseId: 'cb4-jp', sellerId: 's2', grade: 9.5, gradeCompany: 'CGC', price: 10500, images: [], freeShipping: false, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-08' },
+  { id: 'l12', cardBaseId: 'cb4-jp', sellerId: 's2', grade: 10, gradeCompany: 'CGC', pristine: true, price: 18500, images: [], freeShipping: true, language: 'JP', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-08' },
   { id: 'l13', cardBaseId: 'cb4', sellerId: 's6', grade: 8, gradeCompany: 'TAG', price: 6200, images: [], freeShipping: false, language: 'PT', tags: ['alt-art', 'graduada'], status: 'active', createdAt: '2024-12-10' },
 
   // cb5 — Rayquaza VMAX Alt Art (2 listings)
@@ -101,6 +101,7 @@ export const salesHistory: Record<string, SaleRecord[]> = {
     { date: '2024-07-18', price: 1800, grade: 9, gradeCompany: 'PSA', sellerName: 'PokéCollector SP', buyerName: 'Mariana F.', language: 'PT' },
   ],
   cb4: [
+    { date: '2024-12-05', price: 17800, grade: 10, gradeCompany: 'CGC', pristine: true, sellerName: 'Graded Cards BR', buyerName: 'Ricardo L.', language: 'PT' },
     { date: '2024-11-01', price: 8500, grade: 9, gradeCompany: 'PSA', sellerName: 'Graded Cards BR', buyerName: 'Carlos T.', language: 'PT' },
     { date: '2024-09-15', price: 8200, grade: 9, gradeCompany: 'PSA', sellerName: 'CardMaster BR', buyerName: 'Fernanda R.', language: 'EN' },
     { date: '2024-08-20', price: 9100, grade: 10, gradeCompany: 'PSA', sellerName: 'TCG Premium', buyerName: 'Bruno M.', language: 'PT' },

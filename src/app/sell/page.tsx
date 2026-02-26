@@ -90,14 +90,15 @@ export default function Sell() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Empresa de grading</Label>
-                <Select value={gradeCompany} onValueChange={setGradeCompany}>
+                <Select value={gradeCompany} onValueChange={(v) => { setGradeCompany(v); if (grade === 'pristine-10' && !['CGC', 'TAG', 'Beckett'].includes(v)) setGrade(''); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PSA">PSA</SelectItem>
-                    <SelectItem value="BGS">BGS</SelectItem>
                     <SelectItem value="CGC">CGC</SelectItem>
-                    <SelectItem value="Beckett">Beckett</SelectItem>
                     <SelectItem value="TAG">TAG</SelectItem>
+                    <SelectItem value="Mana Fix">Mana Fix</SelectItem>
+                    <SelectItem value="BGA">BGA</SelectItem>
+                    <SelectItem value="Beckett">Beckett</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -106,6 +107,9 @@ export default function Sell() {
                 <Select value={grade} onValueChange={setGrade}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
+                    {['CGC', 'TAG', 'Beckett'].includes(gradeCompany) && (
+                      <SelectItem value="pristine-10">Pristine 10</SelectItem>
+                    )}
                     <SelectItem value="10">10</SelectItem>
                     <SelectItem value="9.5">9.5</SelectItem>
                     <SelectItem value="9">9</SelectItem>

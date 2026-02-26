@@ -88,7 +88,7 @@ export function ListingPhotoModal({ listing, seller, open, onClose }: ListingPho
 
           {/* Listing details */}
           <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-            <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
+            <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
             <span className="font-bold text-accent text-lg">
               R$ {listing.price.toLocaleString('pt-BR')}
             </span>

@@ -111,9 +111,9 @@ export default function CardDetailPage() {
   const cardTabs = (
     <Tabs defaultValue="buy" className="mt-4">
       <TabsList className="w-full justify-start overflow-x-auto overflow-y-hidden">
-        <TabsTrigger value="buy" className="shrink-0">Comprar ({cardListings.length})</TabsTrigger>
-        <TabsTrigger value="sales" className="shrink-0">Vendas</TabsTrigger>
-        <TabsTrigger value="prices" className="shrink-0">Preços</TabsTrigger>
+        <TabsTrigger value="buy" className="shrink-0"><span className="lg:hidden">Comprar ({cardListings.length})</span><span className="hidden lg:inline">Comprar Agora ({cardListings.length})</span></TabsTrigger>
+        <TabsTrigger value="sales" className="shrink-0"><span className="lg:hidden">Hist. Vendas</span><span className="hidden lg:inline">Histórico de Vendas</span></TabsTrigger>
+        <TabsTrigger value="prices" className="shrink-0"><span className="lg:hidden">Hist. Preços</span><span className="hidden lg:inline">Histórico de Preços</span></TabsTrigger>
       </TabsList>
 
       <TabsContent value="buy">

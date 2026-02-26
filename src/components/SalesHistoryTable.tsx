@@ -31,7 +31,7 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
               <TableCell className="text-sm">{new Date(sale.date).toLocaleDateString('pt-BR')}</TableCell>
               <TableCell className="text-sm">{sale.sellerName}</TableCell>
               <TableCell className="text-sm text-muted-foreground">{sale.buyerName}</TableCell>
-              <TableCell><GradeBadge grade={sale.grade} company={sale.gradeCompany} /></TableCell>
+              <TableCell><GradeBadge grade={sale.grade} company={sale.gradeCompany} pristine={sale.pristine} /></TableCell>
               <TableCell><FlagIcon code={sale.language} /></TableCell>
               <TableCell className="text-right font-semibold">R$ {sale.price.toLocaleString('pt-BR')}</TableCell>
             </TableRow>

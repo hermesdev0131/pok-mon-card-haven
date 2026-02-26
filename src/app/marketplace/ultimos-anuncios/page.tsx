@@ -69,7 +69,7 @@ export default function UltimosAnunciosPage() {
               <div className="flex items-center justify-between gap-3 w-full sm:w-auto pl-14 sm:pl-0">
                 <div className="flex items-center gap-2">
                   <FlagIcon code={listing.language} />
-                  <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
+                  <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-bold text-accent">R$ {listing.price.toLocaleString('pt-BR')}</p>

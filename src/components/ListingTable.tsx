@@ -96,7 +96,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
 
                   {/* Grade */}
                   <TableCell>
-                    <GradeBadge grade={listing.grade} company={listing.gradeCompany} />
+                    <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
                   </TableCell>
 
                   {/* Language */}
