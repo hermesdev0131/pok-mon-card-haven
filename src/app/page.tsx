@@ -228,14 +228,14 @@ export default function Home() {
                   <Star className="h-6 w-6 text-accent" />
                 </div>
                 <h3 className="font-semibold">Vendedores verificados</h3>
-                <p className="text-sm text-muted-foreground">Vendedores verificados contam com histórico comprovado e maior nível de confiança</p>
+                <p className="text-sm text-muted-foreground">Vendedores verificados contam com histórico comprovado e maior nível de confiança.</p>
               </div>
               <div className="space-y-3">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
                   <Sparkles className="h-6 w-6 text-accent" />
                 </div>
                 <h3 className="font-semibold">Preços transparentes</h3>
-                <p className="text-sm text-muted-foreground">Acompanhe preços com base em vendas reais do mercado</p>
+                <p className="text-sm text-muted-foreground">Acompanhe preços com base em vendas reais do mercado.</p>
               </div>
             </div>
           </div>
