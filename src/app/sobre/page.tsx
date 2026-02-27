@@ -14,23 +14,28 @@ export default function Sobre() {
       {/* Origin story */}
       <div className="space-y-6 text-sm text-muted-foreground leading-relaxed mb-12">
         <p>
-          O GradedBR nasceu da frustração de colecionadores brasileiros que queriam comprar e vender cartas
-          Pokémon graduadas com segurança — mas não encontravam uma plataforma confiável e especializada para isso.
+          O GradedBR nasceu das principais dores do mercado brasileiro de cartas Pokémon graduadas: a falta de
+          dados reais sobre vendas no Brasil, a dificuldade de entender o valor real das cartas e a ausência de
+          um lugar centralizado que reunisse as cartas disponíveis no mercado nacional.
         </p>
         <p>
-          Em grupos de WhatsApp e redes sociais, as negociações sempre tinham o mesmo problema: falta de
-          transparência nos preços, dificuldade de verificar a reputação do vendedor e nenhuma proteção
-          para o comprador. Golpes eram frequentes e a desconfiança impedia o mercado de crescer.
+          Por muito tempo, colecionadores negociaram principalmente em grupos de WhatsApp e redes sociais, sem
+          histórico estruturado de vendas e sem uma referência clara de preços. Muitas decisões acabavam baseadas
+          em percepções isoladas, comparações internacionais ou simples especulação, o que gerava insegurança e
+          dificultava o desenvolvimento do mercado.
         </p>
         <p>
-          Foi aí que decidimos criar o GradedBR — um marketplace feito por colecionadores, para colecionadores.
-          Um lugar onde cada carta graduada tem histórico de preço real, cada vendedor é verificado e cada
-          pagamento é protegido até a confirmação do recebimento.
+          Além disso, não existia uma plataforma que concentrasse, de forma organizada, as cartas graduadas
+          disponíveis no Brasil, tornando o processo de compra, venda e precificação ainda mais complexo.
         </p>
         <p>
-          Começamos pequenos, com um grupo de amigos que compartilhavam a paixão por cartas Pokémon e a
-          vontade de profissionalizar esse mercado no Brasil. Hoje, nossa missão é tornar a compra e venda
-          de cartas graduadas tão segura e transparente quanto deveria sempre ter sido.
+          Foi para mudar esse cenário que criamos o GradedBR um marketplace especializado que organiza dados
+          reais de vendas, centraliza ofertas e oferece um ambiente mais seguro, transparente e profissional
+          para compradores e vendedores.
+        </p>
+        <p>
+          Nosso objetivo vai além da intermediação: queremos fomentar o mercado brasileiro de cartas graduadas,
+          trazendo mais clareza, confiança e estrutura para que ele cresça de forma saudável e sustentável.
         </p>
       </div>
 
@@ -41,12 +46,12 @@ export default function Sobre() {
           {
             icon: ShieldCheck,
             title: 'Segurança acima de tudo',
-            desc: 'Pagamento protegido e vendedores verificados. Nenhuma transação é concluída sem a confirmação do comprador.',
+            desc: 'Pagamento protegido, vendedores verificados e transações seguras do início ao fim.',
           },
           {
             icon: Target,
             title: 'Transparência de preços',
-            desc: 'Histórico real de vendas e gráficos por grade e idioma. Nada de preços inflados ou informações ocultas.',
+            desc: 'Dados reais de vendas e histórico confiável para decisões baseadas em informação, não em especulação.',
           },
           {
             icon: Users,
@@ -56,7 +61,7 @@ export default function Sobre() {
           {
             icon: Heart,
             title: 'Paixão pelo hobby',
-            desc: 'Acreditamos que colecionar cartas Pokémon graduadas merece uma experiência à altura da dedicação de cada colecionador.',
+            desc: 'O GradedBR nasceu da nossa própria paixão pelo colecionismo e da vontade de ver o mercado brasileiro evoluir com mais transparência, segurança e reconhecimento para quem vive esse hobby.',
           },
         ].map(({ icon: Icon, title, desc }) => (
           <Card key={title} className="glass">

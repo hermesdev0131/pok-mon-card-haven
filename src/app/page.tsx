@@ -77,14 +77,14 @@ export default function Home() {
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm text-accent">
                 <Sparkles className="h-3.5 w-3.5" />
-                Marketplace #1 de cartas graduadas
+                1º marketplace brasileiro dedicado a cartas graduadas
               </div>
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl leading-[1.1]">
-                Encontre cartas{' '}
-                <span className="text-accent text-glow-accent">raras e exclusivas</span>
+                Encontre as cartas{' '}
+                <span className="text-accent text-glow-accent">mais desejadas do mercado</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                PSA, CGC, Beckett, TAG e mais — todas as grading companies. Preços transparentes, vendedores verificados e pagamento protegido.
+                PSA, CGC, Beckett, TAG, ManaFix, BGA e as principais grading companies reunidas em um só lugar. Transparência total, vendedores verificados e pagamento 100% protegido.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row pt-2">
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
@@ -221,21 +221,21 @@ export default function Home() {
                   <Shield className="h-6 w-6 text-accent" />
                 </div>
                 <h3 className="font-semibold">Pagamento protegido</h3>
-                <p className="text-sm text-muted-foreground">Valor retido até a confirmação do recebimento</p>
+                <p className="text-sm text-muted-foreground">Seu pagamento seguro do início ao fim. Valor liberado ao vendedor apenas após a confirmação do recebimento.</p>
               </div>
               <div className="space-y-3">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
                   <Star className="h-6 w-6 text-accent" />
                 </div>
                 <h3 className="font-semibold">Vendedores verificados</h3>
-                <p className="text-sm text-muted-foreground">Todos passam por processo de validação</p>
+                <p className="text-sm text-muted-foreground">Vendedores verificados contam com histórico comprovado e maior nível de confiança</p>
               </div>
               <div className="space-y-3">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
                   <Sparkles className="h-6 w-6 text-accent" />
                 </div>
                 <h3 className="font-semibold">Preços transparentes</h3>
-                <p className="text-sm text-muted-foreground">Histórico real de vendas e gráficos de preço</p>
+                <p className="text-sm text-muted-foreground">Acompanhe preços com base em vendas reais do mercado</p>
               </div>
             </div>
           </div>
@@ -249,10 +249,10 @@ export default function Home() {
           <div className="mx-auto max-w-2xl">
             <Accordion type="single" collapsible>
               {[
-                { q: 'Como funciona o pagamento protegido?', a: 'O valor fica retido até o comprador confirmar o recebimento da carta em bom estado.' },
+                { q: 'Como funciona o pagamento protegido?', a: 'O valor fica retido até que o comprador confirme o recebimento da carta. Assim, garantimos uma negociação segura para ambas as partes.' },
                 { q: 'Como sei que o vendedor é confiável?', a: 'Vendedores verificados passam por um processo de validação e têm histórico de vendas público.' },
-                { q: 'Posso devolver uma carta?', a: 'Sim, se a carta não corresponder ao anúncio, você pode abrir uma disputa e solicitar reembolso.' },
-                { q: 'Quais empresas de grading são aceitas?', a: 'Aceitamos cartas graduadas por PSA, CGC, Beckett, TAG, ARS, Mana Fix, BGA, Capy e Taverna.' },
+                { q: 'Posso devolver uma carta?', a: 'Em casos específicos, como divergência ou problema com o item, nossa equipe analisa a situação para garantir uma solução justa.' },
+                { q: 'Quais empresas de grading são aceitas?', a: 'Aceitamos cartas graduadas pelas principais grading companies, incluindo PSA, CGC, Beckett, TAG, ARS, AGS, ManaFix, BGA.' },
               ].map(({ q, a }, i) => (
                 <AccordionItem key={i} value={`item-${i}`}>
                   <AccordionTrigger className="text-sm font-medium">{q}</AccordionTrigger>

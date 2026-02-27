@@ -3,11 +3,11 @@ import { Shield, TrendingUp, CheckCircle, CreditCard, Package, HelpCircle, Badge
 
 export default function ComoFunciona() {
   const steps = [
-    { icon: TrendingUp, title: '1. Pesquise com dados reais', desc: 'Compare preços usando histórico de vendas concluídas e gráficos por grade. Sem achismos.' },
-    { icon: CheckCircle, title: '2. Compre de vendedores verificados', desc: 'Vendedores passam por verificação e têm avaliações públicas de compradores reais.' },
-    { icon: CreditCard, title: '3. Pague com segurança', desc: 'O pagamento fica retido até você receber e verificar a carta. Proteção total.' },
-    { icon: Package, title: '4. Receba e confirme', desc: 'Verifique a carta, confirme o recebimento e o pagamento é liberado ao vendedor.' },
-    { icon: HelpCircle, title: '5. Suporte dedicado', desc: 'Em caso de problemas, abra uma disputa. Nosso time analisa e resolve.' },
+    { icon: TrendingUp, title: '1. Pesquise com dados reais', desc: 'Compare preços com base em vendas reais e histórico de mercado, sem achismos.' },
+    { icon: CheckCircle, title: '2. Compre de vendedores verificados', desc: 'Vendedores verificados passam por validação e possuem histórico público na plataforma.' },
+    { icon: CreditCard, title: '3. Pague com segurança', desc: 'O pagamento fica retido até você receber e verificar a carta.' },
+    { icon: Package, title: '4. Receba e confirme', desc: 'Após sua confirmação, o pagamento é liberado ao vendedor.' },
+    { icon: HelpCircle, title: '5. Suporte dedicado', desc: 'Se houver qualquer problema, nosso time analisa e resolve com você.' },
   ];
 
   return (
@@ -50,7 +50,7 @@ export default function ComoFunciona() {
               <div>
                 <h3 className="font-semibold mb-1">Mínimo de 20 vendas concluídas</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Complete pelo menos 20 transações com sucesso na plataforma para comprovar sua experiência e confiabilidade.
+                  Construa histórico na plataforma com transações bem-sucedidas e comprovadas.
                 </p>
               </div>
             </CardContent>
@@ -64,7 +64,7 @@ export default function ComoFunciona() {
               <div>
                 <h3 className="font-semibold mb-1">Avaliação mínima de 4.5</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Mantenha uma nota média de pelo menos 4.5 estrelas nas avaliações dos compradores.
+                  Mantenha um alto padrão nos atendimentos e a satisfação dos compradores.
                 </p>
               </div>
             </CardContent>
@@ -78,7 +78,7 @@ export default function ComoFunciona() {
               <div>
                 <h3 className="font-semibold mb-1">Já é reconhecido pela comunidade?</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                  Vendedores de confiança já reconhecidos pela comunidade podem receber o selo ao se cadastrar. Entre em contato pelo WhatsApp com algumas informações para análise.
+                  Se você já possui reputação consolidada fora da plataforma, entre em contato pelo WhatsApp com algumas informações para análise antecipada do selo.
                 </p>
                 <a
                   href="https://wa.me/5511987813451"

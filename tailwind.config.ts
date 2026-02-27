@@ -96,6 +96,10 @@ export default {
           "0%, 100%": { boxShadow: "0 0 10px hsl(142 70% 50% / 0.2)" },
           "50%": { boxShadow: "0 0 20px hsl(142 70% 50% / 0.4), 0 0 40px hsl(142 70% 50% / 0.1)" },
         },
+        "pulse-glow-gold": {
+          "0%, 100%": { boxShadow: "0 0 10px hsl(43 96% 56% / 0.25)" },
+          "50%": { boxShadow: "0 0 20px hsl(43 96% 56% / 0.5), 0 0 40px hsl(43 96% 56% / 0.15)" },
+        },
         "shimmer": {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
@@ -107,6 +111,7 @@ export default {
         "float": "float 20s ease-in-out infinite",
         "float-slow": "float 30s ease-in-out infinite",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "pulse-glow-gold": "pulse-glow-gold 2s ease-in-out infinite",
         "shimmer": "shimmer 2s linear infinite",
       },
       backgroundImage: {

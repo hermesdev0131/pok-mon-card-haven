@@ -38,7 +38,7 @@ export function Footer() {
               <span className="text-foreground">BR</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              O marketplace brasileiro de cartas Pokémon graduadas com pagamento protegido.
+              O 1º marketplace brasileiro dedicado exclusivamente a cartas Pokémon graduadas, com segurança e transparência em cada negociação.
             </p>
           </div>
           <div>
