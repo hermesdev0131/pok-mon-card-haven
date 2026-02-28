@@ -420,9 +420,10 @@ export async function getPriceHistory(cardBaseId: string): Promise<PricePoint[]>
   const groups: Record<string, { total: number; count: number }> = {};
   for (const row of rows) {
     const d = new Date(row.sold_at);
-    const month = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    const monthName = d.toLocaleDateString('pt-BR', { month: 'short' })
       .replace('.', '')
       .replace(/^(\w)/, (_, c) => c.toUpperCase());
+    const month = `${monthName}/${String(d.getFullYear()).slice(-2)}`;
     const key = `${month}|${row.language}|${row.grade_company}|${row.grade}`;
     if (!groups[key]) groups[key] = { total: 0, count: 0 };
     groups[key].total += row.sale_price;

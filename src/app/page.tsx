@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Shield, ArrowRight, Flame, Zap, Ghost, Moon, Star, Sparkles, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithStats, getAllSellers } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 import type { CardBaseWithStats, Seller } from '@/types';
 
 const categoryDefs = [
@@ -125,7 +126,7 @@ export default function Home() {
                       <p className="text-sm text-muted-foreground">{featuredCard.cardBase.set} · #{featuredCard.cardBase.number}</p>
                       <p className="text-sm text-muted-foreground">{featuredCard.listingCount} anúncios</p>
                       <p className="text-2xl font-bold text-accent text-glow-accent">
-                        a partir de R$ {featuredCard.lowestPrice.toLocaleString('pt-BR')}
+                        a partir de R$ {formatPrice(featuredCard.lowestPrice)}
                       </p>
                     </div>
                   </div>

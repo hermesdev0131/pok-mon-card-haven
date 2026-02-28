@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { GradeBadge } from './GradeBadge';
 import { VerifiedBadge } from './VerifiedBadge';
 import { Camera } from 'lucide-react';
+import { formatPrice } from '@/lib/utils';
 import type { Listing, Seller } from '@/types';
 
 const IMAGE_LABELS = ['Frente', 'Verso', 'Label', 'Case'] as const;
@@ -90,7 +91,7 @@ export function ListingPhotoModal({ listing, seller, open, onClose }: ListingPho
           <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
             <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
             <span className="font-bold text-accent text-lg">
-              R$ {listing.price.toLocaleString('pt-BR')}
+              R$ {formatPrice(listing.price)}
             </span>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getSeller, getSellerListings, getSellerReviews } from '@/lib/api';
 import { Star, ShoppingBag, Calendar, Truck } from 'lucide-react';
+import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import { RequireAuth } from '@/components/RequireAuth';
 import type { CardBase, Listing, Seller, Review } from '@/types';
@@ -84,7 +85,7 @@ function SellerProfilePage() {
                 <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
               </div>
               <div className="text-right shrink-0">
-                <p className="font-bold text-accent">R$ {listing.price.toLocaleString('pt-BR')}</p>
+                <p className="font-bold text-accent">R$ {formatPrice(listing.price)}</p>
                 {listing.freeShipping && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
                     <Truck className="h-2.5 w-2.5" /> Frete grátis

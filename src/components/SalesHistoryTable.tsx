@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { GradeBadge } from './GradeBadge';
 import { FlagIcon } from './FlagIcon';
+import { formatPrice } from '@/lib/utils';
 import type { SaleRecord } from '@/types';
 
 export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
@@ -33,7 +34,7 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
               <TableCell className="text-sm text-muted-foreground">{sale.buyerName}</TableCell>
               <TableCell><GradeBadge grade={sale.grade} company={sale.gradeCompany} pristine={sale.pristine} /></TableCell>
               <TableCell><FlagIcon code={sale.language} /></TableCell>
-              <TableCell className="text-right font-semibold">R$ {sale.price.toLocaleString('pt-BR')}</TableCell>
+              <TableCell className="text-right font-semibold">R$ {formatPrice(sale.price)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

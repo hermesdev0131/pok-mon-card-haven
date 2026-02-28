@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getRecentSales } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 import type { SaleRecord, Seller } from '@/types';
 
 type SaleWithCard = SaleRecord & {
@@ -88,7 +89,7 @@ export default function UltimasVendasPage() {
                   <GradeBadge grade={sale.grade} company={sale.gradeCompany} pristine={sale.pristine} />
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-bold text-accent">R$ {sale.price.toLocaleString('pt-BR')}</p>
+                  <p className="font-bold text-accent">R$ {formatPrice(sale.price)}</p>
                   <p className="text-[11px] text-muted-foreground">
                     {new Date(sale.date).toLocaleDateString('pt-BR')}
                   </p>

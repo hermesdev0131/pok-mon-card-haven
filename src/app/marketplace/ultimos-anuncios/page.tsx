@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getRecentListings } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 import type { CardBase, Listing, Seller } from '@/types';
 
 type RecentListing = Listing & { cardBase: CardBase; seller?: Seller };
@@ -87,7 +88,7 @@ export default function UltimosAnunciosPage() {
                     <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-bold text-accent">R$ {listing.price.toLocaleString('pt-BR')}</p>
+                    <p className="font-bold text-accent">R$ {formatPrice(listing.price)}</p>
                     {listing.freeShipping && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
                         <Truck className="h-2.5 w-2.5" /> Frete grátis

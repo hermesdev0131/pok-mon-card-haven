@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { formatPrice } from '@/lib/utils';
 import type { CardBaseWithStats } from '@/types';
 
 interface CardBaseCardProps {
@@ -54,7 +55,7 @@ export function CardBaseCard({ item }: CardBaseCardProps) {
 
           <div className="pt-1">
             <p className="text-sm font-bold text-accent">
-              a partir de R$ {lowestPrice.toLocaleString('pt-BR')}
+              a partir de R$ {formatPrice(lowestPrice)}
             </p>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { RequireAuth } from '@/components/RequireAuth';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getMyOrders } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, User, BadgeCheck } from 'lucide-react';
 import type { Order } from '@/types';
@@ -88,7 +89,7 @@ function OrderList({ orders }: { orders: Order[] }) {
               </p>
             </div>
             <div className="text-right">
-              <p className="font-semibold text-sm">R$ {order.price.toLocaleString('pt-BR')}</p>
+              <p className="font-semibold text-sm">R$ {formatPrice(order.price)}</p>
               <StatusPill status={order.status} />
             </div>
           </CardContent>

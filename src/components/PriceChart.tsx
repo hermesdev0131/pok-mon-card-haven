@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FlagIcon } from '@/components/FlagIcon';
+import { formatPrice } from '@/lib/utils';
 import type { PricePoint, CardLanguage } from '@/types';
 
 interface PriceChartProps {
@@ -246,7 +247,7 @@ export function PriceChart({ data }: PriceChartProps) {
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$${v}`} />
+              <YAxis width={90} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `R$ ${formatPrice(v)}`} />
               <Tooltip
                 contentStyle={{
                   background: 'hsla(220, 10%, 10%, 0.9)',
@@ -258,7 +259,7 @@ export function PriceChart({ data }: PriceChartProps) {
                 }}
                 formatter={(value, name, props) => {
                   const count = props.payload[`${name}_count`];
-                  const priceStr = `R$ ${Number(value).toLocaleString('pt-BR')}`;
+                  const priceStr = `R$ ${formatPrice(Number(value))}`;
                   return [count != null ? `${priceStr} (${count} ${count === 1 ? 'venda' : 'vendas'})` : priceStr, name];
                 }}
                 itemStyle={{ padding: '2px 0' }}

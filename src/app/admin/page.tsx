@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { getAllOrders, getAllSellers } from '@/lib/api';
 import { DollarSign, Package, Users, TrendingUp } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
+import { formatPrice } from '@/lib/utils';
 import type { Order, Seller } from '@/types';
 
 export default function Admin() {
@@ -22,7 +23,7 @@ export default function Admin() {
   }, []);
 
   const stats = [
-    { icon: DollarSign, label: 'Volume transacionado', value: `R$ ${orders.reduce((a, o) => a + o.price, 0).toLocaleString('pt-BR')}` },
+    { icon: DollarSign, label: 'Volume transacionado', value: `R$ ${formatPrice(orders.reduce((a, o) => a + o.price, 0))}` },
     { icon: Package, label: 'Vendas concluídas', value: orders.filter(o => o.status === 'entregue').length },
     { icon: Users, label: 'Usuários', value: 42 },
     { icon: TrendingUp, label: 'Cartas ativas', value: 8 },
@@ -77,7 +78,7 @@ export default function Admin() {
                     <TableCell className="text-sm">{order.cardName}</TableCell>
                     <TableCell className="text-sm">{order.buyerName}</TableCell>
                     <TableCell className="text-sm">{order.sellerName}</TableCell>
-                    <TableCell className="font-semibold text-sm">R$ {order.price.toLocaleString('pt-BR')}</TableCell>
+                    <TableCell className="font-semibold text-sm">R$ {formatPrice(order.price)}</TableCell>
                     <TableCell><StatusPill status={order.status} /></TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm">Detalhes</Button>

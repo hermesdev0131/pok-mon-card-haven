@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Truck, ShoppingCart, Image as ImageIcon, Star, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getQuestionsForListing } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 import type { Listing, Seller, Question } from '@/types';
 
 interface ListingTableProps {
@@ -107,7 +108,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                   {/* Price */}
                   <TableCell className="text-right">
                     <span className="font-bold text-accent">
-                      R$ {listing.price.toLocaleString('pt-BR')}
+                      R$ {formatPrice(listing.price)}
                     </span>
                   </TableCell>
 
