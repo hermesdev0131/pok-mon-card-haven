@@ -20,6 +20,13 @@ type ConfirmedSaleRow = Database['public']['Tables']['confirmed_sales']['Row'];
 
 const supabase = createClient();
 
+// Log Supabase query errors to console (helps debug auth/RLS failures)
+function logIfError(label: string, error: { message: string; code?: string } | null) {
+  if (error) {
+    console.error(`[api] ${label}:`, error.message, error.code ?? '');
+  }
+}
+
 // ════════════════════════════════════════════════
 // Helpers: batch-fetch profiles & seller_profiles
 // ════════════════════════════════════════════════
@@ -27,7 +34,8 @@ const supabase = createClient();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchProfilesByIds(ids: string[]): Promise<Record<string, any>> {
   if (!ids.length) return {};
-  const { data } = await supabase.from('profiles').select('*').in('id', Array.from(new Set(ids)));
+  const { data, error } = await supabase.from('profiles').select('*').in('id', Array.from(new Set(ids)));
+  logIfError('fetchProfilesByIds', error);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const map: Record<string, any> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,10 +47,11 @@ async function fetchProfilesByIds(ids: string[]): Promise<Record<string, any>> {
 async function fetchSellerProfilesByIds(ids: string[]): Promise<Record<string, any>> {
   if (!ids.length) return {};
   const unique = Array.from(new Set(ids));
-  const [{ data: sellers }, profiles] = await Promise.all([
+  const [{ data: sellers, error: sErr }, profiles] = await Promise.all([
     supabase.from('seller_profiles').select('*').in('id', unique),
     fetchProfilesByIds(unique),
   ]);
+  logIfError('fetchSellerProfilesByIds', sErr);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const map: Record<string, any> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -172,14 +181,16 @@ export async function getCardBasesWithStats(filters?: {
   if (filters?.type) {
     cbQuery = cbQuery.eq('type', filters.type as string);
   }
-  const { data: cardRows } = await cbQuery;
+  const { data: cardRows, error: cbErr } = await cbQuery;
+  logIfError('getCardBasesWithStats.card_bases', cbErr);
   const cardBaseRows = (cardRows ?? []) as CardBaseRow[];
   if (!cardBaseRows.length) return [];
 
-  const { data: listingRows } = await supabase
+  const { data: listingRows, error: lErr } = await supabase
     .from('listings')
     .select('*')
     .eq('status', 'active' as string);
+  logIfError('getCardBasesWithStats.listings', lErr);
 
   const listingsArr = (listingRows ?? []) as ListingRow[];
 
@@ -208,11 +219,12 @@ export async function getCardBasesWithStats(filters?: {
 }
 
 export async function getCardBase(id: string): Promise<CardBase | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('card_bases')
     .select('*')
     .eq('id', id)
     .single();
+  logIfError('getCardBase', error);
   return data ? mapCardBase(data) : null;
 }
 
@@ -221,12 +233,13 @@ export async function getCardBase(id: string): Promise<CardBase | null> {
 // ════════════════════════════════════════════════
 
 export async function getListingsForCard(cardBaseId: string): Promise<Listing[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('listings')
     .select('*')
     .eq('card_base_id', cardBaseId)
     .eq('status', 'active' as string)
     .order('price', { ascending: true });
+  logIfError('getListingsForCard', error);
   return ((data ?? []) as ListingRow[]).map(mapListing);
 }
 
@@ -235,12 +248,13 @@ export async function getRecentListings(): Promise<
   (Listing & { cardBase: CardBase; seller?: Seller })[]
 > {
   // card_bases join works (direct FK), but seller_profiles doesn't
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('listings')
     .select('*, card_bases(*)')
     .eq('status', 'active' as string)
     .order('created_at', { ascending: false })
     .limit(30);
+  logIfError('getRecentListings', error);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = (data ?? []) as any[];
@@ -303,7 +317,8 @@ export async function getSellerReviews(sellerId: string): Promise<Review[]> {
 }
 
 export async function getAllSellers(): Promise<Seller[]> {
-  const { data } = await supabase.from('seller_profiles').select('*');
+  const { data, error } = await supabase.from('seller_profiles').select('*');
+  logIfError('getAllSellers', error);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = (data ?? []) as any[];
   if (!rows.length) return [];
@@ -357,11 +372,12 @@ export async function getAllReviews(): Promise<Review[]> {
 // ════════════════════════════════════════════════
 
 export async function getSalesHistory(cardBaseId: string): Promise<SaleRecord[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('confirmed_sales')
     .select('*')
     .eq('card_base_id', cardBaseId)
     .order('sold_at', { ascending: false });
+  logIfError('getSalesHistory', error);
 
   const rows = (data ?? []) as ConfirmedSaleRow[];
   if (!rows.length) return [];
@@ -391,11 +407,12 @@ export async function getSalesHistory(cardBaseId: string): Promise<SaleRecord[]>
 }
 
 export async function getPriceHistory(cardBaseId: string): Promise<PricePoint[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('confirmed_sales')
     .select('*')
     .eq('card_base_id', cardBaseId)
     .order('sold_at', { ascending: true });
+  logIfError('getPriceHistory', error);
 
   const rows = (data ?? []) as ConfirmedSaleRow[];
   if (!rows.length) return [];
@@ -429,11 +446,12 @@ export async function getPriceHistory(cardBaseId: string): Promise<PricePoint[]>
 export async function getRecentSales(): Promise<
   (SaleRecord & { cardBaseId: string; cardName: string; cardSet: string; imageUrl?: string; seller?: Seller })[]
 > {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('confirmed_sales')
     .select('*')
     .order('sold_at', { ascending: false })
     .limit(30);
+  logIfError('getRecentSales', error);
 
   const rows = (data ?? []) as ConfirmedSaleRow[];
   if (!rows.length) return [];

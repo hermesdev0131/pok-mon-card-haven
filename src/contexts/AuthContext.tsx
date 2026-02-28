@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { Profile, SellerProfile } from "@/types/database";
@@ -24,46 +32,171 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    sellerProfile: null,
-    loading: true,
-    isAuthenticated: false,
-    isSeller: false,
-    isAdmin: false,
-  });
+// Singleton client — createBrowserClient already deduplicates, but we
+// keep a stable reference so the rest of the provider never recreates it.
+const supabase = createClient();
 
-  const supabase = createClient();
+function buildAuthState(
+  user: User | null,
+  profile: Profile | null,
+  sellerProfile: SellerProfile | null,
+): AuthState {
+  return {
+    user,
+    profile,
+    sellerProfile,
+    loading: false,
+    isAuthenticated: !!user,
+    isSeller: profile?.role === "seller" || profile?.role === "admin",
+    isAdmin: profile?.role === "admin",
+  };
+}
 
-  async function fetchProfile(userId: string) {
-    const { data } = await supabase
+async function fetchProfile(userId: string) {
+  try {
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .single();
+
+    if (error) {
+      console.warn("[AuthContext] fetchProfile error:", error.message);
+      return { profile: null as Profile | null, sellerProfile: null as SellerProfile | null };
+    }
 
     const profile = data as Profile | null;
     const role = profile?.role;
 
     let sellerProfile: SellerProfile | null = null;
     if (role === "seller" || role === "admin") {
-      const { data: sp } = await supabase
+      const { data: sp, error: spErr } = await supabase
         .from("seller_profiles")
         .select("*")
         .eq("id", userId)
         .single();
+      if (spErr) {
+        console.warn("[AuthContext] fetchSellerProfile error:", spErr.message);
+      }
       sellerProfile = sp as SellerProfile | null;
     }
 
     return { profile, sellerProfile };
+  } catch (err) {
+    console.warn("[AuthContext] fetchProfile unexpected error:", err);
+    return { profile: null as Profile | null, sellerProfile: null as SellerProfile | null };
   }
+}
 
-  async function refreshProfile() {
-    if (!state.user) return;
-    const { profile, sellerProfile } = await fetchProfile(state.user.id);
-    if (profile) {
+const ANONYMOUS_STATE: AuthState = {
+  user: null,
+  profile: null,
+  sellerProfile: null,
+  loading: false,
+  isAuthenticated: false,
+  isSeller: false,
+  isAdmin: false,
+};
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<AuthState>({
+    ...ANONYMOUS_STATE,
+    loading: true,
+  });
+
+  // Track mounted to avoid state updates after unmount
+  const mountedRef = useRef(true);
+  // Track current user id to skip redundant profile fetches (e.g. TOKEN_REFRESHED)
+  const currentUserIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    let cancelled = false;
+
+    // Get initial session
+    supabase.auth.getUser().then(async ({ data: { user }, error }) => {
+      if (cancelled) return;
+
+      if (error && !error.message.includes("Auth session missing")) {
+        console.warn("[AuthContext] getUser error:", error.message);
+      }
+
+      if (user) {
+        currentUserIdRef.current = user.id;
+        const { profile, sellerProfile } = await fetchProfile(user.id);
+        if (!cancelled) {
+          setState(buildAuthState(user, profile, sellerProfile));
+        }
+      } else {
+        currentUserIdRef.current = null;
+        if (!cancelled) {
+          setState(ANONYMOUS_STATE);
+        }
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
+
+      // TOKEN_REFRESHED: user hasn't changed, skip re-fetching profile
+      if (event === "TOKEN_REFRESHED" && session?.user?.id === currentUserIdRef.current) {
+        return;
+      }
+
+      if (session?.user) {
+        const userId = session.user.id;
+        // Only re-fetch profile if user actually changed
+        if (userId !== currentUserIdRef.current || event === "SIGNED_IN") {
+          currentUserIdRef.current = userId;
+          const { profile, sellerProfile } = await fetchProfile(userId);
+          if (!cancelled) {
+            setState(buildAuthState(session.user, profile, sellerProfile));
+          }
+        }
+      } else {
+        currentUserIdRef.current = null;
+        if (!cancelled) {
+          setState(ANONYMOUS_STATE);
+        }
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      mountedRef.current = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error?.message ?? null };
+  }, []);
+
+  const signUp = useCallback(
+    async (email: string, password: string, fullName: string) => {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      });
+      return { error: error?.message ?? null };
+    },
+    [],
+  );
+
+  const signOutFn = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
+
+  const refreshProfileFn = useCallback(async () => {
+    const uid = currentUserIdRef.current;
+    if (!uid) return;
+    const { profile, sellerProfile } = await fetchProfile(uid);
+    if (profile && mountedRef.current) {
       setState((prev) => ({
         ...prev,
         profile,
@@ -72,89 +205,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin: profile.role === "admin",
       }));
     }
-  }
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user) {
-        const { profile, sellerProfile } = await fetchProfile(user.id);
-        setState({
-          user,
-          profile,
-          sellerProfile,
-          loading: false,
-          isAuthenticated: true,
-          isSeller: profile?.role === "seller" || profile?.role === "admin",
-          isAdmin: profile?.role === "admin",
-        });
-      } else {
-        setState((prev) => ({ ...prev, loading: false }));
-      }
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const { profile, sellerProfile } = await fetchProfile(session.user.id);
-        setState({
-          user: session.user,
-          profile,
-          sellerProfile,
-          loading: false,
-          isAuthenticated: true,
-          isSeller: profile?.role === "seller" || profile?.role === "admin",
-          isAdmin: profile?.role === "admin",
-        });
-      } else {
-        setState({
-          user: null,
-          profile: null,
-          sellerProfile: null,
-          loading: false,
-          isAuthenticated: false,
-          isSeller: false,
-          isAdmin: false,
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function signIn(email: string, password: string) {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error: error?.message ?? null };
-  }
-
-  async function signUp(email: string, password: string, fullName: string) {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-      },
-    });
-    return { error: error?.message ?? null };
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-  }
-
-  return (
-    <AuthContext.Provider
-      value={{ ...state, signIn, signUp, signOut, refreshProfile }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Memoize context value to prevent cascading re-renders on every provider render
+  const value = useMemo<AuthContextType>(
+    () => ({
+      ...state,
+      signIn,
+      signUp,
+      signOut: signOutFn,
+      refreshProfile: refreshProfileFn,
+    }),
+    [state, signIn, signUp, signOutFn, refreshProfileFn],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

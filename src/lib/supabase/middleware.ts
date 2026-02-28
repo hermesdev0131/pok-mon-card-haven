@@ -33,8 +33,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session — important for Server Components
-  await supabase.auth.getUser();
+  // Refresh the session — important for Server Components.
+  // Wrap in try/catch so auth service failures (500, network errors)
+  // don't block page navigation.
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // Auth refresh failed — let the page load anyway (client-side will retry)
+  }
 
   return supabaseResponse;
 }
