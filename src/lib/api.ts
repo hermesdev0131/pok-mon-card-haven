@@ -739,22 +739,21 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
     imageUrls.push(urlData.publicUrl);
   }
 
-  const { error: insertError } = await supabase
-    .from('listings')
-    .insert({
-      id: listingId,
-      seller_id: user.id,
-      card_base_id: input.cardBaseId,
-      grade: input.grade,
-      grade_company: input.gradeCompany,
-      pristine: input.pristine,
-      language: input.language,
-      price: input.price,
-      free_shipping: input.freeShipping,
-      condition_notes: input.conditionNotes ?? null,
-      images: imageUrls,
-      status: 'active' as const,
-    });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: insertError } = await (supabase.from('listings') as any).insert({
+    id: listingId,
+    seller_id: user.id,
+    card_base_id: input.cardBaseId,
+    grade: input.grade,
+    grade_company: input.gradeCompany,
+    pristine: input.pristine,
+    language: input.language,
+    price: input.price,
+    free_shipping: input.freeShipping,
+    condition_notes: input.conditionNotes ?? null,
+    images: imageUrls,
+    status: 'active',
+  });
 
   if (insertError) {
     logIfError('createListing.insert', insertError);
@@ -785,11 +784,8 @@ export async function updateListing(
   if (input.conditionNotes !== undefined) updates.condition_notes = input.conditionNotes;
   if (input.status !== undefined) updates.status = input.status;
 
-  const { error } = await supabase
-    .from('listings')
-    .update(updates)
-    .eq('id', listingId)
-    .eq('seller_id', user.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('listings') as any).update(updates).eq('id', listingId).eq('seller_id', user.id);
 
   if (error) {
     logIfError('updateListing', error);
@@ -851,20 +847,17 @@ export async function createOrder(listingId: string): Promise<CreateOrderResult>
   const platformFee = Math.round(price * PLATFORM_FEE_RATE);
   const sellerPayout = price - platformFee;
 
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      listing_id: listingId,
-      buyer_id: user.id,
-      seller_id: (listing as { seller_id: string }).seller_id,
-      price,
-      shipping_cost: 0,
-      platform_fee: platformFee,
-      seller_payout: sellerPayout,
-      status: 'awaiting_payment' as const,
-    })
-    .select('id')
-    .single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: order, error: orderError } = await (supabase.from('orders') as any).insert({
+    listing_id: listingId,
+    buyer_id: user.id,
+    seller_id: (listing as { seller_id: string }).seller_id,
+    price,
+    shipping_cost: 0,
+    platform_fee: platformFee,
+    seller_payout: sellerPayout,
+    status: 'awaiting_payment',
+  }).select('id').single();
 
   if (orderError) {
     logIfError('createOrder', orderError);
@@ -872,7 +865,8 @@ export async function createOrder(listingId: string): Promise<CreateOrderResult>
     return { success: false, error: orderError.message };
   }
 
-  await supabase.from('listings').update({ status: 'reserved' }).eq('id', listingId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('listings') as any).update({ status: 'reserved' }).eq('id', listingId);
 
   return { success: true, orderId: (order as { id: string }).id };
 }
