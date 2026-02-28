@@ -113,29 +113,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     mountedRef.current = true;
     let cancelled = false;
 
-    // Get initial session
-    supabase.auth.getUser().then(async ({ data: { user }, error }) => {
+    // Get initial session — attempt refresh first so an expired access token
+    // is renewed before we try to fetch the profile.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (cancelled) return;
 
-      if (error && !error.message.includes("Auth session missing")) {
-        console.warn("[AuthContext] getUser error:", error.message);
-        // Stale JWT referencing a deleted user — clear the invalid session
-        if (error.message.includes("does not exist")) {
+      if (session) {
+        // Proactively refresh the access token on mount so we never start
+        // with a token that is about to expire.
+        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+        if (refreshErr || !refreshed.session) {
+          // Refresh token is expired or invalid — clean slate.
           await supabase.auth.signOut();
+          if (!cancelled) setState(ANONYMOUS_STATE);
+          return;
         }
-      }
-
-      if (user) {
+        const user = refreshed.session.user;
         currentUserIdRef.current = user.id;
         const { profile, sellerProfile } = await fetchProfile(user.id);
-        if (!cancelled) {
-          setState(buildAuthState(user, profile, sellerProfile));
-        }
+        if (!cancelled) setState(buildAuthState(user, profile, sellerProfile));
       } else {
         currentUserIdRef.current = null;
-        if (!cancelled) {
-          setState(ANONYMOUS_STATE);
-        }
+        if (!cancelled) setState(ANONYMOUS_STATE);
       }
     });
 
@@ -147,6 +146,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // TOKEN_REFRESHED: user hasn't changed, skip re-fetching profile
       if (event === "TOKEN_REFRESHED" && session?.user?.id === currentUserIdRef.current) {
+        return;
+      }
+
+      // SIGNED_OUT: refresh token expired or was invalidated — reload the page
+      // so the browser client resets to a clean anonymous state. Without this,
+      // the Supabase client keeps sending the broken session on every request.
+      if (event === "SIGNED_OUT") {
+        currentUserIdRef.current = null;
+        if (!cancelled) setState(ANONYMOUS_STATE);
+        // Hard reload clears the in-memory Supabase client state
+        window.location.reload();
         return;
       }
 
