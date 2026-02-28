@@ -119,20 +119,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return;
 
       if (session) {
+        console.info('[Auth] Session found on mount — refreshing token');
         // Proactively refresh the access token on mount so we never start
         // with a token that is about to expire.
         const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
         if (refreshErr || !refreshed.session) {
-          // Refresh token is expired or invalid — clean slate.
-          await supabase.auth.signOut();
+          // Refresh token is expired or invalid — clear local state only.
+          // Do NOT call supabase.auth.signOut() here: it would fire SIGNED_OUT
+          // which previously triggered window.location.reload(), causing a
+          // race condition with cookie clearing and an infinite reload loop.
+          console.warn('[Auth] Token refresh failed on mount — clearing session locally.', refreshErr?.message ?? 'no session returned');
           if (!cancelled) setState(ANONYMOUS_STATE);
           return;
         }
+        console.info('[Auth] Token refreshed successfully on mount');
         const user = refreshed.session.user;
         currentUserIdRef.current = user.id;
         const { profile, sellerProfile } = await fetchProfile(user.id);
         if (!cancelled) setState(buildAuthState(user, profile, sellerProfile));
       } else {
+        console.info('[Auth] No session on mount — anonymous state');
         currentUserIdRef.current = null;
         if (!cancelled) setState(ANONYMOUS_STATE);
       }
@@ -146,17 +152,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // TOKEN_REFRESHED: user hasn't changed, skip re-fetching profile
       if (event === "TOKEN_REFRESHED" && session?.user?.id === currentUserIdRef.current) {
+        console.info('[Auth] Token refreshed in background — session still active');
         return;
       }
 
-      // SIGNED_OUT: refresh token expired or was invalidated — reload the page
-      // so the browser client resets to a clean anonymous state. Without this,
-      // the Supabase client keeps sending the broken session on every request.
+      // SIGNED_OUT: session was cleared (explicit logout or server invalidation).
+      // setState is enough — React re-renders and RequireAuth redirects to /login.
+      // DO NOT call window.location.reload() here: it races with cookie clearing,
+      // causing getSession() on the next load to find stale cookies, which triggers
+      // refreshSession() on an invalidated token, and loops back to SIGNED_OUT → reload.
       if (event === "SIGNED_OUT") {
+        console.warn('[Auth] SIGNED_OUT event received — clearing auth state. URL:', window.location.pathname);
         currentUserIdRef.current = null;
         if (!cancelled) setState(ANONYMOUS_STATE);
-        // Hard reload clears the in-memory Supabase client state
-        window.location.reload();
         return;
       }
 
@@ -164,6 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userId = session.user.id;
         // Only re-fetch profile if user actually changed
         if (userId !== currentUserIdRef.current || event === "SIGNED_IN") {
+          console.info('[Auth] SIGNED_IN — fetching profile for user', userId);
           currentUserIdRef.current = userId;
           const { profile, sellerProfile } = await fetchProfile(userId);
           if (!cancelled) {
