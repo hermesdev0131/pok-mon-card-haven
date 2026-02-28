@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { GradeBadge } from './GradeBadge';
 import { VerifiedBadge } from './VerifiedBadge';
@@ -9,10 +10,11 @@ import { QnA } from './QnA';
 import { Button } from '@/components/ui/button';
 import { FlagIcon } from './FlagIcon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Truck, ShoppingCart, Image as ImageIcon, Star, MessageCircle } from 'lucide-react';
+import { Truck, ShoppingCart, Image as ImageIcon, Star, MessageCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { getQuestionsForListing } from '@/lib/api';
+import { getQuestionsForListing, createOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Listing, Seller, Question } from '@/types';
 
 interface ListingTableProps {
@@ -21,9 +23,21 @@ interface ListingTableProps {
 }
 
 export function ListingTable({ listings, sellers }: ListingTableProps) {
+  const router = useRouter();
+  const { user } = useAuth();
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [qnaListing, setQnaListing] = useState<Listing | null>(null);
   const [qnaQuestions, setQnaQuestions] = useState<Question[]>([]);
+  const [buyingId, setBuyingId] = useState<string | null>(null);
+
+  const handleBuy = async (listing: Listing) => {
+    if (!user) { router.push('/login'); return; }
+    setBuyingId(listing.id);
+    const result = await createOrder(listing.id);
+    setBuyingId(null);
+    if (!result.success) { alert(result.error); return; }
+    router.push(`/checkout/${result.orderId}`);
+  };
 
   useEffect(() => {
     if (qnaListing) {
@@ -136,12 +150,13 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                       <Button
                         size="icon"
                         className="h-8 w-8 bg-accent text-accent-foreground hover:bg-accent/90"
-                        asChild
                         title="Comprar"
+                        disabled={buyingId === listing.id}
+                        onClick={() => handleBuy(listing)}
                       >
-                        <Link href={`/checkout/o-new`}>
-                          <ShoppingCart className="h-4 w-4" />
-                        </Link>
+                        {buyingId === listing.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <ShoppingCart className="h-4 w-4" />}
                       </Button>
                     </div>
                   </TableCell>

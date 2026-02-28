@@ -1,97 +1,111 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Shield, Truck, MessageCircle } from 'lucide-react';
+import { Shield, MessageCircle, Loader2 } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
+import { StatusPill } from '@/components/StatusPill';
+import Link from 'next/link';
+import { getOrder } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
+import type { Order } from '@/types';
 
 export default function Checkout() {
+  const params = useParams<{ orderId: string }>();
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (params.orderId) {
+      getOrder(params.orderId).then(o => {
+        setOrder(o);
+        setLoading(false);
+      });
+    }
+  }, [params.orderId]);
+
   return (
     <RequireAuth>
       <div className="container mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Finalizar compra</h1>
+        <h1 className="text-2xl font-bold mb-6">Finalizar compra</h1>
 
-      {/* Item summary */}
-      <Card className="glass mb-6">
-        <CardContent className="flex items-center gap-4 p-4">
-          <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30">🃏</div>
-          <div className="flex-1">
-            <p className="font-semibold">Charizard VMAX PSA 10</p>
-            <p className="text-sm text-muted-foreground">Vendedor: CardMaster BR</p>
+        {loading && (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-          <p className="text-xl font-bold text-accent">R$ 2.850</p>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Shipping */}
-      <Card className="glass mb-6">
-        <CardContent className="p-4 space-y-4">
-          <h3 className="font-semibold">Calcular frete</h3>
-          <div className="flex gap-2">
-            <Input placeholder="CEP" maxLength={9} className="w-32" />
-            <Button variant="outline" size="sm">Calcular</Button>
+        {!loading && !order && (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground mb-4">Pedido não encontrado.</p>
+            <Button asChild variant="outline"><Link href="/me">Ver meus pedidos</Link></Button>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3 cursor-pointer hover:border-accent/40 transition-colors">
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Sedex</p>
-                  <p className="text-xs text-muted-foreground">3-5 dias úteis</p>
-                </div>
-              </div>
-              <p className="font-semibold text-sm">R$ 28,90</p>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-white/[0.06] p-3 cursor-pointer hover:border-accent/40 transition-colors">
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">PAC</p>
-                  <p className="text-xs text-muted-foreground">7-12 dias úteis</p>
-                </div>
-              </div>
-              <p className="font-semibold text-sm">R$ 18,50</p>
+        )}
+
+        {!loading && order && order.status !== 'aguardando_pagamento' && (
+          <div className="text-center py-16">
+            <p className="text-sm text-muted-foreground mb-2">Pedido #{order.id.slice(0, 8)}</p>
+            <p className="font-semibold mb-4">{order.cardName}</p>
+            <StatusPill status={order.status} />
+            <div className="mt-6">
+              <Button asChild variant="outline"><Link href="/me">Ver meus pedidos</Link></Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
 
-      {/* Summary */}
-      <Card className="glass mb-6">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>R$ 2.850,00</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Frete</span>
-            <span>R$ 28,90</span>
-          </div>
-          <Separator />
-          <div className="flex justify-between font-bold text-lg">
-            <span>Total</span>
-            <span className="text-accent">R$ 2.878,90</span>
-          </div>
-        </CardContent>
-      </Card>
+        {!loading && order && order.status === 'aguardando_pagamento' && (
+          <>
+            {/* Item summary */}
+            <Card className="glass mb-6">
+              <CardContent className="flex items-center gap-4 p-4">
+                <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30">🃏</div>
+                <div className="flex-1">
+                  <p className="font-semibold">{order.cardName}</p>
+                  <p className="text-sm text-muted-foreground">Vendedor: {order.sellerName}</p>
+                </div>
+                <p className="text-xl font-bold text-accent">R$ {formatPrice(order.price)}</p>
+              </CardContent>
+            </Card>
 
-      <Button size="lg" className="w-full mb-4 bg-accent text-accent-foreground hover:bg-accent/90 glow-accent">
-        Pagar com Mercado Pago
-      </Button>
+            {/* Summary */}
+            <Card className="glass mb-6">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>R$ {formatPrice(order.price)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Frete</span>
+                  <span className="text-muted-foreground">A calcular</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span className="text-accent">R$ {formatPrice(order.price)}</span>
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Trust signals */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <Shield className="h-4 w-4 text-accent shrink-0" />
-          <span>Pagamento retido até confirmação do recebimento</span>
-        </div>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <MessageCircle className="h-4 w-4 text-accent shrink-0" />
-          <span>Suporte via WhatsApp em caso de problemas</span>
-        </div>
-      </div>
+            <Button size="lg" className="w-full mb-4" disabled>
+              Pagar com Mercado Pago (em breve)
+            </Button>
+
+            {/* Trust signals */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Shield className="h-4 w-4 text-accent shrink-0" />
+                <span>Pagamento retido até confirmação do recebimento</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <MessageCircle className="h-4 w-4 text-accent shrink-0" />
+                <span>Suporte via WhatsApp em caso de problemas</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </RequireAuth>
   );

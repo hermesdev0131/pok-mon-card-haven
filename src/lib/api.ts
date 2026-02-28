@@ -10,6 +10,7 @@ import type {
   Question,
   Review,
   OrderStatus,
+  GradeCompany,
 } from '@/types';
 import type { Database } from '@/types/database';
 
@@ -668,4 +669,201 @@ export async function getSellersForListings(sellerIds: string[]): Promise<Record
     result[id] = mapSeller(row);
   }
   return result;
+}
+
+// ════════════════════════════════════════════════
+// Card Base Search (for sell form)
+// ════════════════════════════════════════════════
+
+export async function searchCardBases(query: string): Promise<CardBase[]> {
+  if (!query.trim()) return [];
+  const { data, error } = await supabase
+    .from('card_bases')
+    .select('*')
+    .or(`name.ilike.%${query}%,set_name.ilike.%${query}%,number.ilike.%${query}%`)
+    .order('name', { ascending: true })
+    .limit(20);
+  logIfError('searchCardBases', error);
+  return ((data ?? []) as CardBaseRow[]).map(mapCardBase);
+}
+
+// ════════════════════════════════════════════════
+// Listing Mutations
+// ════════════════════════════════════════════════
+
+export type CreateListingInput = {
+  cardBaseId: string;
+  grade: number;
+  gradeCompany: GradeCompany;
+  pristine: boolean;
+  language: 'PT' | 'EN' | 'JP';
+  price: number; // in centavos
+  freeShipping: boolean;
+  conditionNotes?: string;
+  imageFiles: (File | null)[];
+};
+
+export type CreateListingResult =
+  | { success: true; listingId: string }
+  | { success: false; error: string };
+
+export async function createListing(input: CreateListingInput): Promise<CreateListingResult> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  const listingId = crypto.randomUUID();
+  const imageUrls: string[] = [];
+
+  for (let i = 0; i < input.imageFiles.length; i++) {
+    const file = input.imageFiles[i];
+    if (!file) continue;
+    const ext = file.name.split('.').pop() ?? 'jpg';
+    const path = `${user.id}/${listingId}/${i}_${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from('listing-images')
+      .upload(path, file, { upsert: false });
+    if (uploadError) {
+      logIfError(`createListing.upload[${i}]`, uploadError);
+      return { success: false, error: `Erro ao enviar imagem ${i + 1}: ${uploadError.message}` };
+    }
+    const { data: urlData } = supabase.storage.from('listing-images').getPublicUrl(path);
+    imageUrls.push(urlData.publicUrl);
+  }
+
+  const { error: insertError } = await supabase
+    .from('listings')
+    .insert({
+      id: listingId,
+      seller_id: user.id,
+      card_base_id: input.cardBaseId,
+      grade: input.grade,
+      grade_company: input.gradeCompany,
+      pristine: input.pristine,
+      language: input.language,
+      price: input.price,
+      free_shipping: input.freeShipping,
+      condition_notes: input.conditionNotes ?? null,
+      images: imageUrls,
+      status: 'active',
+    });
+
+  if (insertError) {
+    logIfError('createListing.insert', insertError);
+    return { success: false, error: insertError.message };
+  }
+
+  return { success: true, listingId };
+}
+
+export type UpdateListingInput = {
+  price?: number;
+  freeShipping?: boolean;
+  conditionNotes?: string;
+  status?: 'active' | 'cancelled';
+};
+
+export async function updateListing(
+  listingId: string,
+  input: UpdateListingInput,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updates: Record<string, any> = {};
+  if (input.price !== undefined) updates.price = input.price;
+  if (input.freeShipping !== undefined) updates.free_shipping = input.freeShipping;
+  if (input.conditionNotes !== undefined) updates.condition_notes = input.conditionNotes;
+  if (input.status !== undefined) updates.status = input.status;
+
+  const { error } = await supabase
+    .from('listings')
+    .update(updates)
+    .eq('id', listingId)
+    .eq('seller_id', user.id);
+
+  if (error) {
+    logIfError('updateListing', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
+export async function cancelListing(
+  listingId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  return updateListing(listingId, { status: 'cancelled' });
+}
+
+export async function getMyListings(): Promise<(Listing & { cardBase: CardBase })[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('listings')
+    .select('*, card_bases(*)')
+    .eq('seller_id', user.id)
+    .in('status', ['active', 'reserved'])
+    .order('created_at', { ascending: false });
+
+  logIfError('getMyListings', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map(row => ({
+    ...mapListing(row),
+    cardBase: mapCardBase(row.card_bases),
+  }));
+}
+
+// ════════════════════════════════════════════════
+// Order Mutations
+// ════════════════════════════════════════════════
+
+const PLATFORM_FEE_RATE = 0.10;
+
+export type CreateOrderResult =
+  | { success: true; orderId: string }
+  | { success: false; error: string };
+
+export async function createOrder(listingId: string): Promise<CreateOrderResult> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  const { data: listing, error: listingError } = await supabase
+    .from('listings')
+    .select('id, seller_id, price, status')
+    .eq('id', listingId)
+    .single();
+
+  if (listingError || !listing) return { success: false, error: 'Anúncio não encontrado' };
+  if ((listing as { status: string }).status !== 'active') return { success: false, error: 'Este anúncio não está mais disponível' };
+  if ((listing as { seller_id: string }).seller_id === user.id) return { success: false, error: 'Você não pode comprar seu próprio anúncio' };
+
+  const price = (listing as { price: number }).price;
+  const platformFee = Math.round(price * PLATFORM_FEE_RATE);
+  const sellerPayout = price - platformFee;
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .insert({
+      listing_id: listingId,
+      buyer_id: user.id,
+      seller_id: (listing as { seller_id: string }).seller_id,
+      price,
+      shipping_cost: 0,
+      platform_fee: platformFee,
+      seller_payout: sellerPayout,
+      status: 'awaiting_payment',
+    })
+    .select('id')
+    .single();
+
+  if (orderError) {
+    logIfError('createOrder', orderError);
+    if (orderError.code === '23505') return { success: false, error: 'Este anúncio já foi vendido' };
+    return { success: false, error: orderError.message };
+  }
+
+  await supabase.from('listings').update({ status: 'reserved' }).eq('id', listingId);
+
+  return { success: true, orderId: (order as { id: string }).id };
 }
