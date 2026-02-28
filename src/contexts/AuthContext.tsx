@@ -119,6 +119,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error && !error.message.includes("Auth session missing")) {
         console.warn("[AuthContext] getUser error:", error.message);
+        // Stale JWT referencing a deleted user — clear the invalid session
+        if (error.message.includes("does not exist")) {
+          await supabase.auth.signOut();
+        }
       }
 
       if (user) {
