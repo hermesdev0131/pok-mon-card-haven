@@ -753,7 +753,7 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
       free_shipping: input.freeShipping,
       condition_notes: input.conditionNotes ?? null,
       images: imageUrls,
-      status: 'active',
+      status: 'active' as const,
     });
 
   if (insertError) {
@@ -861,7 +861,7 @@ export async function createOrder(listingId: string): Promise<CreateOrderResult>
       shipping_cost: 0,
       platform_fee: platformFee,
       seller_payout: sellerPayout,
-      status: 'awaiting_payment',
+      status: 'awaiting_payment' as const,
     })
     .select('id')
     .single();
