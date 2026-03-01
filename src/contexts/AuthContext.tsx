@@ -64,7 +64,6 @@ async function fetchProfile(userId: string) {
       .single();
 
     if (error) {
-      console.warn("[AuthContext] fetchProfile error:", error.message);
       return { profile: null as Profile | null, sellerProfile: null as SellerProfile | null };
     }
 
@@ -73,20 +72,16 @@ async function fetchProfile(userId: string) {
 
     let sellerProfile: SellerProfile | null = null;
     if (role === "seller" || role === "admin") {
-      const { data: sp, error: spErr } = await supabase
+      const { data: sp } = await supabase
         .from("seller_profiles")
         .select("*")
         .eq("id", userId)
         .single();
-      if (spErr) {
-        console.warn("[AuthContext] fetchSellerProfile error:", spErr.message);
-      }
       sellerProfile = sp as SellerProfile | null;
     }
 
     return { profile, sellerProfile };
-  } catch (err) {
-    console.warn("[AuthContext] fetchProfile unexpected error:", err);
+  } catch {
     return { profile: null as Profile | null, sellerProfile: null as SellerProfile | null };
   }
 }
@@ -140,7 +135,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
 
         if (session) {
-          console.info('[Auth] Session found on mount');
           const user = session.user;
           currentUserIdRef.current = user.id;
           const { profile, sellerProfile } = await fetchProfile(user.id);
@@ -150,7 +144,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           // Tab flag was set but cookies are gone — clear the stale flag
-          console.info('[Auth] Tab session flag set but no cookie session — resetting');
           sessionStorage.removeItem('gradedbr_tab_active');
           tabSessionActiveRef.current = false;
           currentUserIdRef.current = null;
@@ -161,7 +154,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // New tab — skip cookie restore, show anonymous state immediately.
       // The user must log in explicitly; INITIAL_SESSION / TOKEN_REFRESHED events
       // from the existing cookie session are ignored until SIGNED_IN fires.
-      console.info('[Auth] New tab — starting in anonymous state');
       setState(ANONYMOUS_STATE);
     }
 
@@ -182,14 +174,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // the token is valid.
       if (event === "TOKEN_REFRESHED" && session?.user?.id === currentUserIdRef.current) {
         if (!profileLoadedRef.current && session.user) {
-          console.info('[Auth] TOKEN_REFRESHED — retrying profile fetch after expired-token failure');
           const { profile, sellerProfile } = await fetchProfile(session.user.id);
           if (!cancelled && profile) {
             profileLoadedRef.current = true;
             setState(buildAuthState(session.user, profile, sellerProfile));
           }
-        } else {
-          console.info('[Auth] Token refreshed in background — session still active');
         }
         if (!cancelled) setTokenRefreshCount(c => c + 1);
         return;
@@ -207,7 +196,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Explicit logout: skip cookie verification and clear state immediately.
         if (explicitSignOutRef.current) {
           explicitSignOutRef.current = false;
-          console.info('[Auth] Explicit sign out — clearing auth state');
           sessionStorage.removeItem('gradedbr_tab_active');
           tabSessionActiveRef.current = false;
           currentUserIdRef.current = null;
@@ -220,11 +208,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // attach a valid JWT. getSession() alone reads cookies but does NOT
         // restore the client's internal state, so API calls would still run
         // as anonymous even after our AuthContext state was "restored".
-        console.warn('[Auth] SIGNED_OUT event received — attempting token refresh to verify. URL:', window.location.pathname);
         const { data: { session: freshSession }, error: refreshError } = await supabase.auth.refreshSession();
         if (cancelled) return;
         if (freshSession?.user && !refreshError) {
-          console.info('[Auth] SIGNED_OUT was spurious — session recovered via refresh for user', freshSession.user.id);
           const userId = freshSession.user.id;
           currentUserIdRef.current = userId;
           const { profile, sellerProfile } = await fetchProfile(userId);
@@ -233,7 +219,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setTokenRefreshCount(c => c + 1);
           }
         } else {
-          console.warn('[Auth] SIGNED_OUT confirmed — refresh also failed, clearing auth state', refreshError?.message);
           sessionStorage.removeItem('gradedbr_tab_active');
           tabSessionActiveRef.current = false;
           currentUserIdRef.current = null;
@@ -254,7 +239,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isNewUser = userId !== currentUserIdRef.current;
         const wasLoggedOut = !tabSessionActiveRef.current;
         if (isNewUser || wasLoggedOut) {
-          console.info('[Auth] SIGNED_IN — fetching profile for user', userId);
           sessionStorage.setItem('gradedbr_tab_active', '1');
           tabSessionActiveRef.current = true;
           currentUserIdRef.current = userId;
@@ -268,8 +252,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // refresh on tab return — not just on explicit login.
             setTokenRefreshCount(c => c + 1);
           }
-        } else {
-          console.info('[Auth] SIGNED_IN deduped — same user already active, skipping');
         }
       } else {
         currentUserIdRef.current = null;
