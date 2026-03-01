@@ -11,6 +11,7 @@ import { Star, ShoppingBag, Calendar, Truck } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import { RequireAuth } from '@/components/RequireAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import type { CardBase, Listing, Seller, Review } from '@/types';
 
 export default function SellerProfilePageGuarded() {
@@ -24,6 +25,7 @@ export default function SellerProfilePageGuarded() {
 function SellerProfilePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const { tokenRefreshCount } = useAuth();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [sellerListings, setSellerListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -37,7 +39,7 @@ function SellerProfilePage() {
       setReviews(r);
       setLoading(false);
     });
-  }, [id]);
+  }, [id, tokenRefreshCount]);
 
   if (loading) return <div className="container mx-auto px-4 py-12"><div className="animate-pulse h-40 rounded-lg bg-secondary" /></div>;
   if (!seller) return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Vendedor não encontrado.</div>;

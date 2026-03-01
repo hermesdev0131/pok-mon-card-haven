@@ -4,11 +4,13 @@ import { SellerCard } from '@/components/SellerCard';
 import { Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getSellersWithListingCount } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Seller } from '@/types';
 
 type SellerWithCount = Seller & { listingCount: number };
 
 export default function VendedoresPage() {
+  const { tokenRefreshCount } = useAuth();
   const [sellers, setSellers] = useState<SellerWithCount[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +19,7 @@ export default function VendedoresPage() {
       setSellers(data.sort((a, b) => b.totalSales - a.totalSales));
       setLoading(false);
     });
-  }, []);
+  }, [tokenRefreshCount]);
 
   return (
     <div className="container mx-auto px-4 py-8">

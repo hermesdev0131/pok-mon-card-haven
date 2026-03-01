@@ -18,7 +18,7 @@ import { Plus, User, BadgeCheck, Loader2 } from 'lucide-react';
 import type { Order, Listing, CardBase } from '@/types';
 
 export default function Profile() {
-  const { user, profile, isSeller } = useAuth();
+  const { user, profile, isSeller, tokenRefreshCount } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [myListings, setMyListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
 
@@ -27,7 +27,7 @@ export default function Profile() {
       getMyOrders().then(setOrders);
       if (isSeller) getMyListings().then(setMyListings);
     }
-  }, [user, isSeller]);
+  }, [user, isSeller, tokenRefreshCount]);
 
   const purchases = orders.filter(o => o.buyerId === user?.id);
   const sales = orders.filter(o => o.sellerId === user?.id);

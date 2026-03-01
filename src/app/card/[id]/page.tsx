@@ -16,6 +16,7 @@ import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getSellersForListings } from '@/lib/api';
 import { RequireAuth } from '@/components/RequireAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 import type { CardBase, Listing, Seller, SaleRecord, PricePoint } from '@/types';
 
@@ -30,6 +31,7 @@ export default function CardDetailPageGuarded() {
 function CardDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const { tokenRefreshCount } = useAuth();
 
   const [cardBase, setCardBase] = useState<CardBase | null>(null);
   const [cardListings, setCardListings] = useState<Listing[]>([]);
@@ -57,7 +59,7 @@ function CardDetailPage() {
       setSellersMap(sellers);
       setLoading(false);
     });
-  }, [id]);
+  }, [id, tokenRefreshCount]);
 
   if (loading) {
     return (

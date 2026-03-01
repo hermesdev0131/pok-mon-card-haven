@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { Shield, ArrowRight, Flame, Zap, Ghost, Moon, Star, Sparkles, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithStats, getAllSellers } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { CardBaseWithStats, Seller } from '@/types';
 
@@ -22,17 +23,23 @@ const categoryDefs = [
 ];
 
 export default function Home() {
+  const { tokenRefreshCount } = useAuth();
   const [allStats, setAllStats] = useState<CardBaseWithStats[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[Page:Home] useEffect — tokenRefreshCount:', tokenRefreshCount);
     Promise.all([getCardBasesWithStats(), getAllSellers()]).then(([stats, s]) => {
+      console.log('[Page:Home] fetch done — cards:', stats.length, '| sellers:', s.length);
       setAllStats(stats);
       setSellers(s);
       setLoading(false);
+    }).catch((err) => {
+      console.error('[Page:Home] fetch error:', err);
+      setLoading(false);
     });
-  }, []);
+  }, [tokenRefreshCount]);
 
   const featuredCard = allStats.find(s => s.cardBase.name.includes('Umbreon')) ?? allStats[0];
   const highlightCards = allStats.slice(0, 5);

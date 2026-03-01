@@ -187,6 +187,7 @@ export async function getCardBasesWithStats(filters?: {
     cbQuery = cbQuery.eq('type', filters.type as string);
   }
   const { data: cardRows, error: cbErr } = await cbQuery;
+  console.log('[api:DBG] getCardBasesWithStats card_bases — rows:', cardRows?.length ?? 'null', '| error:', cbErr?.message ?? 'none');
   logIfError('getCardBasesWithStats.card_bases', cbErr);
   const cardBaseRows = (cardRows ?? []) as CardBaseRow[];
   if (!cardBaseRows.length) return [];

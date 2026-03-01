@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithStats } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import type { CardBaseWithStats } from '@/types';
 
 export default function Marketplace() {
+  const { tokenRefreshCount } = useAuth();
   const [items, setItems] = useState<CardBaseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -18,15 +20,20 @@ export default function Marketplace() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
+    console.log('[Page:Marketplace] useEffect — tokenRefreshCount:', tokenRefreshCount, '| search:', search, '| sort:', sort);
     setLoading(true);
     getCardBasesWithStats({
       search,
       sort: sort === 'price_asc' ? 'price_asc' : sort === 'price_desc' ? 'price_desc' : undefined,
     }).then((data) => {
+      console.log('[Page:Marketplace] fetch done — count:', data.length);
       setItems(data);
       setLoading(false);
+    }).catch((err) => {
+      console.error('[Page:Marketplace] fetch error:', err);
+      setLoading(false);
     });
-  }, [search, sort]);
+  }, [search, sort, tokenRefreshCount]);
 
   return (
     <div className="container mx-auto px-4 py-8">

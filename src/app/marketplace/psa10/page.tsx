@@ -4,9 +4,11 @@ import { CardBaseCard } from '@/components/CardBaseCard';
 import { Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithPSA10 } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import type { CardBaseWithStats } from '@/types';
 
 export default function PSA10Page() {
+  const { tokenRefreshCount } = useAuth();
   const [stats, setStats] = useState<CardBaseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +17,7 @@ export default function PSA10Page() {
       setStats(data);
       setLoading(false);
     });
-  }, []);
+  }, [tokenRefreshCount]);
 
   return (
     <div className="container mx-auto px-4 py-8">

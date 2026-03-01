@@ -10,17 +10,19 @@ import { useState, useEffect } from 'react';
 import { getAllOrders, getAllSellers } from '@/lib/api';
 import { DollarSign, Package, Users, TrendingUp } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { Order, Seller } from '@/types';
 
 export default function Admin() {
+  const { tokenRefreshCount } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
 
   useEffect(() => {
     getAllOrders().then(setOrders);
     getAllSellers().then(setSellers);
-  }, []);
+  }, [tokenRefreshCount]);
 
   const stats = [
     { icon: DollarSign, label: 'Volume transacionado', value: `R$ ${formatPrice(orders.reduce((a, o) => a + o.price, 0))}` },

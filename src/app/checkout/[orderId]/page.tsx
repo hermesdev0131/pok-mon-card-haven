@@ -10,11 +10,13 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
 import { getOrder } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { Order } from '@/types';
 
 export default function Checkout() {
   const params = useParams<{ orderId: string }>();
+  const { tokenRefreshCount } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +27,7 @@ export default function Checkout() {
         setLoading(false);
       });
     }
-  }, [params.orderId]);
+  }, [params.orderId, tokenRefreshCount]);
 
   return (
     <RequireAuth>

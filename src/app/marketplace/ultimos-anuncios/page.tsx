@@ -8,12 +8,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getRecentListings } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { CardBase, Listing, Seller } from '@/types';
 
 type RecentListing = Listing & { cardBase: CardBase; seller?: Seller };
 
 export default function UltimosAnunciosPage() {
+  const { tokenRefreshCount } = useAuth();
   const [recentListings, setRecentListings] = useState<RecentListing[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +24,7 @@ export default function UltimosAnunciosPage() {
       setRecentListings(data);
       setLoading(false);
     });
-  }, []);
+  }, [tokenRefreshCount]);
 
   return (
     <div className="container mx-auto px-4 py-8">

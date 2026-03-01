@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getRecentSales } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { SaleRecord, Seller } from '@/types';
 
@@ -20,6 +21,7 @@ type SaleWithCard = SaleRecord & {
 };
 
 export default function UltimasVendasPage() {
+  const { tokenRefreshCount } = useAuth();
   const [allSales, setAllSales] = useState<SaleWithCard[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +30,7 @@ export default function UltimasVendasPage() {
       setAllSales(data);
       setLoading(false);
     });
-  }, []);
+  }, [tokenRefreshCount]);
 
   return (
     <div className="container mx-auto px-4 py-8">
