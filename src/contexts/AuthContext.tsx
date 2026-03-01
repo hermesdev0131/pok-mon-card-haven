@@ -113,27 +113,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     mountedRef.current = true;
     let cancelled = false;
 
-    // Get initial session — attempt refresh first so an expired access token
-    // is renewed before we try to fetch the profile.
+    // Read the initial session from cookies — do NOT call refreshSession() here.
+    // Supabase fires TOKEN_REFRESHED automatically on visibility change (e.g. after
+    // Win+L / laptop sleep). Calling refreshSession() manually races against that
+    // internal refresh: both calls send the same single-use refresh token to the
+    // server, the loser gets "invalid token" → Supabase internally calls _signOut()
+    // → SIGNED_OUT fires → state is wiped → fetchProfile() calls hang on the
+    // unstable post-sleep network → page freezes for 30-90 s until HTTP timeout.
+    // The createBrowserClient automatically refreshes the access token before any
+    // DB query, so fetchProfile() below works even when the stored token is stale.
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (cancelled) return;
 
       if (session) {
-        console.info('[Auth] Session found on mount — refreshing token');
-        // Proactively refresh the access token on mount so we never start
-        // with a token that is about to expire.
-        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
-        if (refreshErr || !refreshed.session) {
-          // Refresh token is expired or invalid — clear local state only.
-          // Do NOT call supabase.auth.signOut() here: it would fire SIGNED_OUT
-          // which previously triggered window.location.reload(), causing a
-          // race condition with cookie clearing and an infinite reload loop.
-          console.warn('[Auth] Token refresh failed on mount — clearing session locally.', refreshErr?.message ?? 'no session returned');
-          if (!cancelled) setState(ANONYMOUS_STATE);
-          return;
-        }
-        console.info('[Auth] Token refreshed successfully on mount');
-        const user = refreshed.session.user;
+        console.info('[Auth] Session found on mount');
+        const user = session.user;
         currentUserIdRef.current = user.id;
         const { profile, sellerProfile } = await fetchProfile(user.id);
         if (!cancelled) setState(buildAuthState(user, profile, sellerProfile));
