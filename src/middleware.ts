@@ -1,8 +1,14 @@
-import { type NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+// Do not interact with the Supabase session here. The @supabase/ssr server
+// client calls setAll() to write cookie values back to the response — when it
+// sees an expired token it writes cookie-clearing Set-Cookie headers, which
+// the browser executes on every navigation, deleting auth cookies before the
+// browser client's own refresh has a chance to run. All route protection is
+// handled client-side by RequireAuth; all token refresh is handled by the
+// browser Supabase client. The middleware only needs to be a pass-through.
+export function middleware(request: NextRequest) {
+  return NextResponse.next({ request });
 }
 
 export const config = {
