@@ -150,15 +150,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // SIGNED_OUT: session was cleared (explicit logout or server invalidation).
-      // setState is enough — React re-renders and RequireAuth redirects to /login.
-      // DO NOT call window.location.reload() here: it races with cookie clearing,
-      // causing getSession() on the next load to find stale cookies, which triggers
-      // refreshSession() on an invalidated token, and loops back to SIGNED_OUT → reload.
+      // SIGNED_OUT: fired by the Supabase client on explicit logout OR whenever
+      // a token refresh request fails (network error, timeout, race condition).
+      // On production (high latency), a failed refresh after Win+L / tab visibility
+      // change fires this spuriously while cookies are still valid.
+      // Verify cookies before clearing state: if getSession() returns a valid
+      // session, the SIGNED_OUT was a false alarm — re-initialize from cookies
+      // instead of logging the user out. Only clear state if cookies also say null.
       if (event === "SIGNED_OUT") {
-        console.warn('[Auth] SIGNED_OUT event received — clearing auth state. URL:', window.location.pathname);
-        currentUserIdRef.current = null;
-        if (!cancelled) setState(ANONYMOUS_STATE);
+        console.warn('[Auth] SIGNED_OUT event received — verifying cookies before clearing state. URL:', window.location.pathname);
+        const { data: { session: cookieSession } } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (cookieSession?.user) {
+          console.info('[Auth] SIGNED_OUT was spurious — cookies still valid, re-initializing session for user', cookieSession.user.id);
+          const userId = cookieSession.user.id;
+          currentUserIdRef.current = userId;
+          const { profile, sellerProfile } = await fetchProfile(userId);
+          if (!cancelled) setState(buildAuthState(cookieSession.user, profile, sellerProfile));
+        } else {
+          console.warn('[Auth] SIGNED_OUT confirmed by cookies — clearing auth state');
+          currentUserIdRef.current = null;
+          if (!cancelled) setState(ANONYMOUS_STATE);
+        }
         return;
       }
 
