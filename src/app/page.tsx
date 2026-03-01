@@ -29,14 +29,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[Page:Home] useEffect — tokenRefreshCount:', tokenRefreshCount);
     Promise.all([getCardBasesWithStats(), getAllSellers()]).then(([stats, s]) => {
-      console.log('[Page:Home] fetch done — cards:', stats.length, '| sellers:', s.length);
       setAllStats(stats);
       setSellers(s);
       setLoading(false);
-    }).catch((err) => {
-      console.error('[Page:Home] fetch error:', err);
+    }).catch(() => {
       setLoading(false);
     });
   }, [tokenRefreshCount]);

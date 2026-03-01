@@ -20,17 +20,14 @@ export default function Marketplace() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    console.log('[Page:Marketplace] useEffect — tokenRefreshCount:', tokenRefreshCount, '| search:', search, '| sort:', sort);
     setLoading(true);
     getCardBasesWithStats({
       search,
       sort: sort === 'price_asc' ? 'price_asc' : sort === 'price_desc' ? 'price_desc' : undefined,
     }).then((data) => {
-      console.log('[Page:Marketplace] fetch done — count:', data.length);
       setItems(data);
       setLoading(false);
-    }).catch((err) => {
-      console.error('[Page:Marketplace] fetch error:', err);
+    }).catch(() => {
       setLoading(false);
     });
   }, [search, sort, tokenRefreshCount]);
