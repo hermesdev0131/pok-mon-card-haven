@@ -21,20 +21,15 @@ type ConfirmedSaleRow = Database['public']['Tables']['confirmed_sales']['Row'];
 
 const supabase = createClient();
 
-// JWT-related error messages that indicate the session is broken
-const AUTH_ERROR_HINTS = ['jwt expired', 'invalid jwt', 'not authenticated', 'invalid token'];
-
-// Log Supabase query errors. If the error is auth-related (expired token,
-// invalid JWT), trigger a sign-out so the Supabase client resets cleanly.
-// The SIGNED_OUT event in AuthContext will then reload the page.
+// Log Supabase query errors. Do NOT call signOut() here — Supabase handles
+// genuine session expiry automatically via its own token refresh and emits
+// SIGNED_OUT through onAuthStateChange when truly needed. Calling signOut()
+// on transient JWT errors clears in-memory session state while cookies remain
+// valid, causing all subsequent queries to fail until a hard refresh restores
+// the session from cookies.
 function logIfError(label: string, error: { message: string; code?: string } | null) {
   if (!error) return;
   console.error(`[api] ${label}:`, error.message, error.code ?? '');
-  const msg = error.message.toLowerCase();
-  if (AUTH_ERROR_HINTS.some(hint => msg.includes(hint))) {
-    console.warn('[api] Auth error detected — signing out to reset session');
-    supabase.auth.signOut().catch(() => {});
-  }
 }
 
 // ════════════════════════════════════════════════
