@@ -429,19 +429,20 @@ export async function getPriceHistory(cardBaseId: string): Promise<PricePoint[]>
       .replace('.', '')
       .replace(/^(\w)/, (_, c) => c.toUpperCase());
     const month = `${monthName}/${String(d.getFullYear()).slice(-2)}`;
-    const key = `${month}|${row.language}|${row.grade_company}|${row.grade}`;
+    const key = `${month}|${row.language}|${row.grade_company}|${row.grade}|${row.pristine ? '1' : '0'}`;
     if (!groups[key]) groups[key] = { total: 0, count: 0 };
     groups[key].total += row.sale_price;
     groups[key].count += 1;
   }
 
   return Object.entries(groups).map(([key, { total, count }]) => {
-    const [month, language, company, grade] = key.split('|');
+    const [month, language, company, grade, pristineFlag] = key.split('|');
     return {
       month,
       language: language as PricePoint['language'],
       company,
       grade: Number(grade),
+      pristine: pristineFlag === '1',
       avgPrice: Math.round(total / count),
       salesCount: count,
     };

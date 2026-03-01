@@ -30,8 +30,9 @@ const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   JP: '日本語',
 };
 
-function getSeriesKey(company: string, grade: number): string {
+function getSeriesKey(company: string, grade: number, pristine: boolean): string {
   if (company === 'NM') return 'NM';
+  if (pristine) return `${company} Pristine ${grade}`;
   return `${company} ${grade}`;
 }
 
@@ -73,7 +74,7 @@ export function PriceChart({ data }: PriceChartProps) {
   // All unique series keys (e.g., "NM", "PSA 10", "CGC 9")
   const allSeries = useMemo(() => {
     const set = new Set<string>();
-    filteredData.forEach(d => set.add(getSeriesKey(d.company, d.grade)));
+    filteredData.forEach(d => set.add(getSeriesKey(d.company, d.grade, d.pristine)));
     return Array.from(set);
   }, [filteredData]);
 
@@ -144,7 +145,7 @@ export function PriceChart({ data }: PriceChartProps) {
     const byMonth: Record<string, Record<string, number>> = {};
     filteredData.forEach(d => {
       if (!byMonth[d.month]) byMonth[d.month] = {};
-      const key = getSeriesKey(d.company, d.grade);
+      const key = getSeriesKey(d.company, d.grade, d.pristine);
       byMonth[d.month][key] = d.avgPrice;
       byMonth[d.month][`${key}_count`] = d.salesCount;
     });
