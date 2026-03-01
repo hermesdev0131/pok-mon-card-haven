@@ -33,14 +33,15 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session — important for Server Components.
-  // Wrap in try/catch so auth service failures (500, network errors)
-  // don't block page navigation.
-  try {
-    await supabase.auth.getUser();
-  } catch {
-    // Auth refresh failed — let the page load anyway (client-side will retry)
-  }
+  // Read the session from cookies (local read, no network call to Supabase).
+  // Previously used getUser() which hits the Supabase Auth API and can trigger
+  // a server-side token refresh. On Vercel (high latency to Supabase), this
+  // races with the browser client's own auto-refresh on visibility change:
+  // both send the same single-use refresh token → one fails → _signOut() fires
+  // → SIGNED_OUT → page freeze. All token refresh is handled by the browser
+  // client via onAuthStateChange. The middleware only needs to forward the
+  // current cookies so Server Components can read the session if needed.
+  await supabase.auth.getSession();
 
   return supabaseResponse;
 }
