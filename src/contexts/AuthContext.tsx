@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { Profile, SellerProfile } from "@/types/database";
@@ -35,9 +36,12 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Singleton client — createBrowserClient already deduplicates, but we
-// keep a stable reference so the rest of the provider never recreates it.
 const supabase = createClient();
+
+const IDLE_MS = 15 * 60 * 1000; // 15 minutes of inactivity → auto sign-out
+const ACTIVITY_EVENTS = [
+  'mousemove', 'mousedown', 'keydown', 'scroll', 'click', 'touchstart',
+] as const;
 
 function buildAuthState(
   user: User | null,
@@ -68,10 +72,9 @@ async function fetchProfile(userId: string) {
     }
 
     const profile = data as Profile | null;
-    const role = profile?.role;
 
     let sellerProfile: SellerProfile | null = null;
-    if (role === "seller" || role === "admin") {
+    if (profile?.role === "seller" || profile?.role === "admin") {
       const { data: sp } = await supabase
         .from("seller_profiles")
         .select("*")
@@ -97,200 +100,111 @@ const ANONYMOUS_STATE: AuthState = {
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    ...ANONYMOUS_STATE,
-    loading: true,
-  });
+  const [state, setState] = useState<AuthState>({ ...ANONYMOUS_STATE, loading: true });
   const [tokenRefreshCount, setTokenRefreshCount] = useState(0);
-
-  // Track mounted to avoid state updates after unmount
+  const router = useRouter();
   const mountedRef = useRef(true);
-  // Track current user id to skip redundant profile fetches (e.g. TOKEN_REFRESHED)
-  const currentUserIdRef = useRef<string | null>(null);
-  // Set to true when the user explicitly clicks "sign out". Prevents the SIGNED_OUT
-  // handler from mistaking an intentional logout for a spurious token-refresh failure.
-  const explicitSignOutRef = useRef(false);
-  // Re-entry guard: set to true while the SIGNED_OUT recovery refreshSession() is
-  // in-flight. Prevents a second concurrent SIGNED_OUT (fired by the failing
-  // refreshSession() itself) from starting another recovery attempt, which would
-  // cause two simultaneous refreshSession() calls → LockManager contention → freeze.
-  const recoveringRef = useRef(false);
-  // Track whether the profile was successfully loaded after the initial getSession().
-  // If the access token was expired on page load, fetchProfile() fails silently and
-  // profile stays null. When TOKEN_REFRESHED fires (token is now valid), we retry.
-  const profileLoadedRef = useRef(false);
-  // Session is scoped to the browser tab. sessionStorage is per-tab and is cleared
-  // automatically when the tab is closed. A new tab always starts anonymous — the
-  // user must log in explicitly. The flag is set on SIGNED_IN and cleared on logout.
-  // Initialized to false; real value is read inside useEffect (sessionStorage is
-  // not available during SSR — accessing it at module/render scope throws on server).
-  const tabSessionActiveRef = useRef(false);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks whether a user is currently signed in — used to gate the idle timer.
+  const isAuthenticatedRef = useRef(false);
+
+  const clearIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  }, []);
+
+  const signOutFn = useCallback(async () => {
+    console.log('[Auth] signing out — clearing all sessions and cookies');
+    isAuthenticatedRef.current = false;
+    clearIdleTimer();
+    sessionStorage.clear();
+    // scope:'global' revokes the refresh token server-side, invalidating all
+    // devices/tabs at once. The SDK also clears local cookies and localStorage.
+    await supabase.auth.signOut({ scope: 'global' });
+  }, [clearIdleTimer]);
+
+  const resetIdleTimer = useCallback(() => {
+    // Ignore activity events when no user is logged in
+    if (!isAuthenticatedRef.current) return;
+    clearIdleTimer();
+    idleTimerRef.current = setTimeout(async () => {
+      console.log('[Auth] 15 min idle — signing out automatically');
+      await signOutFn();
+      router.push('/login');
+    }, IDLE_MS);
+  }, [clearIdleTimer, signOutFn, router]);
 
   useEffect(() => {
     mountedRef.current = true;
     let cancelled = false;
 
-    // Read sessionStorage here — browser-only, safe inside useEffect
-    tabSessionActiveRef.current = !!sessionStorage.getItem('gradedbr_tab_active');
+    // Register activity listeners. resetIdleTimer is a no-op when not authenticated.
+    ACTIVITY_EVENTS.forEach(e =>
+      window.addEventListener(e, resetIdleTimer, { passive: true }),
+    );
 
-    if (tabSessionActiveRef.current) {
-      // Existing tab session — restore from cookies.
-      // Do NOT call refreshSession() here: see long comment below about race conditions.
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // onAuthStateChange is the single source of truth — fires INITIAL_SESSION on
+    // mount to restore any existing session, then SIGNED_IN / TOKEN_REFRESHED /
+    // SIGNED_OUT for subsequent changes.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
         if (cancelled) return;
+        console.log(`[Auth] event=${event} userId=${session?.user?.id ?? 'none'}`);
 
-        if (session) {
-          const user = session.user;
-          currentUserIdRef.current = user.id;
-          const { profile, sellerProfile } = await fetchProfile(user.id);
-          if (!cancelled) {
-            profileLoadedRef.current = !!profile;
-            setState(buildAuthState(user, profile, sellerProfile));
+        if (event === 'INITIAL_SESSION') {
+          if (session?.user) {
+            const { profile, sellerProfile } = await fetchProfile(session.user.id);
+            if (!cancelled) {
+              isAuthenticatedRef.current = true;
+              setState(buildAuthState(session.user, profile, sellerProfile));
+              resetIdleTimer();
+            }
+          } else {
+            if (!cancelled) setState(ANONYMOUS_STATE);
           }
-        } else {
-          // Tab flag was set but cookies are gone — clear the stale flag
-          sessionStorage.removeItem('gradedbr_tab_active');
-          tabSessionActiveRef.current = false;
-          currentUserIdRef.current = null;
-          if (!cancelled) setState(ANONYMOUS_STATE);
+          return;
         }
-      });
-    } else {
-      // New tab — skip cookie restore, show anonymous state immediately.
-      // The user must log in explicitly; INITIAL_SESSION / TOKEN_REFRESHED events
-      // from the existing cookie session are ignored until SIGNED_IN fires.
-      setState(ANONYMOUS_STATE);
-    }
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (cancelled) return;
-
-      // Tab session scope: new tabs start anonymous and must log in explicitly.
-      // INITIAL_SESSION and TOKEN_REFRESHED relate to the existing cookie session —
-      // ignore them until this tab activates via an explicit SIGNED_IN.
-      console.log(`[Auth] event=${event} tabActive=${tabSessionActiveRef.current} recovering=${recoveringRef.current} userId=${session?.user?.id ?? 'none'}`);
-
-      if (!tabSessionActiveRef.current && event !== 'SIGNED_IN') return;
-
-      // TOKEN_REFRESHED: token was refreshed in the background.
-      // If the profile was never loaded (fetchProfile failed on mount because the
-      // access token was already expired when the tab reopened), retry it now that
-      // the token is valid.
-      if (event === "TOKEN_REFRESHED" && session?.user?.id === currentUserIdRef.current) {
-        console.log('[Auth] TOKEN_REFRESHED — incrementing tokenRefreshCount');
-        if (!profileLoadedRef.current && session.user) {
+        if (event === 'SIGNED_IN' && session?.user) {
           const { profile, sellerProfile } = await fetchProfile(session.user.id);
-          if (!cancelled && profile) {
-            profileLoadedRef.current = true;
+          if (!cancelled) {
+            isAuthenticatedRef.current = true;
             setState(buildAuthState(session.user, profile, sellerProfile));
+            setTokenRefreshCount(c => c + 1);
+            resetIdleTimer();
           }
+          return;
         }
-        if (!cancelled) setTokenRefreshCount(c => c + 1);
-        return;
-      }
 
-      // SIGNED_OUT: fired by the Supabase client on explicit logout OR whenever
-      // a token refresh request fails (network error, timeout, race condition).
-      // On production (high latency BR→Vercel), this fires spuriously after
-      // Win+L / tab visibility change even though the refresh token in cookies
-      // is still valid. We attempt refreshSession() to both verify the session
-      // AND restore the Supabase client's internal state — getSession() alone
-      // reads cookies but leaves the client's currentSession = null, causing
-      // all subsequent API calls to run as anonymous (no JWT attached).
-      if (event === "SIGNED_OUT") {
-        // Explicit logout: skip cookie verification and clear state immediately.
-        if (explicitSignOutRef.current) {
-          console.log('[Auth] SIGNED_OUT — explicit logout, clearing state');
-          explicitSignOutRef.current = false;
-          sessionStorage.removeItem('gradedbr_tab_active');
-          tabSessionActiveRef.current = false;
-          currentUserIdRef.current = null;
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('[Auth] TOKEN_REFRESHED — incrementing tokenRefreshCount');
+          if (!cancelled) {
+            setTokenRefreshCount(c => c + 1);
+            resetIdleTimer();
+          }
+          return;
+        }
+
+        if (event === 'SIGNED_OUT') {
+          console.log('[Auth] SIGNED_OUT — clearing state');
+          isAuthenticatedRef.current = false;
+          clearIdleTimer();
           if (!cancelled) setState(ANONYMOUS_STATE);
           return;
         }
-        // Re-entry guard: if a recovery is already in-flight, a second SIGNED_OUT
-        // fired by that failing refreshSession() must not start another attempt.
-        // Two concurrent refreshSession() calls saturate the LockManager → freeze.
-        if (recoveringRef.current) {
-          console.warn('[Auth] SIGNED_OUT — recovery already in-flight, skipping re-entry');
-          return;
-        }
-        // Attempt a fresh token refresh. If the SIGNED_OUT was spurious (network
-        // hiccup / race condition), refreshSession() will succeed and restore the
-        // Supabase client's internal session — ensuring subsequent API calls
-        // attach a valid JWT. getSession() alone reads cookies but does NOT
-        // restore the client's internal state, so API calls would still run
-        // as anonymous even after our AuthContext state was "restored".
-        console.log('[Auth] SIGNED_OUT — spurious, attempting refreshSession()');
-        recoveringRef.current = true;
-        const { data: { session: freshSession }, error: refreshError } = await supabase.auth.refreshSession();
-        recoveringRef.current = false;
-        if (cancelled) return;
-        if (freshSession?.user && !refreshError) {
-          console.log('[Auth] SIGNED_OUT recovery succeeded — session restored');
-          const userId = freshSession.user.id;
-          currentUserIdRef.current = userId;
-          const { profile, sellerProfile } = await fetchProfile(userId);
-          if (!cancelled) {
-            setState(buildAuthState(freshSession.user, profile, sellerProfile));
-            setTokenRefreshCount(c => c + 1);
-          }
-        } else {
-          console.warn('[Auth] SIGNED_OUT recovery failed — logging out', refreshError?.message);
-          sessionStorage.removeItem('gradedbr_tab_active');
-          tabSessionActiveRef.current = false;
-          currentUserIdRef.current = null;
-          if (!cancelled) setState(ANONYMOUS_STATE);
-        }
-        return;
-      }
-
-      if (session?.user) {
-        const userId = session.user.id;
-        // Re-run the full handler only when the user actually changed OR when
-        // the tab was not previously active (explicit login after logout, or
-        // first login). Skip if the same user is already active — this dedupes
-        // the spurious second SIGNED_IN that Supabase fires when refreshSession()
-        // succeeds inside the SIGNED_OUT recovery handler, which would otherwise
-        // cause all page useEffects to run twice in parallel and saturate the
-        // Navigator LockManager (auth-token lock), causing a 10 s timeout freeze.
-        const isNewUser = userId !== currentUserIdRef.current;
-        const wasLoggedOut = !tabSessionActiveRef.current;
-        if (isNewUser || wasLoggedOut) {
-          console.log(`[Auth] SIGNED_IN — isNewUser=${isNewUser} wasLoggedOut=${wasLoggedOut}, loading profile`);
-          sessionStorage.setItem('gradedbr_tab_active', '1');
-          tabSessionActiveRef.current = true;
-          currentUserIdRef.current = userId;
-          profileLoadedRef.current = false;
-          const { profile, sellerProfile } = await fetchProfile(userId);
-          if (!cancelled) {
-            profileLoadedRef.current = !!profile;
-            setState(buildAuthState(session.user, profile, sellerProfile));
-            // Increment so pages that depend only on tokenRefreshCount (home,
-            // marketplace) also re-fetch. SIGNED_IN fires after every token
-            // refresh on tab return — not just on explicit login.
-            setTokenRefreshCount(c => c + 1);
-          }
-        } else {
-          console.log('[Auth] SIGNED_IN — same user already active, skipping (dedup)');
-        }
-      } else {
-        currentUserIdRef.current = null;
-        if (!cancelled) {
-          setState(ANONYMOUS_STATE);
-        }
-      }
-    });
+      },
+    );
 
     return () => {
       cancelled = true;
       mountedRef.current = false;
       subscription.unsubscribe();
+      clearIdleTimer();
+      ACTIVITY_EVENTS.forEach(e => window.removeEventListener(e, resetIdleTimer));
     };
-  }, []);
+  }, [resetIdleTimer, clearIdleTimer]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -312,17 +226,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const signOutFn = useCallback(async () => {
-    explicitSignOutRef.current = true;
-    await supabase.auth.signOut();
-  }, []);
-
   const refreshProfileFn = useCallback(async () => {
-    const uid = currentUserIdRef.current;
-    if (!uid) return;
-    const { profile, sellerProfile } = await fetchProfile(uid);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { profile, sellerProfile } = await fetchProfile(user.id);
     if (profile && mountedRef.current) {
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         profile,
         sellerProfile,
@@ -332,7 +241,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Memoize context value to prevent cascading re-renders on every provider render
   const value = useMemo<AuthContextType>(
     () => ({
       ...state,
