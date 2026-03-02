@@ -122,6 +122,7 @@ export function PriceChart({ data }: PriceChartProps) {
       }
       const parts = key.split(' ');
       const grade = Number(parts.pop());
+      if (parts[parts.length - 1] === 'Pristine') parts.pop();
       const company = parts.join(' ');
       return enabledCompanies.has(company) && enabledGrades.has(grade);
     });
