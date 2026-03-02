@@ -58,6 +58,9 @@ function CardDetailPage() {
       const sellers = await getSellersForListings(sellerIds);
       setSellersMap(sellers);
       setLoading(false);
+    }).catch((err) => {
+      console.error('[CardDetail] data fetch failed', err);
+      setLoading(false);
     });
   }, [id, tokenRefreshCount]);
 

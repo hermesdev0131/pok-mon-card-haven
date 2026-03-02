@@ -110,6 +110,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Set to true when the user explicitly clicks "sign out". Prevents the SIGNED_OUT
   // handler from mistaking an intentional logout for a spurious token-refresh failure.
   const explicitSignOutRef = useRef(false);
+  // Re-entry guard: set to true while the SIGNED_OUT recovery refreshSession() is
+  // in-flight. Prevents a second concurrent SIGNED_OUT (fired by the failing
+  // refreshSession() itself) from starting another recovery attempt, which would
+  // cause two simultaneous refreshSession() calls → LockManager contention → freeze.
+  const recoveringRef = useRef(false);
   // Track whether the profile was successfully loaded after the initial getSession().
   // If the access token was expired on page load, fetchProfile() fails silently and
   // profile stays null. When TOKEN_REFRESHED fires (token is now valid), we retry.
@@ -166,6 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Tab session scope: new tabs start anonymous and must log in explicitly.
       // INITIAL_SESSION and TOKEN_REFRESHED relate to the existing cookie session —
       // ignore them until this tab activates via an explicit SIGNED_IN.
+      console.log(`[Auth] event=${event} tabActive=${tabSessionActiveRef.current} recovering=${recoveringRef.current} userId=${session?.user?.id ?? 'none'}`);
+
       if (!tabSessionActiveRef.current && event !== 'SIGNED_IN') return;
 
       // TOKEN_REFRESHED: token was refreshed in the background.
@@ -173,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // access token was already expired when the tab reopened), retry it now that
       // the token is valid.
       if (event === "TOKEN_REFRESHED" && session?.user?.id === currentUserIdRef.current) {
+        console.log('[Auth] TOKEN_REFRESHED — incrementing tokenRefreshCount');
         if (!profileLoadedRef.current && session.user) {
           const { profile, sellerProfile } = await fetchProfile(session.user.id);
           if (!cancelled && profile) {
@@ -195,11 +203,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (event === "SIGNED_OUT") {
         // Explicit logout: skip cookie verification and clear state immediately.
         if (explicitSignOutRef.current) {
+          console.log('[Auth] SIGNED_OUT — explicit logout, clearing state');
           explicitSignOutRef.current = false;
           sessionStorage.removeItem('gradedbr_tab_active');
           tabSessionActiveRef.current = false;
           currentUserIdRef.current = null;
           if (!cancelled) setState(ANONYMOUS_STATE);
+          return;
+        }
+        // Re-entry guard: if a recovery is already in-flight, a second SIGNED_OUT
+        // fired by that failing refreshSession() must not start another attempt.
+        // Two concurrent refreshSession() calls saturate the LockManager → freeze.
+        if (recoveringRef.current) {
+          console.warn('[Auth] SIGNED_OUT — recovery already in-flight, skipping re-entry');
           return;
         }
         // Attempt a fresh token refresh. If the SIGNED_OUT was spurious (network
@@ -208,9 +224,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // attach a valid JWT. getSession() alone reads cookies but does NOT
         // restore the client's internal state, so API calls would still run
         // as anonymous even after our AuthContext state was "restored".
+        console.log('[Auth] SIGNED_OUT — spurious, attempting refreshSession()');
+        recoveringRef.current = true;
         const { data: { session: freshSession }, error: refreshError } = await supabase.auth.refreshSession();
+        recoveringRef.current = false;
         if (cancelled) return;
         if (freshSession?.user && !refreshError) {
+          console.log('[Auth] SIGNED_OUT recovery succeeded — session restored');
           const userId = freshSession.user.id;
           currentUserIdRef.current = userId;
           const { profile, sellerProfile } = await fetchProfile(userId);
@@ -219,6 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setTokenRefreshCount(c => c + 1);
           }
         } else {
+          console.warn('[Auth] SIGNED_OUT recovery failed — logging out', refreshError?.message);
           sessionStorage.removeItem('gradedbr_tab_active');
           tabSessionActiveRef.current = false;
           currentUserIdRef.current = null;
@@ -239,6 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const isNewUser = userId !== currentUserIdRef.current;
         const wasLoggedOut = !tabSessionActiveRef.current;
         if (isNewUser || wasLoggedOut) {
+          console.log(`[Auth] SIGNED_IN — isNewUser=${isNewUser} wasLoggedOut=${wasLoggedOut}, loading profile`);
           sessionStorage.setItem('gradedbr_tab_active', '1');
           tabSessionActiveRef.current = true;
           currentUserIdRef.current = userId;
@@ -252,6 +274,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // refresh on tab return — not just on explicit login.
             setTokenRefreshCount(c => c + 1);
           }
+        } else {
+          console.log('[Auth] SIGNED_IN — same user already active, skipping (dedup)');
         }
       } else {
         currentUserIdRef.current = null;
