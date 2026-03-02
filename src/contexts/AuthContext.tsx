@@ -107,6 +107,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Tracks whether a user is currently signed in — used to gate the idle timer.
   const isAuthenticatedRef = useRef(false);
+  // Current signed-in user ID. Set synchronously before any await in the SIGNED_IN
+  // handler so a second concurrent SIGNED_IN (fired by Supabase's visibilitychange
+  // + focus recovery) sees the same ID and skips — preventing two parallel
+  // fetchProfile() calls from saturating the LockManager and freezing the page.
+  const currentUserIdRef = useRef<string | null>(null);
+  // Set to true while signOut() is in-flight. Blocks any SIGNED_IN event that
+  // Supabase fires during the async signOut (race between our signOut clearing
+  // storage and the internal _recoverAndRefresh() still holding a valid token).
+  const signingOutRef = useRef(false);
 
   const clearIdleTimer = useCallback(() => {
     if (idleTimerRef.current) {
@@ -117,7 +126,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOutFn = useCallback(async () => {
     console.log('[Auth] signing out — clearing all sessions and cookies');
+    signingOutRef.current = true;
     isAuthenticatedRef.current = false;
+    currentUserIdRef.current = null;
     clearIdleTimer();
     sessionStorage.clear();
     // scope:'global' revokes the refresh token server-side, invalidating all
@@ -155,7 +166,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'INITIAL_SESSION') {
           if (session?.user) {
-            const { profile, sellerProfile } = await fetchProfile(session.user.id);
+            const userId = session.user.id;
+            if (userId === currentUserIdRef.current) {
+              console.log('[Auth] INITIAL_SESSION — same user already active, skipping (dedup)');
+              return;
+            }
+            currentUserIdRef.current = userId; // set synchronously before await
+            const { profile, sellerProfile } = await fetchProfile(userId);
             if (!cancelled) {
               isAuthenticatedRef.current = true;
               setState(buildAuthState(session.user, profile, sellerProfile));
@@ -168,7 +185,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (event === 'SIGNED_IN' && session?.user) {
-          const { profile, sellerProfile } = await fetchProfile(session.user.id);
+          // Block SIGNED_IN fired by Supabase's internal _recoverAndRefresh() while
+          // our signOut() is still in-flight (race: token still valid in memory).
+          if (signingOutRef.current) {
+            console.warn('[Auth] SIGNED_IN — signOut in-flight, ignoring');
+            return;
+          }
+          const userId = session.user.id;
+          // Deduplicate concurrent SIGNED_IN events (visibilitychange + focus both
+          // fire _recoverAndRefresh()). currentUserIdRef is set synchronously before
+          // the await so a second concurrent handler sees the same ID and skips.
+          if (userId === currentUserIdRef.current) {
+            console.log('[Auth] SIGNED_IN — same user already active, skipping (dedup)');
+            resetIdleTimer();
+            return;
+          }
+          currentUserIdRef.current = userId; // synchronous — guard against concurrent handlers
+          const { profile, sellerProfile } = await fetchProfile(userId);
           if (!cancelled) {
             isAuthenticatedRef.current = true;
             setState(buildAuthState(session.user, profile, sellerProfile));
@@ -189,7 +222,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_OUT') {
           console.log('[Auth] SIGNED_OUT — clearing state');
+          signingOutRef.current = false;
           isAuthenticatedRef.current = false;
+          currentUserIdRef.current = null;
           clearIdleTimer();
           if (!cancelled) setState(ANONYMOUS_STATE);
           return;
