@@ -30,6 +30,11 @@ const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   JP: '日本語',
 };
 
+// 'BL' is the sentinel value for the Black Label / Pristine grade pill.
+// Pristine series (CGC Pristine 10, BGS Black Label, etc.) are controlled by
+// the BL toggle — separate from the regular numeric grade 10 toggle.
+type GradeKey = number | 'BL';
+
 function getSeriesKey(company: string, grade: number, pristine: boolean): string {
   if (company === 'NM') return 'NM';
   if (pristine) return `${company} Pristine ${grade}`;
@@ -41,20 +46,16 @@ export function PriceChart({ data }: PriceChartProps) {
   const availableLanguages = useMemo(() => {
     const set = new Set<CardLanguage>();
     data.forEach(d => set.add(d.language));
-    // Order: PT first (Brazilian marketplace), then EN, JP
     const order: CardLanguage[] = ['PT', 'EN', 'JP'];
     return order.filter(lang => set.has(lang));
   }, [data]);
 
-  // Selected language — default to PT (primary market)
   const [selectedLanguage, setSelectedLanguage] = useState<CardLanguage>('PT');
 
-  // Filter data by selected language
   const filteredData = useMemo(() => {
     return data.filter(d => d.language === selectedLanguage);
   }, [data, selectedLanguage]);
 
-  // Discover all unique companies and grades present in filtered data
   const availableCompanies = useMemo(() => {
     const set = new Set<string>();
     filteredData.forEach(d => set.add(d.company));
@@ -65,22 +66,30 @@ export function PriceChart({ data }: PriceChartProps) {
     });
   }, [filteredData]);
 
+  // Numeric grades come only from non-pristine entries.
+  // Pristine / Black Label entries are represented by the 'BL' sentinel.
+  // This means grade 10 pill controls PSA 10 / CGC 10, while BL pill
+  // controls CGC Pristine 10 / BGS Black Label, etc.
   const availableGrades = useMemo(() => {
-    const set = new Set<number>();
-    filteredData.forEach(d => { if (d.grade > 0) set.add(d.grade); });
-    return Array.from(set).sort((a, b) => a - b);
+    const numSet = new Set<number>();
+    let hasPristine = false;
+    filteredData.forEach(d => {
+      if (d.grade > 0 && !d.pristine) numSet.add(d.grade);
+      if (d.pristine) hasPristine = true;
+    });
+    const grades: GradeKey[] = Array.from(numSet).sort((a, b) => a - b);
+    if (hasPristine) grades.push('BL');
+    return grades;
   }, [filteredData]);
 
-  // All unique series keys (e.g., "NM", "PSA 10", "CGC 9")
   const allSeries = useMemo(() => {
     const set = new Set<string>();
     filteredData.forEach(d => set.add(getSeriesKey(d.company, d.grade, d.pristine)));
     return Array.from(set);
   }, [filteredData]);
 
-  // Toggle state — all enabled by default
   const [enabledCompanies, setEnabledCompanies] = useState<Set<string>>(new Set(availableCompanies));
-  const [enabledGrades, setEnabledGrades] = useState<Set<number>>(new Set([0, ...availableGrades])); // 0 = NM
+  const [enabledGrades, setEnabledGrades] = useState<Set<GradeKey>>(new Set<GradeKey>([0, ...availableGrades]));
 
   const toggleCompany = (company: string) => {
     setEnabledCompanies(prev => {
@@ -91,7 +100,7 @@ export function PriceChart({ data }: PriceChartProps) {
     });
   };
 
-  const toggleGrade = (grade: number) => {
+  const toggleGrade = (grade: GradeKey) => {
     setEnabledGrades(prev => {
       const next = new Set(prev);
       if (next.has(grade)) next.delete(grade);
@@ -100,21 +109,23 @@ export function PriceChart({ data }: PriceChartProps) {
     });
   };
 
-  // When language changes, enable all companies/grades for the new language
   const handleLanguageChange = (lang: CardLanguage) => {
     setSelectedLanguage(lang);
     const langData = data.filter(d => d.language === lang);
     const companies = new Set<string>();
-    const grades = new Set<number>([0]);
+    const grades = new Set<GradeKey>([0]);
     langData.forEach(d => {
       companies.add(d.company);
-      if (d.grade > 0) grades.add(d.grade);
+      if (d.grade > 0 && !d.pristine) grades.add(d.grade);
+      if (d.pristine) grades.add('BL');
     });
     setEnabledCompanies(companies);
     setEnabledGrades(grades);
   };
 
-  // Filter series based on toggles
+  // Filter series based on toggles.
+  // Pristine series (key contains 'Pristine') are gated by the 'BL' grade toggle.
+  // All other graded series are gated by their numeric grade toggle.
   const activeSeries = useMemo(() => {
     return allSeries.filter(key => {
       if (key === 'NM') {
@@ -122,18 +133,18 @@ export function PriceChart({ data }: PriceChartProps) {
       }
       const parts = key.split(' ');
       const grade = Number(parts.pop());
-      if (parts[parts.length - 1] === 'Pristine') parts.pop();
+      const isPristine = parts[parts.length - 1] === 'Pristine';
+      if (isPristine) parts.pop();
       const company = parts.join(' ');
-      return enabledCompanies.has(company) && enabledGrades.has(grade);
+      return enabledCompanies.has(company) && enabledGrades.has(isPristine ? 'BL' : grade);
     });
   }, [allSeries, enabledCompanies, enabledGrades]);
 
-  // Assign stable colors per series
   const colorMap = useMemo(() => {
     const map: Record<string, string> = {};
     allSeries.forEach((key, i) => {
       if (key === 'NM') {
-        map[key] = COLORS[COLORS.length - 1]; // gray for NM
+        map[key] = COLORS[COLORS.length - 1];
       } else {
         map[key] = COLORS[i % (COLORS.length - 1)];
       }
@@ -141,7 +152,6 @@ export function PriceChart({ data }: PriceChartProps) {
     return map;
   }, [allSeries]);
 
-  // Pivot data: { month, "PSA 10": 2800, "PSA 10_count": 3, ... }
   const chartData = useMemo(() => {
     const byMonth: Record<string, Record<string, number>> = {};
     filteredData.forEach(d => {
@@ -150,8 +160,6 @@ export function PriceChart({ data }: PriceChartProps) {
       byMonth[d.month][key] = d.avgPrice;
       byMonth[d.month][`${key}_count`] = d.salesCount;
     });
-
-    // Get ordered months
     const months = Array.from(new Set(filteredData.map(d => d.month)));
     return months.map(month => ({ month, ...byMonth[month] }));
   }, [filteredData]);
@@ -207,7 +215,7 @@ export function PriceChart({ data }: PriceChartProps) {
           ))}
         </div>
 
-        {/* Grade pills */}
+        {/* Grade pills — numeric grades + BL (Black Label / Pristine) */}
         <div className="flex flex-wrap gap-1.5">
           <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider self-center mr-1">Nota:</span>
           {availableCompanies.includes('NM') && (
@@ -232,7 +240,7 @@ export function PriceChart({ data }: PriceChartProps) {
                   : 'bg-white/[0.03] border-white/[0.06] text-muted-foreground/50'
               }`}
             >
-              {grade}
+              {grade === 'BL' ? 'Black Label' : grade}
             </button>
           ))}
         </div>

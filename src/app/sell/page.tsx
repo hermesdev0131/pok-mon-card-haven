@@ -26,6 +26,7 @@ export default function Sell() {
   const [cardSearchResults, setCardSearchResults] = useState<CardBase[]>([]);
   const [gradeCompany, setGradeCompany] = useState('');
   const [grade, setGrade] = useState('');
+  const [otherGrade, setOtherGrade] = useState('');
   const [language, setLanguage] = useState<'PT' | 'EN' | 'JP'>('PT');
 
   // Step 2 — Price & shipping
@@ -98,7 +99,7 @@ export default function Sell() {
 
     const result = await createListing({
       cardBaseId: selectedCardBase.id,
-      grade: grade === 'pristine-10' ? 10 : Number(grade),
+      grade: grade === 'pristine-10' ? 10 : grade === 'other' ? Number(otherGrade) : Number(grade),
       gradeCompany: gradeCompany as GradeCompany,
       pristine: grade === 'pristine-10',
       language,
@@ -197,14 +198,16 @@ export default function Sell() {
                     <SelectItem value="Mana Fix">Mana Fix</SelectItem>
                     <SelectItem value="BGA">BGA</SelectItem>
                     <SelectItem value="ARS">ARS</SelectItem>
+                    <SelectItem value="AGS">AGS</SelectItem>
                     <SelectItem value="Capy">Capy</SelectItem>
                     <SelectItem value="Taverna">Taverna</SelectItem>
+                    <SelectItem value="OTHER">Outros</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Grade</Label>
-                <Select value={grade} onValueChange={setGrade}>
+                <Select value={grade} onValueChange={(v) => { setGrade(v); setOtherGrade(''); }}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     {['CGC', 'TAG', 'Beckett'].includes(gradeCompany) && (
@@ -216,8 +219,21 @@ export default function Sell() {
                     <SelectItem value="8.5">8.5</SelectItem>
                     <SelectItem value="8">8</SelectItem>
                     <SelectItem value="7">7</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
                   </SelectContent>
                 </Select>
+                {grade === 'other' && (
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    step="0.5"
+                    placeholder="Ex: 6.5"
+                    value={otherGrade}
+                    onChange={(e) => setOtherGrade(e.target.value)}
+                    className="mt-2"
+                  />
+                )}
               </div>
             </div>
 
@@ -236,7 +252,7 @@ export default function Sell() {
             <Button
               onClick={() => setStep(2)}
               className="w-full"
-              disabled={!selectedCardBase || !gradeCompany || !grade}
+              disabled={!selectedCardBase || !gradeCompany || !grade || (grade === 'other' && !otherGrade)}
             >
               Próximo
             </Button>

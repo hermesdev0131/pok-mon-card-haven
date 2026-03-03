@@ -672,7 +672,9 @@ insert into grade_companies (code, name, logo_url, website, active, sort_order) 
   ('Mana Fix', 'Mana Fix Grading',                  null, null,                              true, 6),
   ('BGA',      'BGA Grading',                       null, null,                              true, 7),
   ('Capy',     'Capy Grading',                      null, null,                              true, 8),
-  ('Taverna',  'Taverna Grading',                    null, null,                              true, 9);
+  ('Taverna',  'Taverna Grading',                    null, null,                              true, 9),
+  ('AGS',      'AGS Grading',                        null, null,                              true, 10),
+  ('OTHER',    'Outros',                             null, null,                              true, 99);
 
 -- 6.3 Platform Config
 insert into platform_config (key, value) values
@@ -681,7 +683,7 @@ insert into platform_config (key, value) values
   ('cancellation_timeout_hours', '24'),
   ('min_listing_price', '500'),
   ('max_images_per_listing', '8'),
-  ('supported_grade_companies', '["PSA", "CGC", "Beckett", "TAG", "ARS", "Mana Fix", "BGA", "Capy", "Taverna"]');
+  ('supported_grade_companies', '["PSA", "CGC", "Beckett", "TAG", "ARS", "Mana Fix", "BGA", "Capy", "Taverna", "AGS", "OTHER"]');
 
 
 -- =========================

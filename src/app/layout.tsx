@@ -29,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className={`${spaceGrotesk.variable} font-sans`}>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body className={`${spaceGrotesk.variable} font-sans`} suppressHydrationWarning>
         <Providers>
           {/* Global background gradient blobs */}
           <div className="fixed inset-0 -z-10 overflow-hidden">

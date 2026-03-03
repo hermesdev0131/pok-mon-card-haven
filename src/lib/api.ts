@@ -424,6 +424,7 @@ export async function getPriceHistory(cardBaseId: string): Promise<PricePoint[]>
 
   const groups: Record<string, { total: number; count: number }> = {};
   for (const row of rows) {
+    if (row.grade_company === 'OTHER') continue;
     const d = new Date(row.sold_at);
     const monthName = d.toLocaleDateString('pt-BR', { month: 'short' })
       .replace('.', '')
@@ -794,6 +795,27 @@ export async function cancelListing(
   listingId: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
   return updateListing(listingId, { status: 'cancelled' });
+}
+
+export async function becomeSeller(
+  storeName: string,
+  description?: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: 'Não autenticado' };
+
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ role: 'seller', updated_at: new Date().toISOString() })
+    .eq('id', user.id);
+  if (profileError) return { success: false, error: profileError.message };
+
+  const { error: spError } = await supabase
+    .from('seller_profiles')
+    .insert({ id: user.id, store_name: storeName, description: description || null });
+  if (spError) return { success: false, error: spError.message };
+
+  return { success: true };
 }
 
 export async function getMyListings(): Promise<(Listing & { cardBase: CardBase })[]> {
