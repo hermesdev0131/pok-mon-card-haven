@@ -804,13 +804,15 @@ export async function becomeSeller(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { success: false, error: 'Não autenticado' };
 
-  const { error: profileError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: profileError } = await (supabase as any)
     .from('profiles')
     .update({ role: 'seller', updated_at: new Date().toISOString() })
     .eq('id', user.id);
   if (profileError) return { success: false, error: profileError.message };
 
-  const { error: spError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: spError } = await (supabase as any)
     .from('seller_profiles')
     .insert({ id: user.id, store_name: storeName, description: description || null });
   if (spError) return { success: false, error: spError.message };
