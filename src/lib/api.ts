@@ -890,3 +890,16 @@ export async function createOrder(listingId: string): Promise<CreateOrderResult>
 
   return { success: true, orderId: (order as { id: string }).id };
 }
+
+export async function updateSellerVerification(
+  sellerId: string,
+  verified: boolean,
+): Promise<{ success: true } | { success: false; error: string }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('seller_profiles')
+    .update({ verified })
+    .eq('id', sellerId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}

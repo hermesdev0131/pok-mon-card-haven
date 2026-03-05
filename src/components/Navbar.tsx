@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Search, Menu, X, User, ShoppingBag, Sparkles, LogOut } from 'lucide-react';
+import { Search, Menu, X, User, ShoppingBag, Sparkles, LogOut, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -19,7 +19,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, profile, loading, signOut } = useAuth();
+  const { isAuthenticated, isAdmin, profile, signOut } = useAuth();
 
   async function handleSignOut() {
     await signOut();
@@ -61,6 +61,11 @@ export function Navbar() {
             </Button>
             {isAuthenticated ? (
               <>
+                {isAdmin && (
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
+                    <Link href="/admin"><ShieldCheck className="h-3.5 w-3.5" /> Admin</Link>
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
                   <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
                 </Button>
@@ -166,6 +171,11 @@ export function Navbar() {
             <Link href="/me" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
               <User className="h-3.5 w-3.5" /> {isAuthenticated ? (profile?.full_name?.split(' ')[0] ?? 'Minha conta') : 'Minha conta'}
             </Link>
+            {isAdmin && (
+              <Link href="/admin" className="text-sm font-medium flex items-center gap-2 text-accent" onClick={() => setMobileOpen(false)}>
+                <ShieldCheck className="h-3.5 w-3.5" /> Painel Admin
+              </Link>
+            )}
             {isAuthenticated ? (
               <Button size="sm" variant="outline" className="w-fit rounded-full px-4 gap-1.5" onClick={handleSignOut}>
                 <LogOut className="h-3.5 w-3.5" /> Sair

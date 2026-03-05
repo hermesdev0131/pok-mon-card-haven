@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Shield, MessageCircle, Loader2 } from 'lucide-react';
+import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
@@ -14,11 +14,37 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { Order } from '@/types';
 
+function PaymentReturnBanner({ status }: { status: string | null }) {
+  if (!status) return null;
+  if (status === 'success') return (
+    <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+      <CheckCircle2 className="h-5 w-5 shrink-0" />
+      Pagamento confirmado! Seu pedido está sendo processado.
+    </div>
+  );
+  if (status === 'pending') return (
+    <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+      <Clock className="h-5 w-5 shrink-0" />
+      Pagamento pendente. Você receberá uma confirmação assim que for aprovado.
+    </div>
+  );
+  return (
+    <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+      <XCircle className="h-5 w-5 shrink-0" />
+      Pagamento recusado. Verifique os dados do cartão e tente novamente.
+    </div>
+  );
+}
+
 export default function Checkout() {
   const params = useParams<{ orderId: string }>();
+  const searchParams = useSearchParams();
+  const paymentStatus = searchParams.get('status');
   const { tokenRefreshCount } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.orderId) {
@@ -28,6 +54,26 @@ export default function Checkout() {
       });
     }
   }, [params.orderId, tokenRefreshCount]);
+
+  const handlePay = useCallback(async () => {
+    if (!order) return;
+    setPaying(true);
+    setPayError(null);
+    try {
+      const res = await fetch('/api/payment/create-preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setPayError(data.error ?? 'Erro ao iniciar pagamento'); setPaying(false); return; }
+      // Redirect to Mercado Pago checkout
+      window.location.href = data.sandboxInitPoint ?? data.initPoint;
+    } catch {
+      setPayError('Erro de conexão. Tente novamente.');
+      setPaying(false);
+    }
+  }, [order]);
 
   return (
     <RequireAuth>
@@ -60,6 +106,8 @@ export default function Checkout() {
 
         {!loading && order && order.status === 'aguardando_pagamento' && (
           <>
+            <PaymentReturnBanner status={paymentStatus} />
+
             {/* Item summary */}
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
@@ -72,7 +120,7 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {/* Summary */}
+            {/* Price summary */}
             <Card className="glass mb-6">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between text-sm">
@@ -91,8 +139,14 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            <Button size="lg" className="w-full mb-4" disabled>
-              Pagar com Mercado Pago (em breve)
+            {payError && (
+              <p className="text-sm text-destructive mb-3 text-center">{payError}</p>
+            )}
+
+            <Button size="lg" className="w-full mb-4" onClick={handlePay} disabled={paying}>
+              {paying
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Aguarde...</>
+                : 'Pagar com Mercado Pago'}
             </Button>
 
             {/* Trust signals */}

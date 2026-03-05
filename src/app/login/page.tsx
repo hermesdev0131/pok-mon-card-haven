@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
 
 export default function Login() {
@@ -29,7 +30,14 @@ export default function Login() {
       setError(error === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error);
       setLoading(false);
     } else {
-      router.push('/');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      let destination = '/';
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if ((profile as { role?: string } | null)?.role === 'admin') destination = '/admin';
+      }
+      router.push(destination);
       router.refresh();
     }
   }
