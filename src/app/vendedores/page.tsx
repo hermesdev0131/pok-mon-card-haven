@@ -5,6 +5,8 @@ import { Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getSellersWithListingCount } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from '@/components/Pagination';
 import type { Seller } from '@/types';
 
 type SellerWithCount = Seller & { listingCount: number };
@@ -13,6 +15,7 @@ export default function VendedoresPage() {
   const { tokenRefreshCount } = useAuth();
   const [sellers, setSellers] = useState<SellerWithCount[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(sellers, 12);
 
   useEffect(() => {
     getSellersWithListingCount().then(data => {
@@ -42,16 +45,19 @@ export default function VendedoresPage() {
           ))}
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sellers.map(seller => (
-            <div key={seller.id} className="space-y-3">
-              <SellerCard seller={seller} />
-              {seller.listingCount > 0 && (
-                <p className="text-xs text-muted-foreground px-1">{seller.listingCount} {seller.listingCount === 1 ? 'anúncio ativo' : 'anúncios ativos'}</p>
-              )}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {paged.map(seller => (
+              <div key={seller.id} className="space-y-3">
+                <SellerCard seller={seller} />
+                {seller.listingCount > 0 && (
+                  <p className="text-xs text-muted-foreground px-1">{seller.listingCount} {seller.listingCount === 1 ? 'anúncio ativo' : 'anúncios ativos'}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        </>
       )}
     </div>
   );

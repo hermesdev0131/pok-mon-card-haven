@@ -12,6 +12,8 @@ import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from '@/components/Pagination';
 import type { CardBase, Listing, Seller, Review } from '@/types';
 
 export default function SellerProfilePageGuarded() {
@@ -30,6 +32,7 @@ function SellerProfilePage() {
   const [sellerListings, setSellerListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged: pagedListings, total, pageSize, setPageSize } = usePagination(sellerListings, 10);
 
   useEffect(() => {
     if (!id) return;
@@ -67,8 +70,8 @@ function SellerProfilePage() {
 
       {/* Listings */}
       <h2 className="text-lg font-semibold mb-4">Anúncios ({sellerListings.length})</h2>
-      <div className="space-y-3 mb-12">
-        {sellerListings.map(listing => {
+      <div className="space-y-3 mb-4">
+        {pagedListings.map(listing => {
           const { cardBase } = listing;
           return (
             <Link
@@ -100,6 +103,9 @@ function SellerProfilePage() {
         {sellerListings.length === 0 && (
           <p className="text-sm text-muted-foreground py-8 text-center">Nenhum anúncio ativo.</p>
         )}
+      </div>
+      <div className="mb-8">
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
       </div>
 
       {/* Reviews */}

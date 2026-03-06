@@ -228,7 +228,7 @@ export async function getCardBase(id: string): Promise<CardBase | null> {
     .from('card_bases')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
   logIfError('getCardBase', error);
   return data ? mapCardBase(data) : null;
 }
@@ -258,7 +258,7 @@ export async function getRecentListings(): Promise<
     .select('*, card_bases(*)')
     .eq('status', 'active' as string)
     .order('created_at', { ascending: false })
-    .limit(30);
+    .limit(200);
   logIfError('getRecentListings', error);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -282,7 +282,7 @@ export async function getRecentListings(): Promise<
 
 export async function getSeller(id: string): Promise<Seller | null> {
   const [{ data: sp }, profiles] = await Promise.all([
-    supabase.from('seller_profiles').select('*').eq('id', id).single(),
+    supabase.from('seller_profiles').select('*').eq('id', id).maybeSingle(),
     fetchProfilesByIds([id]),
   ]);
   if (!sp) return null;
@@ -458,7 +458,7 @@ export async function getRecentSales(): Promise<
     .from('confirmed_sales')
     .select('*')
     .order('sold_at', { ascending: false })
-    .limit(30);
+    .limit(200);
   logIfError('getRecentSales', error);
 
   const rows = (data ?? []) as ConfirmedSaleRow[];
@@ -518,7 +518,7 @@ export async function getQuestionsForListing(listingId: string): Promise<Questio
     .from('listings')
     .select('seller_id')
     .eq('id', listingId)
-    .single();
+    .maybeSingle();
 
   // Batch-fetch user profiles + seller name
   const userIds = rows.map(r => r.user_id);
@@ -527,7 +527,7 @@ export async function getQuestionsForListing(listingId: string): Promise<Questio
   const [profiles, { data: sellerData }] = await Promise.all([
     fetchProfilesByIds(userIds),
     sellerId
-      ? supabase.from('seller_profiles').select('store_name').eq('id', sellerId).single()
+      ? supabase.from('seller_profiles').select('store_name').eq('id', sellerId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -609,7 +609,7 @@ export async function getOrder(id: string): Promise<Order | null> {
     .from('orders')
     .select(ORDER_SELECT)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (!data) return null;
   const orders = await enrichOrders([data]);

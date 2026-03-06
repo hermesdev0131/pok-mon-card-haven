@@ -15,6 +15,8 @@ import Link from 'next/link';
 import { getQuestionsForListing, createOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from './Pagination';
 import type { Listing, Seller, Question } from '@/types';
 
 interface ListingTableProps {
@@ -29,6 +31,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
   const [qnaListing, setQnaListing] = useState<Listing | null>(null);
   const [qnaQuestions, setQnaQuestions] = useState<Question[]>([]);
   const [buyingId, setBuyingId] = useState<string | null>(null);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(listings, 10);
 
   const handleBuy = async (listing: Listing) => {
     if (!user) { router.push('/login'); return; }
@@ -70,7 +73,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {listings.map((listing) => {
+            {paged.map((listing) => {
               const seller = sellers[listing.sellerId];
               return (
                 <TableRow key={listing.id} className="group/row hover:bg-white/[0.02]">
@@ -166,6 +169,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
           </TableBody>
         </Table>
       </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
 
       {/* Photo modal */}
       <ListingPhotoModal

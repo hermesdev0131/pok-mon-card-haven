@@ -9,12 +9,15 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithStats } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from '@/components/Pagination';
 import type { CardBaseWithStats } from '@/types';
 
 export default function Marketplace() {
   const { tokenRefreshCount } = useAuth();
   const [items, setItems] = useState<CardBaseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(items, 12);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('newest');
   const [showFilters, setShowFilters] = useState(false);
@@ -85,11 +88,14 @@ export default function Marketplace() {
           <p className="text-muted-foreground">Nenhuma carta encontrada.</p>
         </div>
       ) : (
-        <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {items.map((item) => (
-            <CardBaseCard key={item.cardBase.id} item={item} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {paged.map((item) => (
+              <CardBaseCard key={item.cardBase.id} item={item} />
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        </>
       )}
     </div>
   );

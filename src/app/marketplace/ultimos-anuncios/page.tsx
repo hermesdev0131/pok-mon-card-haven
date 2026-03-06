@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getRecentListings } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from '@/components/Pagination';
 import { formatPrice } from '@/lib/utils';
 import type { CardBase, Listing, Seller } from '@/types';
 
@@ -18,6 +20,7 @@ export default function UltimosAnunciosPage() {
   const { tokenRefreshCount } = useAuth();
   const [recentListings, setRecentListings] = useState<RecentListing[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(recentListings, 10);
 
   useEffect(() => {
     getRecentListings().then(data => {
@@ -47,8 +50,9 @@ export default function UltimosAnunciosPage() {
           ))}
         </div>
       ) : (
+        <>
         <div className="space-y-3">
-          {recentListings.map(listing => {
+          {paged.map(listing => {
             const { cardBase, seller } = listing;
 
             return (
@@ -102,6 +106,8 @@ export default function UltimosAnunciosPage() {
             );
           })}
         </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        </>
       )}
     </div>
   );

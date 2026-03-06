@@ -16,6 +16,8 @@ import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, User, BadgeCheck, Loader2, Store } from 'lucide-react';
 import { GradeBadge } from '@/components/GradeBadge';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from '@/components/Pagination';
 import type { Order, Listing, CardBase } from '@/types';
 
 export default function Profile() {
@@ -219,6 +221,7 @@ function MyListingsList({
   const [editingListing, setEditingListing] = useState<(Listing & { cardBase: CardBase }) | null>(null);
   const [editPrice, setEditPrice] = useState('');
   const [saving, setSaving] = useState(false);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(listings, 10);
 
   if (!listings.length) {
     return (
@@ -245,7 +248,7 @@ function MyListingsList({
   return (
     <>
       <div className="space-y-3 mt-4">
-        {listings.map(listing => (
+        {paged.map(listing => (
           <Card key={listing.id} className="glass">
             <CardContent className="flex items-center gap-4 p-4">
               <div className="flex-1 min-w-0">
@@ -314,6 +317,7 @@ function MyListingsList({
           </Card>
         ))}
       </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
 
       {/* Edit price dialog */}
       <Dialog open={!!editingListing} onOpenChange={(open) => !open && setEditingListing(null)}>

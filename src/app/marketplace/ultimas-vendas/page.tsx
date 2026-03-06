@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getRecentSales } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from '@/components/Pagination';
 import { formatPrice } from '@/lib/utils';
 import type { SaleRecord, Seller } from '@/types';
 
@@ -24,6 +26,7 @@ export default function UltimasVendasPage() {
   const { tokenRefreshCount } = useAuth();
   const [allSales, setAllSales] = useState<SaleWithCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(allSales, 10);
 
   useEffect(() => {
     getRecentSales().then(data => {
@@ -53,8 +56,9 @@ export default function UltimasVendasPage() {
           ))}
         </div>
       ) : (
+        <>
         <div className="space-y-3">
-          {allSales.map((sale, i) => (
+          {paged.map((sale, i) => (
             <Link
               key={`${sale.cardBaseId}-${sale.date}-${i}`}
               href={`/card/${sale.cardBaseId}`}
@@ -100,6 +104,8 @@ export default function UltimasVendasPage() {
             </Link>
           ))}
         </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        </>
       )}
     </div>
   );

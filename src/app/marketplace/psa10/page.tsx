@@ -5,12 +5,15 @@ import { Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithPSA10 } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from '@/hooks/usePagination';
+import { Pagination } from '@/components/Pagination';
 import type { CardBaseWithStats } from '@/types';
 
 export default function PSA10Page() {
   const { tokenRefreshCount } = useAuth();
   const [stats, setStats] = useState<CardBaseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(stats, 12);
 
   useEffect(() => {
     getCardBasesWithPSA10().then(data => {
@@ -40,11 +43,14 @@ export default function PSA10Page() {
           ))}
         </div>
       ) : (
-        <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {stats.map(item => (
-            <CardBaseCard key={item.cardBase.id} item={item} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {paged.map(item => (
+              <CardBaseCard key={item.cardBase.id} item={item} />
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
+        </>
       )}
     </div>
   );
