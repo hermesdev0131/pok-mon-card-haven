@@ -68,10 +68,10 @@ export async function POST(req: NextRequest) {
       .update({ mp_preference_id: result.id })
       .eq('id', orderId);
 
+    const isSandbox = process.env.MERCADO_PAGO_ACCESS_TOKEN?.startsWith('TEST-');
     return NextResponse.json({
       preferenceId: result.id,
-      initPoint: result.init_point,        // production checkout URL
-      sandboxInitPoint: result.sandbox_init_point, // sandbox URL
+      checkoutUrl: isSandbox ? result.sandbox_init_point : result.init_point,
     });
   } catch (err: any) {
     console.error('[create-preference]', err);

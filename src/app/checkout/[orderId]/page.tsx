@@ -68,7 +68,7 @@ export default function Checkout() {
       const data = await res.json();
       if (!res.ok) { setPayError(data.error ?? 'Erro ao iniciar pagamento'); setPaying(false); return; }
       // Redirect to Mercado Pago checkout
-      window.location.href = data.sandboxInitPoint ?? data.initPoint;
+      window.location.href = data.checkoutUrl;
     } catch {
       setPayError('Erro de conexão. Tente novamente.');
       setPaying(false);
