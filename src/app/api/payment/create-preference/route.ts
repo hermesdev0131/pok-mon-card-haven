@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       .update({ mp_preference_id: result.id })
       .eq('id', orderId);
 
-    const isSandbox = process.env.MERCADO_PAGO_ACCESS_TOKEN?.startsWith('TEST-');
+    const isSandbox = process.env.MERCADO_PAGO_SANDBOX === 'true';
     return NextResponse.json({
       preferenceId: result.id,
       checkoutUrl: isSandbox ? result.sandbox_init_point : result.init_point,
