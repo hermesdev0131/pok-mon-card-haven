@@ -18,7 +18,7 @@ import { formatPrice } from '@/lib/utils';
 import type { Order, Seller } from '@/types';
 
 // These are frontend-mapped OrderStatus values (from mapOrderStatus in api.ts)
-const RELEASABLE_STATUSES = ['pago', 'enviado'];
+const RELEASABLE_STATUSES = ['pago', 'enviado', 'entregue'];
 
 export default function Admin() {
   const { tokenRefreshCount } = useAuth();
@@ -74,7 +74,7 @@ export default function Admin() {
         body: JSON.stringify({ orderId }),
       });
       if (res.ok) {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'entregue' as const } : o));
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'concluido' as const } : o));
       }
     } finally {
       setReleasingId(null);
@@ -86,12 +86,12 @@ export default function Admin() {
     setSellers(prev => prev.map(s => s.id === sellerId ? { ...s, verified } : s));
   };
 
-  const completedOrders = orders.filter(o => o.status === 'entregue');
+  const completedOrders = orders.filter(o => o.status === 'concluido');
   const stats = [
     { icon: DollarSign, label: 'Volume transacionado', value: `R$ ${formatPrice(orders.reduce((a, o) => a + o.price, 0))}` },
     { icon: Package, label: 'Vendas concluídas', value: completedOrders.length },
     { icon: Users, label: 'Vendedores', value: sellers.length },
-    { icon: TrendingUp, label: 'Pedidos ativos', value: orders.filter(o => !['entregue', 'cancelado'].includes(o.status)).length },
+    { icon: TrendingUp, label: 'Pedidos ativos', value: orders.filter(o => !['concluido', 'cancelado'].includes(o.status)).length },
   ];
 
   return (
@@ -129,7 +129,7 @@ export default function Admin() {
                 <Input placeholder="Buscar por carta, comprador, vendedor..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} className="pl-9" />
               </div>
               <div className="flex rounded-lg border border-white/[0.08] overflow-hidden shrink-0">
-                {([['all', 'Todos'], ['aguardando_pagamento', 'Aguardando'], ['pago', 'Pago'], ['enviado', 'Enviado'], ['entregue', 'Entregue'], ['disputa', 'Disputa'], ['cancelado', 'Cancelado']] as const).map(([val, label]) => (
+                {([['all', 'Todos'], ['aguardando_pagamento', 'Aguardando'], ['pago', 'Pago'], ['enviado', 'Enviado'], ['entregue', 'Entregue'], ['concluido', 'Concluído'], ['disputa', 'Disputa'], ['cancelado', 'Cancelado']] as const).map(([val, label]) => (
                   <button
                     key={val}
                     onClick={() => setOrderStatusFilter(val)}

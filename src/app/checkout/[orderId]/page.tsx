@@ -314,8 +314,38 @@ export default function Checkout() {
               </Card>
             )}
 
+            {/* Completed — funds released */}
+            {order.status === 'concluido' && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>{isSeller ? 'Pagamento liberado!' : 'Pedido concluído!'}</span>
+                  </div>
+                  {isSeller && (
+                    <p className="text-sm text-muted-foreground">
+                      <span>O valor de </span>
+                      <span className="font-semibold text-accent">R$ {formatPrice(order.price)}</span>
+                      <span> foi creditado na sua conta.</span>
+                    </p>
+                  )}
+                  {isBuyer && (
+                    <p className="text-sm text-muted-foreground">
+                      <span>O pagamento foi liberado ao vendedor. Obrigado pela compra!</span>
+                    </p>
+                  )}
+                  {order.trackingCode && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Código de rastreamento</span>
+                      <span className="font-mono font-medium">{order.trackingCode}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Generic status for other states */}
-            {order.status !== 'pago' && order.status !== 'enviado' && order.status !== 'entregue' && (
+            {order.status !== 'pago' && order.status !== 'enviado' && order.status !== 'entregue' && order.status !== 'concluido' && (
               <div className="text-center mb-6">
                 <StatusPill status={order.status} />
               </div>

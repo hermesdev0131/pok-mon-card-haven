@@ -7,6 +7,7 @@ const statusConfig: Record<OrderStatus, { label: string; className: string }> = 
   pago: { label: 'Pago', className: 'bg-accent/10 text-accent border-accent/20' },
   enviado: { label: 'Enviado', className: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
   entregue: { label: 'Entregue', className: 'bg-accent/10 text-accent border-accent/20' },
+  concluido: { label: 'Concluído', className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
   disputa: { label: 'Em disputa', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   cancelado: { label: 'Cancelado', className: 'bg-muted/50 text-muted-foreground border-border' },
 };

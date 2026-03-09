@@ -84,7 +84,7 @@ export interface SaleRecord {
   language: CardLanguage;
 }
 
-export type OrderStatus = 'aguardando_pagamento' | 'pago' | 'enviado' | 'entregue' | 'disputa' | 'cancelado';
+export type OrderStatus = 'aguardando_pagamento' | 'pago' | 'enviado' | 'entregue' | 'concluido' | 'disputa' | 'cancelado';
 
 export interface Order {
   id: string;

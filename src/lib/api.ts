@@ -128,7 +128,7 @@ function mapOrderStatus(dbStatus: string): OrderStatus {
     awaiting_shipment: 'pago',
     shipped: 'enviado',
     delivered: 'entregue',
-    completed: 'entregue',
+    completed: 'concluido',
     disputed: 'disputa',
     cancelled: 'cancelado',
     refunded: 'cancelado',
