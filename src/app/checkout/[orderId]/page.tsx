@@ -169,17 +169,17 @@ export default function Checkout() {
                 {verifying ? (
                   <>
                     <Loader2 className="h-5 w-5 shrink-0 animate-spin" />
-                    Verificando pagamento...
+                    <span>Verificando pagamento...</span>
                   </>
                 ) : paymentStatus === 'success' ? (
                   <>
                     <CheckCircle2 className="h-5 w-5 shrink-0" />
-                    Pagamento realizado! A confirmação pode levar alguns instantes.
+                    <span>Pagamento realizado! A confirmação pode levar alguns instantes.</span>
                   </>
                 ) : (
                   <>
                     <Clock className="h-5 w-5 shrink-0" />
-                    Pagamento pendente. Você receberá uma confirmação assim que for aprovado.
+                    <span>Pagamento pendente. Você receberá uma confirmação assim que for aprovado.</span>
                   </>
                 )}
               </div>
@@ -189,14 +189,14 @@ export default function Checkout() {
             {isBuyer && paymentStatus === 'failure' && (
               <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
                 <XCircle className="h-5 w-5 shrink-0" />
-                Pagamento recusado. Verifique os dados e tente novamente.
+                <span>Pagamento recusado. Verifique os dados e tente novamente.</span>
               </div>
             )}
 
             {/* Item summary */}
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30">🃏</div>
+                <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
                   <p className="text-sm text-muted-foreground">
