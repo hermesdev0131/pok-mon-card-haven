@@ -53,16 +53,22 @@ export async function POST(req: NextRequest) {
     const approvedPayment = results.find((p: any) => p.status === 'approved');
 
     if (approvedPayment) {
-      // Payment approved — update order status
-      await admin
-        .from('orders')
-        .update({
-          status: 'payment_confirmed',
-          mp_payment_id: String(approvedPayment.id),
-          paid_at: new Date().toISOString(),
-        })
-        .eq('id', orderId)
-        .eq('status', 'awaiting_payment'); // idempotent guard
+      // Payment approved — update order status and mark listing as sold
+      await Promise.all([
+        admin
+          .from('orders')
+          .update({
+            status: 'payment_confirmed',
+            mp_payment_id: String(approvedPayment.id),
+            paid_at: new Date().toISOString(),
+          })
+          .eq('id', orderId)
+          .eq('status', 'awaiting_payment'), // idempotent guard
+        admin
+          .from('listings')
+          .update({ status: 'sold' })
+          .eq('id', order.listing_id),
+      ]);
 
       return NextResponse.json({ status: 'payment_confirmed' });
     }

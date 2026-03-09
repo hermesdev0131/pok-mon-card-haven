@@ -65,39 +65,38 @@ export async function POST(req: NextRequest) {
     // Fetch the order to check current status (idempotency)
     const { data: order } = await admin
       .from('orders')
-      .select('id, status')
+      .select('id, status, listing_id')
       .eq('id', orderId)
       .single();
 
     if (!order) return NextResponse.json({ ok: true });
 
     if (payment.status === 'approved' && order.status === 'awaiting_payment') {
-      await admin
-        .from('orders')
-        .update({
-          status: 'payment_confirmed',
-          mp_payment_id: paymentId,
-          paid_at: new Date().toISOString(),
-        })
-        .eq('id', orderId);
+      // Payment approved — update order and mark listing as sold
+      await Promise.all([
+        admin
+          .from('orders')
+          .update({
+            status: 'payment_confirmed',
+            mp_payment_id: paymentId,
+            paid_at: new Date().toISOString(),
+          })
+          .eq('id', orderId),
+        admin
+          .from('listings')
+          .update({ status: 'sold' })
+          .eq('id', order.listing_id),
+      ]);
 
     } else if (['rejected', 'cancelled'].includes(payment.status ?? '') && order.status === 'awaiting_payment') {
       // Release the listing back to active
-      const { data: orderFull } = await admin
-        .from('orders')
-        .select('listing_id')
-        .eq('id', orderId)
-        .single();
-
       await Promise.all([
         admin.from('orders').update({
           status: 'cancelled',
           cancelled_at: new Date().toISOString(),
           cancellation_reason: `MP payment ${payment.status}`,
         }).eq('id', orderId),
-        orderFull
-          ? admin.from('listings').update({ status: 'active' }).eq('id', orderFull.listing_id)
-          : Promise.resolve(),
+        admin.from('listings').update({ status: 'active' }).eq('id', order.listing_id),
       ]);
     }
   } catch (err) {
