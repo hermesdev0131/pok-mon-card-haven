@@ -890,6 +890,27 @@ export async function shipOrder(
   return { success: true };
 }
 
+export async function confirmDelivery(
+  orderId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('orders')
+    .update({
+      status: 'delivered',
+      delivered_at: new Date().toISOString(),
+    })
+    .eq('id', orderId)
+    .eq('buyer_id', user.id)
+    .eq('status', 'shipped');
+
+  if (error) { logIfError('confirmDelivery', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
 export async function updateSellerVerification(
   sellerId: string,
   verified: boolean,

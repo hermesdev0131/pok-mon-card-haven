@@ -11,7 +11,7 @@ import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock, Package, 
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
-import { getOrder, cancelOrder, shipOrder } from '@/lib/api';
+import { getOrder, cancelOrder, shipOrder, confirmDelivery } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { Order } from '@/types';
@@ -32,6 +32,9 @@ export default function Checkout() {
   const [trackingCode, setTrackingCode] = useState('');
   const [shipping, setShipping] = useState(false);
   const [shipError, setShipError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmDeliveryOpen, setConfirmDeliveryOpen] = useState(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const verifyAttempts = useRef(0);
   const isBuyer = !!(user && order && user.id === order.buyerId);
   const isSeller = !!(user && order && user.id === order.sellerId);
@@ -129,6 +132,21 @@ export default function Checkout() {
     }
   }, [order, trackingCode]);
 
+  const handleConfirmDelivery = useCallback(async () => {
+    if (!order) return;
+    setConfirming(true);
+    setDeliveryError(null);
+    const result = await confirmDelivery(order.id);
+    setConfirming(false);
+    if (result.success) {
+      const updated = await getOrder(order.id);
+      setOrder(updated);
+      setConfirmDeliveryOpen(false);
+    } else {
+      setDeliveryError('error' in result ? result.error : 'Erro ao confirmar recebimento');
+    }
+  }, [order]);
+
   const isPostPayment = isBuyer && (paymentStatus === 'success' || paymentStatus === 'pending');
 
   const pageTitle = !loading && order
@@ -216,7 +234,7 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* Shipped — show tracking info */}
+            {/* Shipped — show tracking info + confirm delivery for buyer */}
             {order.status === 'enviado' && (
               <Card className="glass mb-6">
                 <CardContent className="p-4 space-y-3">
@@ -231,16 +249,73 @@ export default function Checkout() {
                     </div>
                   )}
                   {isBuyer && (
+                    <>
+                      {deliveryError && (
+                        <p className="text-sm text-destructive">{deliveryError}</p>
+                      )}
+                      {confirmDeliveryOpen ? (
+                        <div className="space-y-3 pt-2">
+                          <p className="text-sm text-muted-foreground">
+                            Confirme apenas após receber e verificar o produto. Esta ação não pode ser desfeita.
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              className="flex-1"
+                              disabled={confirming}
+                              onClick={handleConfirmDelivery}
+                            >
+                              {confirming
+                                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> <span>Confirmando...</span></>
+                                : <><CheckCircle2 className="h-4 w-4 mr-2" /> <span>Sim, recebi o produto</span></>}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              disabled={confirming}
+                              onClick={() => setConfirmDeliveryOpen(false)}
+                            >
+                              Voltar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          className="w-full"
+                          onClick={() => setConfirmDeliveryOpen(true)}
+                        >
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          <span>Confirmar recebimento</span>
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {isSeller && (
                     <p className="text-xs text-muted-foreground">
-                      Quando receber o produto, confirme a entrega na página de pedidos.
+                      Aguardando o comprador confirmar o recebimento.
                     </p>
                   )}
                 </CardContent>
               </Card>
             )}
 
+            {/* Delivered — awaiting admin release */}
+            {order.status === 'entregue' && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>{isBuyer ? 'Recebimento confirmado!' : 'Comprador confirmou o recebimento!'}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {isSeller
+                      ? 'O pagamento será liberado em breve pela plataforma.'
+                      : 'O pagamento será liberado ao vendedor pela plataforma.'}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Generic status for other states */}
-            {order.status !== 'pago' && order.status !== 'enviado' && (
+            {order.status !== 'pago' && order.status !== 'enviado' && order.status !== 'entregue' && (
               <div className="text-center mb-6">
                 <StatusPill status={order.status} />
               </div>
