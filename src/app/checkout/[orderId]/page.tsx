@@ -41,13 +41,14 @@ export default function Checkout() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const paymentStatus = searchParams.get('status');
-  const { tokenRefreshCount } = useAuth();
+  const { user, tokenRefreshCount } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const isBuyer = !!(user && order && user.id === order.buyerId);
 
   useEffect(() => {
     if (params.orderId) {
@@ -93,7 +94,9 @@ export default function Checkout() {
   return (
     <RequireAuth>
       <div className="container mx-auto max-w-2xl px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Finalizar compra</h1>
+        <h1 className="text-2xl font-bold mb-6">
+          {!loading && order && !isBuyer ? 'Detalhes do pedido' : 'Finalizar compra'}
+        </h1>
 
         {loading && (
           <div className="flex items-center justify-center py-24">
@@ -121,7 +124,7 @@ export default function Checkout() {
 
         {!loading && order && order.status === 'aguardando_pagamento' && (
           <>
-            <PaymentReturnBanner status={paymentStatus} />
+            <PaymentReturnBanner status={isBuyer ? paymentStatus : null} />
 
             {/* Item summary */}
             <Card className="glass mb-6">
@@ -129,7 +132,9 @@ export default function Checkout() {
                 <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30">🃏</div>
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
-                  <p className="text-sm text-muted-foreground">Vendedor: {order.sellerName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isBuyer ? `Vendedor: ${order.sellerName}` : `Comprador: ${order.buyerName}`}
+                  </p>
                 </div>
                 <p className="text-xl font-bold text-accent">R$ {formatPrice(order.price)}</p>
               </CardContent>
@@ -154,62 +159,77 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {payError && (
-              <p className="text-sm text-destructive mb-3 text-center">{payError}</p>
-            )}
+            {isBuyer ? (
+              <>
+                {payError && (
+                  <p className="text-sm text-destructive mb-3 text-center">{payError}</p>
+                )}
 
-            <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying}>
-              {paying
-                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Aguarde...</>
-                : 'Pagar com Mercado Pago'}
-            </Button>
-
-            {/* Cancel order */}
-            <div className="flex justify-center mb-4">
-              {confirmCancel ? (
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground">Tem certeza?</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                    disabled={cancelling}
-                    onClick={handleCancel}
-                  >
-                    {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sim, cancelar'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={() => setConfirmCancel(false)}
-                  >
-                    Voltar
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground/60 hover:text-destructive"
-                  onClick={() => setConfirmCancel(true)}
-                >
-                  Cancelar pedido
+                <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying}>
+                  {paying
+                    ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Aguarde...</>
+                    : 'Pagar com Mercado Pago'}
                 </Button>
-              )}
-            </div>
 
-            {/* Trust signals */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Shield className="h-4 w-4 text-accent shrink-0" />
-                <span>Pagamento retido até confirmação do recebimento</span>
+                {/* Cancel order */}
+                <div className="flex justify-center mb-4">
+                  {confirmCancel ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">Tem certeza?</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={cancelling}
+                        onClick={handleCancel}
+                      >
+                        {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sim, cancelar'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setConfirmCancel(false)}
+                      >
+                        Voltar
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground/60 hover:text-destructive"
+                      onClick={() => setConfirmCancel(true)}
+                    >
+                      Cancelar pedido
+                    </Button>
+                  )}
+                </div>
+
+                {/* Trust signals */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Shield className="h-4 w-4 text-accent shrink-0" />
+                    <span>Pagamento retido até confirmação do recebimento</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <MessageCircle className="h-4 w-4 text-accent shrink-0" />
+                    <span>Suporte via WhatsApp em caso de problemas</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Seller view — read-only status */
+              <div className="text-center py-4">
+                <div className="flex items-center justify-center gap-2 mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+                  <Clock className="h-4 w-4 shrink-0" />
+                  Aguardando pagamento do comprador
+                </div>
+                <Button asChild variant="outline" className="mt-2">
+                  <Link href="/me">Voltar ao perfil</Link>
+                </Button>
               </div>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <MessageCircle className="h-4 w-4 text-accent shrink-0" />
-                <span>Suporte via WhatsApp em caso de problemas</span>
-              </div>
-            </div>
+            )}
           </>
         )}
       </div>

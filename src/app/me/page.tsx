@@ -118,7 +118,7 @@ export default function Profile() {
             }} />
           </TabsContent>
           <TabsContent value="sales">
-            <OrderList orders={sales} />
+            <SalesOrderList orders={sales} />
           </TabsContent>
           {isSeller && (
             <TabsContent value="listings">
@@ -244,6 +244,48 @@ function OrderList({ orders, onCancel }: { orders: Order[]; onCancel?: (id: stri
                   </Button>
                 )
               )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function SalesOrderList({ orders }: { orders: Order[] }) {
+  if (!orders.length) {
+    return <p className="py-12 text-center text-sm text-muted-foreground">Nenhuma venda encontrada.</p>;
+  }
+
+  const statusMessage: Record<string, string> = {
+    aguardando_pagamento: 'Aguardando pagamento do comprador',
+    pago: 'Pagamento recebido — prepare o envio',
+    enviado: 'Aguardando confirmação do comprador',
+    entregue: 'Aguardando liberação do pagamento',
+    concluido: 'Venda concluída',
+    cancelado: 'Pedido cancelado',
+    em_disputa: 'Em disputa — aguarde resolução',
+  };
+
+  return (
+    <div className="space-y-3 mt-4">
+      {orders.map(order => (
+        <Card key={order.id} className="glass">
+          <CardContent className="flex items-center gap-4 p-4">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm truncate">{order.cardName}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Comprador: {order.buyerName} · {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">
+                {statusMessage[order.status] ?? order.status}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="font-semibold text-sm">R$ {formatPrice(order.price)}</p>
+                <StatusPill status={order.status} />
+              </div>
             </div>
           </CardContent>
         </Card>

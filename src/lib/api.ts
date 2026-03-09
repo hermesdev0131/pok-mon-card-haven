@@ -242,7 +242,7 @@ export async function getListingsForCard(cardBaseId: string): Promise<Listing[]>
     .from('listings')
     .select('*')
     .eq('card_base_id', cardBaseId)
-    .eq('status', 'active' as string)
+    .in('status', ['active', 'reserved'] as string[])
     .order('price', { ascending: true });
   logIfError('getListingsForCard', error);
   return ((data ?? []) as ListingRow[]).map(mapListing);
@@ -843,79 +843,25 @@ export async function getMyListings(): Promise<(Listing & { cardBase: CardBase }
 // Order Mutations
 // ════════════════════════════════════════════════
 
-const PLATFORM_FEE_RATE = 0.10;
-
 export type CreateOrderResult =
   | { success: true; orderId: string }
   | { success: false; error: string };
 
 export async function createOrder(listingId: string): Promise<CreateOrderResult> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autenticado' };
-
-  const { data: listing, error: listingError } = await supabase
-    .from('listings')
-    .select('id, seller_id, price, status')
-    .eq('id', listingId)
-    .single();
-
-  if (listingError || !listing) return { success: false, error: 'Anúncio não encontrado' };
-  if ((listing as { status: string }).status !== 'active') return { success: false, error: 'Este anúncio não está mais disponível' };
-  if ((listing as { seller_id: string }).seller_id === user.id) return { success: false, error: 'Você não pode comprar seu próprio anúncio' };
-
-  const price = (listing as { price: number }).price;
-  const platformFee = Math.round(price * PLATFORM_FEE_RATE);
-  const sellerPayout = price - platformFee;
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: order, error: orderError } = await (supabase.from('orders') as any).insert({
-    listing_id: listingId,
-    buyer_id: user.id,
-    seller_id: (listing as { seller_id: string }).seller_id,
-    price,
-    shipping_cost: 0,
-    platform_fee: platformFee,
-    seller_payout: sellerPayout,
-    status: 'awaiting_payment',
-  }).select('id').single();
-
-  if (orderError) {
-    logIfError('createOrder', orderError);
-    if (orderError.code === '23505') return { success: false, error: 'Este anúncio já foi vendido' };
-    return { success: false, error: orderError.message };
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('listings') as any).update({ status: 'reserved' }).eq('id', listingId);
-
-  return { success: true, orderId: (order as { id: string }).id };
+  const { data, error } = await (supabase as any).rpc('create_order', { p_listing_id: listingId });
+  if (error) { logIfError('createOrder', error); return { success: false, error: error.message }; }
+  const result = data as { success: boolean; orderId?: string; error?: string };
+  if (!result.success) return { success: false, error: result.error ?? 'Erro ao criar pedido' };
+  return { success: true, orderId: result.orderId! };
 }
 
 export async function cancelOrder(orderId: string): Promise<{ success: true } | { success: false; error: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autenticado' };
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: order } = await (supabase as any)
-    .from('orders')
-    .select('id, listing_id, buyer_id, status')
-    .eq('id', orderId)
-    .maybeSingle();
-
-  if (!order) return { success: false, error: 'Pedido não encontrado' };
-  if (order.buyer_id !== user.id) return { success: false, error: 'Sem permissão' };
-  if (order.status !== 'awaiting_payment') return { success: false, error: 'Pedido não pode ser cancelado' };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: updateError } = await (supabase as any)
-    .from('orders')
-    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: 'Cancelado pelo comprador' })
-    .eq('id', orderId);
-  if (updateError) return { success: false, error: updateError.message };
-
-  // Unlock the listing
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from('listings').update({ status: 'active' }).eq('id', order.listing_id);
+  const { data, error } = await (supabase as any).rpc('cancel_order', { p_order_id: orderId });
+  if (error) { logIfError('cancelOrder', error); return { success: false, error: error.message }; }
+  const result = data as { success: boolean; error?: string };
+  if (!result.success) return { success: false, error: result.error ?? 'Erro ao cancelar pedido' };
 
   return { success: true };
 }
