@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
             currency_id: 'BRL',
           },
         ],
-        marketplace_fee: order.platform_fee / 100,
+        // Note: marketplace_fee requires MP marketplace approval — fee is tracked internally in the order
         back_urls: {
           success: `${appUrl}/checkout/${orderId}?status=success`,
           failure: `${appUrl}/checkout/${orderId}?status=failure`,

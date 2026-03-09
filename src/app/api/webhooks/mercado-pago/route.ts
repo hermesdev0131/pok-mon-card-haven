@@ -7,7 +7,7 @@ const mp = new MercadoPagoConfig({
   accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
 });
 
-function verifySignature(req: NextRequest, _rawBody: string): boolean {
+function verifySignature(req: NextRequest): boolean {
   const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
   if (!secret) return true; // skip verification if secret not configured yet
 
@@ -21,7 +21,9 @@ function verifySignature(req: NextRequest, _rawBody: string): boolean {
   const v1 = parts['v1'];
   if (!ts || !v1) return false;
 
-  const manifest = `id:${xRequestId};request-id:${xRequestId};ts:${ts};`;
+  // The data.id comes from the query string, not the request body
+  const dataId = req.nextUrl.searchParams.get('data.id') ?? '';
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
   const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
   return crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
 }
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Always return 200 to MP — process errors internally
-  if (!verifySignature(req, rawBody)) {
+  if (!verifySignature(req)) {
     console.warn('[webhook/mp] invalid signature');
     return NextResponse.json({ ok: true });
   }
