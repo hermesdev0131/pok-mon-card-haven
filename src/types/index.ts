@@ -98,6 +98,8 @@ export interface Order {
   price: number;
   createdAt: string;
   trackingCode?: string;
+  mpPaymentId?: string;
+  paidAt?: string;
 }
 
 export interface Question {

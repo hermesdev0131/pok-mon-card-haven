@@ -155,6 +155,8 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
     price: row.price,
     createdAt: row.created_at,
     trackingCode: row.tracking_code ?? undefined,
+    mpPaymentId: row.mp_payment_id ?? undefined,
+    paidAt: row.paid_at ?? undefined,
   };
 }
 
@@ -239,6 +241,20 @@ export async function getCardBase(id: string): Promise<CardBase | null> {
 // ════════════════════════════════════════════════
 
 export async function getListingsForCard(cardBaseId: string): Promise<Listing[]> {
+  // First, expire any stale reserved listings for this card
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: reservedIds } = await (supabase as any)
+    .from('listings')
+    .select('id')
+    .eq('card_base_id', cardBaseId)
+    .eq('status', 'reserved' as string);
+  if (reservedIds?.length) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).rpc('expire_stale_orders', {
+      p_listing_ids: reservedIds.map((r: any) => r.id),
+    });
+  }
+
   const { data, error } = await supabase
     .from('listings')
     .select('*')
@@ -849,6 +865,10 @@ export type CreateOrderResult =
   | { success: false; error: string };
 
 export async function createOrder(listingId: string): Promise<CreateOrderResult> {
+  // Expire any stale reservation on this listing before attempting purchase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).rpc('expire_stale_orders', { p_listing_ids: [listingId] });
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc('create_order', { p_listing_id: listingId });
   if (error) { logIfError('createOrder', error); return { success: false, error: error.message }; }

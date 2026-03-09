@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useEffect, useMemo } from 'react';
 import { getAllOrders, getAllSellers, updateSellerVerification } from '@/lib/api';
 import { Input } from '@/components/ui/input';
-import { DollarSign, Package, Users, TrendingUp, Loader2, Search } from 'lucide-react';
+import { DollarSign, Package, Users, TrendingUp, Loader2, Search, ExternalLink } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePagination } from '@/hooks/usePagination';
@@ -149,6 +149,7 @@ export default function Admin() {
                     <TableHead>Comprador</TableHead>
                     <TableHead>Vendedor</TableHead>
                     <TableHead>Valor</TableHead>
+                    <TableHead>Pagamento</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -161,6 +162,28 @@ export default function Admin() {
                       <TableCell className="text-sm">{order.buyerName}</TableCell>
                       <TableCell className="text-sm">{order.sellerName}</TableCell>
                       <TableCell className="font-semibold text-sm">R$ {formatPrice(order.price)}</TableCell>
+                      <TableCell>
+                        {order.mpPaymentId ? (
+                          <div className="space-y-0.5">
+                            <a
+                              href={`https://www.mercadopago.com.br/activities/detail/${order.mpPaymentId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-accent hover:underline font-mono"
+                            >
+                              {order.mpPaymentId.slice(0, 10)}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                            {order.paidAt && (
+                              <p className="text-[10px] text-muted-foreground">
+                                {new Date(order.paidAt).toLocaleDateString('pt-BR')}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell><StatusPill status={order.status} /></TableCell>
                       <TableCell className="text-right">
                         {RELEASABLE_STATUSES.includes(order.status) && (

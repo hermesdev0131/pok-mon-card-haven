@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock, Package, Truck } from 'lucide-react';
+import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock, Package, Truck, AlertTriangle } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
@@ -36,6 +36,7 @@ export default function Checkout() {
   const [confirmDeliveryOpen, setConfirmDeliveryOpen] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const verifyAttempts = useRef(0);
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const isBuyer = !!(user && order && user.id === order.buyerId);
   const isSeller = !!(user && order && user.id === order.sellerId);
 
@@ -48,6 +49,27 @@ export default function Checkout() {
       });
     }
   }, [params.orderId, tokenRefreshCount]);
+
+  // Countdown timer for awaiting_payment orders (30 min expiry)
+  useEffect(() => {
+    if (!order || order.status !== 'aguardando_pagamento') { setTimeLeft(null); return; }
+    const expiresAt = new Date(order.createdAt).getTime() + 30 * 60 * 1000;
+    const tick = () => {
+      const remaining = expiresAt - Date.now();
+      if (remaining <= 0) {
+        setTimeLeft(null);
+        // Refetch order — it may have been expired by the DB function
+        getOrder(order.id).then(o => { if (o) setOrder(o); });
+        return;
+      }
+      const mins = Math.floor(remaining / 60000);
+      const secs = Math.floor((remaining % 60000) / 1000);
+      setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [order?.id, order?.status, order?.createdAt]);
 
   // When returning from MP with ?status=success, verify payment
   useEffect(() => {
@@ -424,6 +446,14 @@ export default function Checkout() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Expiry countdown */}
+            {timeLeft && !isPostPayment && (
+              <div className="flex items-center justify-center gap-2 mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>Reserva expira em <span className="font-mono font-bold">{timeLeft}</span></span>
+              </div>
+            )}
 
             {isBuyer ? (
               <>
