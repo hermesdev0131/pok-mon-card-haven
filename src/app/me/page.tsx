@@ -260,7 +260,7 @@ function SalesOrderList({ orders }: { orders: Order[] }) {
   const statusMessage: Record<string, string> = {
     aguardando_pagamento: 'Aguardando pagamento do comprador',
     pago: 'Pagamento recebido — prepare o envio',
-    enviado: 'Aguardando confirmação do comprador',
+    enviado: 'Enviado — aguardando confirmação do comprador',
     entregue: 'Aguardando liberação do pagamento',
     concluido: 'Venda concluída',
     cancelado: 'Pedido cancelado',
@@ -286,6 +286,11 @@ function SalesOrderList({ orders }: { orders: Order[] }) {
                 <p className="font-semibold text-sm">R$ {formatPrice(order.price)}</p>
                 <StatusPill status={order.status} />
               </div>
+              {order.status !== 'cancelado' && order.status !== 'aguardando_pagamento' && (
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/checkout/${order.id}`}>Ver pedido</Link>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

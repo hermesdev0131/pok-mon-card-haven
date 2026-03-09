@@ -154,6 +154,7 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
     sellerName,
     price: row.price,
     createdAt: row.created_at,
+    trackingCode: row.tracking_code ?? undefined,
   };
 }
 
@@ -863,6 +864,29 @@ export async function cancelOrder(orderId: string): Promise<{ success: true } | 
   const result = data as { success: boolean; error?: string };
   if (!result.success) return { success: false, error: result.error ?? 'Erro ao cancelar pedido' };
 
+  return { success: true };
+}
+
+export async function shipOrder(
+  orderId: string,
+  trackingCode: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('orders')
+    .update({
+      status: 'shipped',
+      tracking_code: trackingCode,
+      shipped_at: new Date().toISOString(),
+    })
+    .eq('id', orderId)
+    .eq('seller_id', user.id)
+    .in('status', ['payment_confirmed', 'awaiting_shipment']);
+
+  if (error) { logIfError('shipOrder', error); return { success: false, error: error.message }; }
   return { success: true };
 }
 

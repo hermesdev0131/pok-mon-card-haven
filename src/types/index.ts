@@ -97,6 +97,7 @@ export interface Order {
   sellerName: string;
   price: number;
   createdAt: string;
+  trackingCode?: string;
 }
 
 export interface Question {

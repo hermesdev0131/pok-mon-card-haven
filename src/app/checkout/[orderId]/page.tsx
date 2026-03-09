@@ -4,12 +4,14 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock, Package, Truck } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
-import { getOrder, cancelOrder } from '@/lib/api';
+import { getOrder, cancelOrder, shipOrder } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { Order } from '@/types';
@@ -27,8 +29,12 @@ export default function Checkout() {
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [trackingCode, setTrackingCode] = useState('');
+  const [shipping, setShipping] = useState(false);
+  const [shipError, setShipError] = useState<string | null>(null);
   const verifyAttempts = useRef(0);
   const isBuyer = !!(user && order && user.id === order.buyerId);
+  const isSeller = !!(user && order && user.id === order.sellerId);
 
   // Fetch order on mount
   useEffect(() => {
@@ -58,14 +64,12 @@ export default function Checkout() {
         const data = await res.json();
 
         if (data.status && data.status !== 'awaiting_payment') {
-          // Status updated — refresh order
           const updated = await getOrder(order.id);
           setOrder(updated);
           setVerifying(false);
           return;
         }
 
-        // Still awaiting — retry up to 6 times (30 seconds total)
         verifyAttempts.current++;
         if (verifyAttempts.current < 6) {
           setTimeout(verify, 5000);
@@ -111,15 +115,30 @@ export default function Checkout() {
     }
   }, [order, router]);
 
-  // Determine if we're in post-payment state (returned from MP)
+  const handleShip = useCallback(async () => {
+    if (!order || !trackingCode.trim()) return;
+    setShipping(true);
+    setShipError(null);
+    const result = await shipOrder(order.id, trackingCode.trim());
+    setShipping(false);
+    if (result.success) {
+      const updated = await getOrder(order.id);
+      setOrder(updated);
+    } else {
+      setShipError('error' in result ? result.error : 'Erro ao registrar envio');
+    }
+  }, [order, trackingCode]);
+
   const isPostPayment = isBuyer && (paymentStatus === 'success' || paymentStatus === 'pending');
+
+  const pageTitle = !loading && order
+    ? (isSeller ? 'Detalhes do pedido' : 'Finalizar compra')
+    : 'Finalizar compra';
 
   return (
     <RequireAuth>
       <div className="container mx-auto max-w-2xl px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">
-          {!loading && order && !isBuyer ? 'Detalhes do pedido' : 'Finalizar compra'}
-        </h1>
+        <h1 className="text-2xl font-bold mb-6">{pageTitle}</h1>
 
         {loading && (
           <div className="flex items-center justify-center py-24">
@@ -134,33 +153,108 @@ export default function Checkout() {
           </div>
         )}
 
+        {/* ====== Non-awaiting-payment states ====== */}
         {!loading && order && order.status !== 'aguardando_pagamento' && (
-          <div className="text-center py-16">
-            {order.status === 'pago' ? (
-              <>
-                <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-                <p className="text-lg font-semibold mb-2">Pagamento confirmado!</p>
-                <p className="text-sm text-muted-foreground mb-2">Pedido #{order.id.slice(0, 8)}</p>
-                <p className="font-semibold mb-2">{order.cardName}</p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {isBuyer
-                    ? 'O vendedor será notificado para preparar o envio.'
-                    : 'Prepare o envio do produto.'}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground mb-2">Pedido #{order.id.slice(0, 8)}</p>
-                <p className="font-semibold mb-4">{order.cardName}</p>
-                <StatusPill status={order.status} />
-              </>
+          <>
+            {/* Order info card */}
+            <Card className="glass mb-6">
+              <CardContent className="flex items-center gap-4 p-4">
+                <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                <div className="flex-1">
+                  <p className="font-semibold">{order.cardName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isBuyer ? `Vendedor: ${order.sellerName}` : `Comprador: ${order.buyerName}`}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pedido #{order.id.slice(0, 8)} · {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xl font-bold text-accent">R$ {formatPrice(order.price)}</p>
+                  <StatusPill status={order.status} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment confirmed — seller shipping flow */}
+            {order.status === 'pago' && isSeller && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-4">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    <span>Pagamento confirmado! Prepare o envio do produto.</span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Código de rastreamento</Label>
+                    <Input
+                      placeholder="Ex: BR123456789BR"
+                      value={trackingCode}
+                      onChange={(e) => setTrackingCode(e.target.value)}
+                    />
+                  </div>
+                  {shipError && (
+                    <p className="text-sm text-destructive">{shipError}</p>
+                  )}
+                  <Button
+                    className="w-full"
+                    disabled={!trackingCode.trim() || shipping}
+                    onClick={handleShip}
+                  >
+                    {shipping
+                      ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> <span>Registrando...</span></>
+                      : <><Package className="h-4 w-4 mr-2" /> <span>Marcar como enviado</span></>}
+                  </Button>
+                </CardContent>
+              </Card>
             )}
-            <div className="mt-6">
-              <Button asChild variant="outline"><Link href="/me">Ver meus pedidos</Link></Button>
+
+            {/* Payment confirmed — buyer view */}
+            {order.status === 'pago' && isBuyer && (
+              <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span>Pagamento confirmado! O vendedor está preparando o envio.</span>
+              </div>
+            )}
+
+            {/* Shipped — show tracking info */}
+            {order.status === 'enviado' && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
+                    <Truck className="h-4 w-4 shrink-0" />
+                    <span>Pedido enviado!</span>
+                  </div>
+                  {order.trackingCode && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Código de rastreamento</span>
+                      <span className="font-mono font-medium">{order.trackingCode}</span>
+                    </div>
+                  )}
+                  {isBuyer && (
+                    <p className="text-xs text-muted-foreground">
+                      Quando receber o produto, confirme a entrega na página de pedidos.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Generic status for other states */}
+            {order.status !== 'pago' && order.status !== 'enviado' && (
+              <div className="text-center mb-6">
+                <StatusPill status={order.status} />
+              </div>
+            )}
+
+            <div className="flex justify-center">
+              <Button asChild variant="outline">
+                <Link href="/me">Ver meus pedidos</Link>
+              </Button>
             </div>
-          </div>
+          </>
         )}
 
+        {/* ====== Awaiting payment state ====== */}
         {!loading && order && order.status === 'aguardando_pagamento' && (
           <>
             {/* Post-payment verifying state */}
@@ -232,16 +326,14 @@ export default function Checkout() {
                   <p className="text-sm text-destructive mb-3 text-center">{payError}</p>
                 )}
 
-                {/* Hide pay button after successful payment, show it for failure/initial */}
                 {!isPostPayment && (
                   <>
                     <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying}>
                       {paying
-                        ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Aguarde...</>
+                        ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> <span>Aguarde...</span></>
                         : 'Pagar com Mercado Pago'}
                     </Button>
 
-                    {/* Cancel order */}
                     <div className="flex justify-center mb-4">
                       {confirmCancel ? (
                         <div className="flex items-center gap-2 text-xs">
@@ -278,7 +370,6 @@ export default function Checkout() {
                   </>
                 )}
 
-                {/* After payment: show link to orders */}
                 {isPostPayment && !verifying && (
                   <div className="flex justify-center mb-4">
                     <Button asChild variant="outline">
@@ -287,7 +378,6 @@ export default function Checkout() {
                   </div>
                 )}
 
-                {/* Trust signals */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <Shield className="h-4 w-4 text-accent shrink-0" />
@@ -300,11 +390,10 @@ export default function Checkout() {
                 </div>
               </>
             ) : (
-              /* Seller view — read-only status */
               <div className="text-center py-4">
                 <div className="flex items-center justify-center gap-2 mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm">
                   <Clock className="h-4 w-4 shrink-0" />
-                  Aguardando pagamento do comprador
+                  <span>Aguardando pagamento do comprador</span>
                 </div>
                 <Button asChild variant="outline" className="mt-2">
                   <Link href="/me">Voltar ao perfil</Link>
