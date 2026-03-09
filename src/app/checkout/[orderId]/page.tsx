@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -9,7 +9,7 @@ import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock } from 'lu
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
-import { getOrder } from '@/lib/api';
+import { getOrder, cancelOrder } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { Order } from '@/types';
@@ -39,12 +39,15 @@ function PaymentReturnBanner({ status }: { status: string | null }) {
 export default function Checkout() {
   const params = useParams<{ orderId: string }>();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const paymentStatus = searchParams.get('status');
   const { tokenRefreshCount } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   useEffect(() => {
     if (params.orderId) {
@@ -74,6 +77,18 @@ export default function Checkout() {
       setPaying(false);
     }
   }, [order]);
+
+  const handleCancel = useCallback(async () => {
+    if (!order) return;
+    setCancelling(true);
+    const result = await cancelOrder(order.id);
+    setCancelling(false);
+    if (result.success) {
+      router.push('/me');
+    } else {
+      setPayError('error' in result ? result.error : 'Erro ao cancelar pedido');
+    }
+  }, [order, router]);
 
   return (
     <RequireAuth>
@@ -143,11 +158,46 @@ export default function Checkout() {
               <p className="text-sm text-destructive mb-3 text-center">{payError}</p>
             )}
 
-            <Button size="lg" className="w-full mb-4" onClick={handlePay} disabled={paying}>
+            <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying}>
               {paying
                 ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Aguarde...</>
                 : 'Pagar com Mercado Pago'}
             </Button>
+
+            {/* Cancel order */}
+            <div className="flex justify-center mb-4">
+              {confirmCancel ? (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground">Tem certeza?</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                    disabled={cancelling}
+                    onClick={handleCancel}
+                  >
+                    {cancelling ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sim, cancelar'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setConfirmCancel(false)}
+                  >
+                    Voltar
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground/60 hover:text-destructive"
+                  onClick={() => setConfirmCancel(true)}
+                >
+                  Cancelar pedido
+                </Button>
+              )}
+            </div>
 
             {/* Trust signals */}
             <div className="space-y-3">

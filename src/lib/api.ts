@@ -891,6 +891,35 @@ export async function createOrder(listingId: string): Promise<CreateOrderResult>
   return { success: true, orderId: (order as { id: string }).id };
 }
 
+export async function cancelOrder(orderId: string): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: order } = await (supabase as any)
+    .from('orders')
+    .select('id, listing_id, buyer_id, status')
+    .eq('id', orderId)
+    .maybeSingle();
+
+  if (!order) return { success: false, error: 'Pedido não encontrado' };
+  if (order.buyer_id !== user.id) return { success: false, error: 'Sem permissão' };
+  if (order.status !== 'awaiting_payment') return { success: false, error: 'Pedido não pode ser cancelado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: updateError } = await (supabase as any)
+    .from('orders')
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancellation_reason: 'Cancelado pelo comprador' })
+    .eq('id', orderId);
+  if (updateError) return { success: false, error: updateError.message };
+
+  // Unlock the listing
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('listings').update({ status: 'active' }).eq('id', order.listing_id);
+
+  return { success: true };
+}
+
 export async function updateSellerVerification(
   sellerId: string,
   verified: boolean,

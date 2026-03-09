@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getMyOrders, getMyListings, cancelListing, updateListing, becomeSeller } from '@/lib/api';
+import { getMyOrders, getMyListings, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, User, BadgeCheck, Loader2, Store } from 'lucide-react';
@@ -112,7 +112,10 @@ export default function Profile() {
             {isSeller && <TabsTrigger value="listings">Meus anúncios</TabsTrigger>}
           </TabsList>
           <TabsContent value="purchases">
-            <OrderList orders={purchases} />
+            <OrderList orders={purchases} onCancel={async (id) => {
+              const result = await cancelOrder(id);
+              if (result.success) setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelado' as const } : o));
+            }} />
           </TabsContent>
           <TabsContent value="sales">
             <OrderList orders={sales} />
@@ -176,7 +179,17 @@ export default function Profile() {
   );
 }
 
-function OrderList({ orders }: { orders: Order[] }) {
+function OrderList({ orders, onCancel }: { orders: Order[]; onCancel?: (id: string) => Promise<void> }) {
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancel = async (orderId: string) => {
+    setCancellingId(orderId);
+    setConfirmId(null);
+    await onCancel?.(orderId);
+    setCancellingId(null);
+  };
+
   if (!orders.length) {
     return <p className="py-12 text-center text-sm text-muted-foreground">Nenhum pedido encontrado.</p>;
   }
@@ -199,6 +212,38 @@ function OrderList({ orders }: { orders: Order[] }) {
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/checkout/${order.id}`}>Ver pedido</Link>
               </Button>
+              {order.status === 'aguardando_pagamento' && onCancel && (
+                confirmId === order.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                      disabled={cancellingId === order.id}
+                      onClick={() => handleCancel(order.id)}
+                    >
+                      {cancellingId === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Sim'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[11px]"
+                      onClick={() => setConfirmId(null)}
+                    >
+                      Não
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[11px] text-muted-foreground/50 hover:text-destructive"
+                    onClick={() => setConfirmId(order.id)}
+                  >
+                    Cancelar
+                  </Button>
+                )
+              )}
             </div>
           </CardContent>
         </Card>

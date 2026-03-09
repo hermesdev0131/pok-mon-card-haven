@@ -10,7 +10,8 @@ import { QnA } from './QnA';
 import { Button } from '@/components/ui/button';
 import { FlagIcon } from './FlagIcon';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Truck, ShoppingCart, Image as ImageIcon, Star, MessageCircle, Loader2 } from 'lucide-react';
+import { Truck, ShoppingCart, Image as ImageIcon, Star, MessageCircle, Loader2, Lock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { getQuestionsForListing, createOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
@@ -31,14 +32,16 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
   const [qnaListing, setQnaListing] = useState<Listing | null>(null);
   const [qnaQuestions, setQnaQuestions] = useState<Question[]>([]);
   const [buyingId, setBuyingId] = useState<string | null>(null);
+  const [buyError, setBuyError] = useState<string | null>(null);
   const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(listings, 10);
 
   const handleBuy = async (listing: Listing) => {
     if (!user) { router.push('/login'); return; }
     setBuyingId(listing.id);
+    setBuyError(null);
     const result = await createOrder(listing.id);
     setBuyingId(null);
-    if (!result.success) { alert(result.error); return; }
+    if (!result.success) { setBuyError(result.error); return; }
     router.push(`/checkout/${result.orderId}`);
   };
 
@@ -61,6 +64,12 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
 
   return (
     <>
+      {buyError && (
+        <div className="flex items-center justify-between gap-2 mb-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+          <span>{buyError}</span>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs hover:bg-destructive/10" onClick={() => setBuyError(null)}>✕</Button>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -75,8 +84,9 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
           <TableBody>
             {paged.map((listing) => {
               const seller = sellers[listing.sellerId];
+              const isAvailable = listing.status === 'active';
               return (
-                <TableRow key={listing.id} className="group/row hover:bg-white/[0.02]">
+                <TableRow key={listing.id} className={`group/row hover:bg-white/[0.02] ${!isAvailable ? 'opacity-50' : ''}`}>
                   {/* Seller */}
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -124,9 +134,14 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
 
                   {/* Price */}
                   <TableCell className="text-right">
-                    <span className="font-bold text-accent">
+                    <span className={`font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
                       R$ {formatPrice(listing.price)}
                     </span>
+                    {!isAvailable && (
+                      <Badge variant="outline" className="ml-2 text-[10px] border-amber-500/30 text-amber-400">
+                        Reservado
+                      </Badge>
+                    )}
                   </TableCell>
 
                   {/* Actions */}
@@ -152,14 +167,16 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                       </Button>
                       <Button
                         size="icon"
-                        className="h-8 w-8 bg-accent text-accent-foreground hover:bg-accent/90"
-                        title="Comprar"
-                        disabled={buyingId === listing.id}
-                        onClick={() => handleBuy(listing)}
+                        className={`h-8 w-8 ${isAvailable ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                        title={isAvailable ? 'Comprar' : 'Indisponível'}
+                        disabled={!isAvailable || buyingId === listing.id}
+                        onClick={() => isAvailable && handleBuy(listing)}
                       >
                         {buyingId === listing.id
                           ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : <ShoppingCart className="h-4 w-4" />}
+                          : isAvailable
+                            ? <ShoppingCart className="h-4 w-4" />
+                            : <Lock className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
                   </TableCell>
