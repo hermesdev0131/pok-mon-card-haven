@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
       .eq('id', orderId);
 
     const isSandbox = process.env.MERCADO_PAGO_SANDBOX === 'true';
+    console.log('[create-preference] sandbox:', isSandbox);
+    console.log('[create-preference] init_point:', result.init_point);
+    console.log('[create-preference] sandbox_init_point:', result.sandbox_init_point);
     return NextResponse.json({
       preferenceId: result.id,
       checkoutUrl: isSandbox ? result.sandbox_init_point : result.init_point,
