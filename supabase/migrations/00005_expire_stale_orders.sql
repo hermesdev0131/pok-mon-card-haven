@@ -1,5 +1,5 @@
 -- ============================================================
--- Expire stale orders: cancel awaiting_payment orders older than 30 min
+-- Expire stale orders: cancel awaiting_payment orders older than 20 min
 -- and release their listings back to active.
 -- Called on-demand from the frontend (getListingsForCard, createOrder).
 -- ============================================================
@@ -18,7 +18,7 @@ BEGIN
     SELECT o.id AS order_id, o.listing_id
     FROM orders o
     WHERE o.status = 'awaiting_payment'
-      AND o.created_at < now() - interval '30 minutes'
+      AND o.created_at < now() - interval '20 minutes'
       AND (p_listing_ids IS NULL OR o.listing_id = ANY(p_listing_ids))
     FOR UPDATE OF o SKIP LOCKED
   ),
@@ -26,7 +26,7 @@ BEGIN
     UPDATE orders
     SET status = 'cancelled',
         cancelled_at = now(),
-        cancellation_reason = 'Expirado — pagamento não realizado em 30 minutos'
+        cancellation_reason = 'Expirado — pagamento não realizado em 20 minutos'
     FROM stale
     WHERE orders.id = stale.order_id
   )

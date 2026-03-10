@@ -53,7 +53,7 @@ export default function Checkout() {
   // Countdown timer for awaiting_payment orders (30 min expiry)
   useEffect(() => {
     if (!order || order.status !== 'aguardando_pagamento') { setTimeLeft(null); return; }
-    const expiresAt = new Date(order.createdAt).getTime() + 30 * 60 * 1000;
+    const expiresAt = new Date(order.createdAt).getTime() + 20 * 60 * 1000;
     const tick = () => {
       const remaining = expiresAt - Date.now();
       if (remaining <= 0) {
