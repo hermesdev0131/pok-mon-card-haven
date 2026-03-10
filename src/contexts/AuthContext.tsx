@@ -38,7 +38,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const supabase = createClient();
 
-const IDLE_MS = 15 * 60 * 1000; // 15 minutes of inactivity → auto sign-out
+const IDLE_MS = 3 * 60 * 60 * 1000; // 3 hours of inactivity → auto sign-out
 const ACTIVITY_EVENTS = [
   'mousemove', 'mousedown', 'keydown', 'scroll', 'click', 'touchstart',
 ] as const;
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isAuthenticatedRef.current) return;
     clearIdleTimer();
     idleTimerRef.current = setTimeout(async () => {
-      console.log('[Auth] 15 min idle — signing out automatically');
+      console.log('[Auth] 3h idle — signing out automatically');
       await signOutFn();
       router.push('/login');
     }, IDLE_MS);
