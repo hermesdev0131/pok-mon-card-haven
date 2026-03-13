@@ -6,21 +6,12 @@ import { SellerCard } from '@/components/SellerCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Shield, ArrowRight, Flame, Zap, Ghost, Moon, Star, Sparkles, ChevronRight } from 'lucide-react';
+import { Shield, ArrowRight, Star, Sparkles, ChevronRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithStats, getAllSellers } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { CardBaseWithStats, Seller } from '@/types';
-
-const categoryDefs = [
-  { type: 'fire', label: 'Fogo', icon: Flame, color: 'from-orange-500/20 to-red-600/10 border-orange-500/20', iconColor: 'text-orange-400' },
-  { type: 'electric', label: 'Elétrico', icon: Zap, color: 'from-yellow-500/20 to-amber-600/10 border-yellow-500/20', iconColor: 'text-yellow-400' },
-  { type: 'psychic', label: 'Psíquico', icon: Sparkles, color: 'from-pink-500/20 to-purple-600/10 border-pink-500/20', iconColor: 'text-pink-400' },
-  { type: 'dark', label: 'Sombrio', icon: Moon, color: 'from-purple-500/20 to-indigo-600/10 border-purple-500/20', iconColor: 'text-purple-400' },
-  { type: 'ghost', label: 'Fantasma', icon: Ghost, color: 'from-indigo-500/20 to-violet-600/10 border-indigo-500/20', iconColor: 'text-indigo-400' },
-  { type: 'dragon', label: 'Dragão', icon: Flame, color: 'from-cyan-500/20 to-blue-600/10 border-cyan-500/20', iconColor: 'text-cyan-400' },
-];
 
 export default function Home() {
   const { tokenRefreshCount } = useAuth();
@@ -42,14 +33,6 @@ export default function Home() {
   const highlightCards = allStats.slice(0, 5);
   const recentCards = [...allStats].slice(0, 5);
   const topSellers = sellers.filter(s => s.verified).sort((a, b) => b.totalSales - a.totalSales);
-
-  // Count cards by type from the stats
-  const typeCounts: Record<string, number> = {};
-  for (const s of allStats) {
-    const t = s.cardBase.type;
-    typeCounts[t] = (typeCounts[t] ?? 0) + 1;
-  }
-  const categories = categoryDefs.map(c => ({ ...c, count: typeCounts[c.type] ?? 0 }));
 
   if (loading) {
     return (
@@ -155,27 +138,6 @@ export default function Home() {
         <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           {highlightCards.map(item => (
             <CardBaseCard key={item.cardBase.id} item={item} />
-          ))}
-        </div>
-      </section>
-
-      {/* Browse by Category */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold">Explorar por tipo</h2>
-            <p className="text-sm text-muted-foreground mt-1">Encontre cartas do seu tipo favorito</p>
-          </div>
-        </div>
-        <div className="grid gap-4 grid-cols-3 sm:grid-cols-3 lg:grid-cols-6">
-          {categories.map(({ label, icon: Icon, color, iconColor, count }) => (
-            <Link key={label} href="/marketplace">
-              <div className={`overflow-hidden rounded-2xl bg-gradient-to-br ${color} border border-white/[0.06] hover:scale-[1.03] transition-all duration-300 cursor-pointer p-5 text-center space-y-2`}>
-                <Icon className={`h-8 w-8 mx-auto ${iconColor}`} />
-                <p className="font-semibold text-sm">{label}</p>
-                <p className="text-xs text-muted-foreground">{count} {count === 1 ? 'carta' : 'cartas'}</p>
-              </div>
-            </Link>
           ))}
         </div>
       </section>
