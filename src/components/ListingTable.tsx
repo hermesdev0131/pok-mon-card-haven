@@ -204,7 +204,14 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
               Perguntas — {qnaListing && sellers[qnaListing.sellerId]?.name}
             </DialogTitle>
           </DialogHeader>
-          <QnA questions={qnaQuestions} />
+          <QnA
+            questions={qnaQuestions}
+            listingId={qnaListing?.id ?? ''}
+            sellerId={qnaListing?.sellerId ?? ''}
+            onQuestionSent={() => {
+              if (qnaListing) getQuestionsForListing(qnaListing.id).then(setQnaQuestions);
+            }}
+          />
         </DialogContent>
       </Dialog>
     </>

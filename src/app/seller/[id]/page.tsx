@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getSeller, getSellerListings, getSellerReviews } from '@/lib/api';
-import { Star, ShoppingBag, Calendar, Truck } from 'lucide-react';
+import { getSeller, getSellerListings, getSellerReviews, replyToReview } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Star, ShoppingBag, Calendar, Truck, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Link from 'next/link';
 import { RequireAuth } from '@/components/RequireAuth';
@@ -27,12 +29,29 @@ export default function SellerProfilePageGuarded() {
 function SellerProfilePage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const { tokenRefreshCount } = useAuth();
+  const { user, tokenRefreshCount } = useAuth();
   const [seller, setSeller] = useState<Seller | null>(null);
   const [sellerListings, setSellerListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [replySubmitting, setReplySubmitting] = useState(false);
   const { page, setPage, totalPages, paged: pagedListings, total, pageSize, setPageSize } = usePagination(sellerListings, 10);
+
+  const isOwnProfile = user?.id === id;
+
+  const handleReply = async (reviewId: string) => {
+    if (!replyText.trim() || replySubmitting) return;
+    setReplySubmitting(true);
+    const result = await replyToReview(reviewId, replyText.trim());
+    setReplySubmitting(false);
+    if (result.success) {
+      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, sellerReply: replyText.trim(), repliedAt: new Date().toISOString() } : r));
+      setReplyingId(null);
+      setReplyText('');
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -120,6 +139,57 @@ function SellerProfilePage() {
                 <span className="text-xs text-muted-foreground ml-auto">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
               </div>
               <p className="text-sm text-muted-foreground">{r.comment}</p>
+
+              {/* Seller reply */}
+              {r.sellerReply ? (
+                <div className="ml-4 pl-3 border-l-2 border-accent/40 mt-3">
+                  <span className="text-xs font-medium text-accent">{seller.name}</span>
+                  {r.repliedAt && (
+                    <span className="text-xs text-muted-foreground ml-2">{new Date(r.repliedAt).toLocaleDateString('pt-BR')}</span>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-1">{r.sellerReply}</p>
+                </div>
+              ) : isOwnProfile && (
+                <div className="ml-4 pl-3 border-l-2 border-accent/20 mt-3">
+                  {replyingId === r.id ? (
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder="Sua resposta..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="min-h-[50px] resize-none text-sm"
+                      />
+                      <div className="flex flex-col gap-1 self-end">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs"
+                          onClick={() => { setReplyingId(null); setReplyText(''); }}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="text-xs"
+                          disabled={!replyText.trim() || replySubmitting}
+                          onClick={() => handleReply(r.id)}
+                        >
+                          {replySubmitting ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Responder'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs text-accent"
+                      onClick={() => { setReplyingId(r.id); setReplyText(''); }}
+                    >
+                      Responder
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}

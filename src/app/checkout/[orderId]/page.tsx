@@ -12,6 +12,9 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
 import { getOrder, cancelOrder, shipOrder, confirmDelivery } from '@/lib/api';
+import { OrderMessages } from '@/components/OrderMessages';
+import { ReviewForm } from '@/components/ReviewForm';
+import { OpenDisputeForm } from '@/components/OpenDisputeForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { Order } from '@/types';
@@ -373,6 +376,33 @@ export default function Checkout() {
               </div>
             )}
 
+            {/* Review form — buyer on completed orders */}
+            {order.status === 'concluido' && isBuyer && (
+              <div className="mb-6">
+                <ReviewForm orderId={order.id} sellerId={order.sellerId} />
+              </div>
+            )}
+
+            {/* Open dispute — buyer/seller on shipped or delivered orders */}
+            {(order.status === 'enviado' || order.status === 'entregue') && (
+              <div className="mb-6 flex justify-end">
+                <OpenDisputeForm
+                  orderId={order.id}
+                  onDisputeOpened={async () => {
+                    const updated = await getOrder(order.id);
+                    if (updated) setOrder(updated);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Private messages — visible on all post-payment statuses */}
+            {order.status !== 'cancelado' && (
+              <div className="mb-6">
+                <OrderMessages orderId={order.id} />
+              </div>
+            )}
+
             <div className="flex justify-center">
               <Button asChild variant="outline">
                 <Link href="/me">Ver meus pedidos</Link>
@@ -437,12 +467,12 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  <span className="text-muted-foreground">A calcular</span>
+                  <span>{order.shippingCost > 0 ? `R$ ${formatPrice(order.shippingCost)}` : order.freeShipping ? 'Grátis' : 'A calcular'}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-accent">R$ {formatPrice(order.price)}</span>
+                  <span className="text-accent">R$ {formatPrice(order.price + (order.shippingCost ?? 0))}</span>
                 </div>
               </CardContent>
             </Card>

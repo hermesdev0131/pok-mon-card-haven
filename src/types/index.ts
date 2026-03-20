@@ -96,6 +96,8 @@ export interface Order {
   sellerId: string;
   sellerName: string;
   price: number;
+  shippingCost: number;
+  freeShipping?: boolean;
   createdAt: string;
   trackingCode?: string;
   mpPaymentId?: string;
@@ -116,11 +118,40 @@ export interface Question {
 
 export interface Review {
   id: string;
+  orderId: string;
   sellerId: string;
   buyerName: string;
   rating: number;
   comment: string;
+  sellerReply?: string;
+  repliedAt?: string;
   date: string;
+}
+
+export interface Message {
+  id: string;
+  orderId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  readAt?: string;
+  createdAt: string;
+  isOwn: boolean;
+}
+
+export type DisputeStatus = 'open' | 'resolved_buyer' | 'resolved_seller' | 'escalated' | 'closed';
+
+export interface Dispute {
+  id: string;
+  orderId: string;
+  openedBy: string;
+  openedByName: string;
+  reason: string;
+  description?: string;
+  status: DisputeStatus;
+  adminNotes?: string;
+  resolvedAt?: string;
+  createdAt: string;
 }
 
 // MVP languages

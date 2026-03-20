@@ -338,9 +338,9 @@ export const questions: Question[] = [
 ];
 
 export const reviews: Review[] = [
-  { id: 'r1', sellerId: 's1', buyerName: 'João M.', rating: 5, comment: 'Carta chegou em perfeito estado, embalagem impecável! Super recomendo.', date: '2024-11-20' },
-  { id: 'r2', sellerId: 's1', buyerName: 'Pedro S.', rating: 5, comment: 'Vendedor super atencioso, envio rápido. Voltarei a comprar!', date: '2024-10-15' },
-  { id: 'r3', sellerId: 's4', buyerName: 'Ana L.', rating: 4, comment: 'Carta conforme anunciado, mas demorou um pouco para enviar.', date: '2024-11-25' },
-  { id: 'r4', sellerId: 's2', buyerName: 'Mariana F.', rating: 5, comment: 'Excelente experiência! Carta linda e envio super cuidadoso.', date: '2024-12-01' },
-  { id: 'r5', sellerId: 's4', buyerName: 'Bruno M.', rating: 5, comment: 'Melhor vendedor de cartas graduadas do Brasil. Sério mesmo.', date: '2024-10-08' },
+  { id: 'r1', orderId: 'o1', sellerId: 's1', buyerName: 'João M.', rating: 5, comment: 'Carta chegou em perfeito estado, embalagem impecável! Super recomendo.', date: '2024-11-20' },
+  { id: 'r2', orderId: 'o2', sellerId: 's1', buyerName: 'Pedro S.', rating: 5, comment: 'Vendedor super atencioso, envio rápido. Voltarei a comprar!', date: '2024-10-15' },
+  { id: 'r3', orderId: 'o3', sellerId: 's4', buyerName: 'Ana L.', rating: 4, comment: 'Carta conforme anunciado, mas demorou um pouco para enviar.', date: '2024-11-25' },
+  { id: 'r4', orderId: 'o4', sellerId: 's2', buyerName: 'Mariana F.', rating: 5, comment: 'Excelente experiência! Carta linda e envio super cuidadoso.', date: '2024-12-01' },
+  { id: 'r5', orderId: 'o5', sellerId: 's4', buyerName: 'Bruno M.', rating: 5, comment: 'Melhor vendedor de cartas graduadas do Brasil. Sério mesmo.', date: '2024-10-08' },
 ];

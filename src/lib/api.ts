@@ -11,6 +11,9 @@ import type {
   Review,
   OrderStatus,
   GradeCompany,
+  Message,
+  Dispute,
+  DisputeStatus,
 } from '@/types';
 import type { Database } from '@/types/database';
 
@@ -153,6 +156,8 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
     sellerId: row.seller_id,
     sellerName,
     price: row.price,
+    shippingCost: row.shipping_cost ?? 0,
+    freeShipping: listing?.free_shipping ?? false,
     createdAt: row.created_at,
     trackingCode: row.tracking_code ?? undefined,
     mpPaymentId: row.mp_payment_id ?? undefined,
@@ -164,10 +169,13 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
 function mapReview(row: any, buyerName: string): Review {
   return {
     id: row.id,
+    orderId: row.order_id,
     sellerId: row.seller_id,
     buyerName,
     rating: row.rating,
     comment: row.comment ?? '',
+    sellerReply: row.seller_reply ?? undefined,
+    repliedAt: row.replied_at ?? undefined,
     date: row.created_at,
   };
 }
@@ -734,6 +742,37 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: 'Não autenticado' };
 
+  // ── Antifraude: enforce limits for new sellers ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sellerProfile } = await (supabase as any)
+    .from('seller_profiles')
+    .select('verified')
+    .eq('id', user.id)
+    .maybeSingle() as { data: { verified: boolean } | null };
+
+  if (sellerProfile && !sellerProfile.verified) {
+    const maxListingsVal = await getPlatformConfig('new_seller_max_listings');
+    const maxPriceVal = await getPlatformConfig('new_seller_max_price');
+    const maxListings = typeof maxListingsVal === 'number' ? maxListingsVal : (typeof maxListingsVal === 'string' ? parseInt(maxListingsVal, 10) : 5);
+    const maxPrice = typeof maxPriceVal === 'number' ? maxPriceVal : (typeof maxPriceVal === 'string' ? parseInt(maxPriceVal, 10) : 50000);
+
+    // Check active listing count
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (supabase as any)
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .eq('seller_id', user.id)
+      .in('status', ['active', 'reserved']);
+    if (count !== null && count >= maxListings) {
+      return { success: false, error: `Vendedores novos podem ter no máximo ${maxListings} anúncios ativos. Verifique sua conta para aumentar o limite.` };
+    }
+
+    // Check price limit
+    if (input.price > maxPrice) {
+      return { success: false, error: `Vendedores novos podem anunciar no máximo R$ ${(maxPrice / 100).toFixed(2).replace('.', ',')}. Verifique sua conta para aumentar o limite.` };
+    }
+  }
+
   const listingId = crypto.randomUUID();
   const imageUrls: string[] = [];
 
@@ -942,4 +981,290 @@ export async function updateSellerVerification(
     .eq('id', sellerId);
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+// ════════════════════════════════════════════════
+// Question Mutations
+// ════════════════════════════════════════════════
+
+export async function createQuestion(
+  listingId: string,
+  question: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('questions')
+    .insert({ listing_id: listingId, user_id: user.id, question });
+
+  if (error) { logIfError('createQuestion', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+export async function answerQuestion(
+  questionId: string,
+  answer: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('questions')
+    .update({ answer, answered_at: new Date().toISOString() })
+    .eq('id', questionId);
+
+  if (error) { logIfError('answerQuestion', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+// ════════════════════════════════════════════════
+// Private Order Messages
+// ════════════════════════════════════════════════
+
+export async function getMessagesForOrder(orderId: string): Promise<Message[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true });
+  logIfError('getMessagesForOrder', error);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const senderIds = rows.map(r => r.sender_id);
+  const profiles = await fetchProfilesByIds(senderIds);
+
+  return rows.map(r => ({
+    id: r.id,
+    orderId: r.order_id,
+    senderId: r.sender_id,
+    senderName: profiles[r.sender_id]?.full_name ?? 'Usuário',
+    content: r.content,
+    readAt: r.read_at ?? undefined,
+    createdAt: r.created_at,
+    isOwn: r.sender_id === user.id,
+  }));
+}
+
+export async function sendMessage(
+  orderId: string,
+  content: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('messages')
+    .insert({ order_id: orderId, sender_id: user.id, content });
+
+  if (error) { logIfError('sendMessage', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+export async function markMessagesRead(orderId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Mark all messages in this order that were NOT sent by the current user
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('order_id', orderId)
+    .neq('sender_id', user.id)
+    .is('read_at', null);
+}
+
+// ════════════════════════════════════════════════
+// Review Mutations
+// ════════════════════════════════════════════════
+
+export async function createReview(
+  orderId: string,
+  sellerId: string,
+  rating: number,
+  comment: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('reviews')
+    .insert({
+      order_id: orderId,
+      seller_id: sellerId,
+      buyer_id: user.id,
+      rating,
+      comment,
+    });
+
+  if (error) {
+    logIfError('createReview', error);
+    if (error.code === '23505') return { success: false, error: 'Você já avaliou este pedido' };
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
+export async function replyToReview(
+  reviewId: string,
+  reply: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('reviews')
+    .update({ seller_reply: reply, replied_at: new Date().toISOString() })
+    .eq('id', reviewId)
+    .eq('seller_id', user.id);
+
+  if (error) { logIfError('replyToReview', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+/** Check if current user has already reviewed an order */
+export async function getReviewForOrder(orderId: string): Promise<Review | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('order_id', orderId)
+    .maybeSingle();
+
+  if (!data) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const row = data as any;
+  const profiles = await fetchProfilesByIds([row.buyer_id]);
+  return mapReview(row, profiles[row.buyer_id]?.full_name ?? 'Comprador');
+}
+
+// ════════════════════════════════════════════════
+// Disputes
+// ════════════════════════════════════════════════
+
+export async function openDispute(
+  orderId: string,
+  reason: string,
+  description?: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: disputeError } = await (supabase as any)
+    .from('disputes')
+    .insert({
+      order_id: orderId,
+      opened_by: user.id,
+      reason,
+      description: description || null,
+      status: 'open',
+    });
+
+  if (disputeError) {
+    logIfError('openDispute', disputeError);
+    if (disputeError.code === '23505') return { success: false, error: 'Já existe uma disputa para este pedido' };
+    return { success: false, error: disputeError.message };
+  }
+
+  // Update order status to disputed
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('orders')
+    .update({ status: 'disputed' })
+    .eq('id', orderId);
+
+  return { success: true };
+}
+
+export async function getAllDisputes(): Promise<Dispute[]> {
+  const { data, error } = await supabase
+    .from('disputes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  logIfError('getAllDisputes', error);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const openerIds = rows.map(r => r.opened_by);
+  const profiles = await fetchProfilesByIds(openerIds);
+
+  return rows.map(r => ({
+    id: r.id,
+    orderId: r.order_id,
+    openedBy: r.opened_by,
+    openedByName: profiles[r.opened_by]?.full_name ?? 'Usuário',
+    reason: r.reason,
+    description: r.description ?? undefined,
+    status: r.status as DisputeStatus,
+    adminNotes: r.admin_notes ?? undefined,
+    resolvedAt: r.resolved_at ?? undefined,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function resolveDispute(
+  disputeId: string,
+  status: DisputeStatus,
+  adminNotes: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('disputes')
+    .update({
+      status,
+      admin_notes: adminNotes,
+      resolved_by: user.id,
+      resolved_at: new Date().toISOString(),
+    })
+    .eq('id', disputeId);
+
+  if (error) { logIfError('resolveDispute', error); return { success: false, error: error.message }; }
+
+  // Log admin action
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('admin_event_log')
+    .insert({
+      admin_id: user.id,
+      action: 'resolve_dispute',
+      entity_type: 'dispute',
+      entity_id: disputeId,
+      details: { status, adminNotes },
+    });
+
+  return { success: true };
+}
+
+// ════════════════════════════════════════════════
+// Platform Config
+// ════════════════════════════════════════════════
+
+export async function getPlatformConfig(key: string): Promise<unknown> {
+  const { data } = await supabase
+    .from('platform_config')
+    .select('value')
+    .eq('key', key)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any)?.value ?? null;
 }

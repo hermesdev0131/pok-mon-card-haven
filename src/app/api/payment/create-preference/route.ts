@@ -36,19 +36,32 @@ export async function POST(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
     const cardName = (order.listings as any)?.card_bases?.name ?? 'Carta Pokémon Graduada';
 
+    // Build MP items: card + shipping (if applicable)
+    const items: { id: string; title: string; quantity: number; unit_price: number; currency_id: string }[] = [
+      {
+        id: order.listing_id,
+        title: cardName,
+        quantity: 1,
+        unit_price: order.price / 100,
+        currency_id: 'BRL',
+      },
+    ];
+
+    if (order.shipping_cost > 0) {
+      items.push({
+        id: `${order.listing_id}-shipping`,
+        title: 'Frete',
+        quantity: 1,
+        unit_price: order.shipping_cost / 100,
+        currency_id: 'BRL',
+      });
+    }
+
     // Create Mercado Pago preference
     const preference = new Preference(mp);
     const result = await preference.create({
       body: {
-        items: [
-          {
-            id: order.listing_id,
-            title: cardName,
-            quantity: 1,
-            unit_price: order.price / 100,
-            currency_id: 'BRL',
-          },
-        ],
+        items,
         // Note: marketplace_fee requires MP marketplace approval — fee is tracked internally in the order
         back_urls: {
           success: `${appUrl}/checkout/${orderId}?status=success`,
