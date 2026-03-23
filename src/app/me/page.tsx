@@ -11,19 +11,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getMyOrders, getMyListings, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
+import { getMyOrders, getMyListings, getMyQuestions, answerQuestion, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, User, BadgeCheck, Loader2, Store } from 'lucide-react';
+import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle } from 'lucide-react';
 import { GradeBadge } from '@/components/GradeBadge';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
-import type { Order, Listing, CardBase } from '@/types';
+import type { Order, Listing, CardBase, Question } from '@/types';
 
 export default function Profile() {
   const { user, profile, isSeller, tokenRefreshCount, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [myListings, setMyListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
+  const [myQuestions, setMyQuestions] = useState<Question[]>([]);
 
   // Become seller modal state
   const [becomeOpen, setBecomeOpen] = useState(false);
@@ -46,7 +47,10 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       getMyOrders().then(setOrders);
-      if (isSeller) getMyListings().then(setMyListings);
+      if (isSeller) {
+        getMyListings().then(setMyListings);
+        getMyQuestions().then(setMyQuestions);
+      }
     }
   }, [user, isSeller, tokenRefreshCount]);
 
@@ -110,6 +114,16 @@ export default function Profile() {
             <TabsTrigger value="purchases">Minhas compras</TabsTrigger>
             <TabsTrigger value="sales">Minhas vendas</TabsTrigger>
             {isSeller && <TabsTrigger value="listings">Meus anúncios</TabsTrigger>}
+            {isSeller && (
+              <TabsTrigger value="questions" className="gap-1.5">
+                Perguntas
+                {myQuestions.filter(q => !q.answer).length > 0 && (
+                  <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                    {myQuestions.filter(q => !q.answer).length}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
           </TabsList>
           <TabsContent value="purchases">
             <OrderList orders={purchases} onCancel={async (id) => {
@@ -120,6 +134,14 @@ export default function Profile() {
           <TabsContent value="sales">
             <SalesOrderList orders={sales} />
           </TabsContent>
+          {isSeller && (
+            <TabsContent value="questions">
+              <SellerQuestionsList
+                questions={myQuestions}
+                onAnswered={async () => { getMyQuestions().then(setMyQuestions); }}
+              />
+            </TabsContent>
+          )}
           {isSeller && (
             <TabsContent value="listings">
               <MyListingsList
@@ -444,5 +466,132 @@ function MyListingsList({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function SellerQuestionsList({
+  questions,
+  onAnswered,
+}: {
+  questions: Question[];
+  onAnswered: () => Promise<void>;
+}) {
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+  const [answerText, setAnswerText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const unanswered = questions.filter(q => !q.answer);
+  const answered = questions.filter(q => !!q.answer);
+
+  const handleSubmit = async (questionId: string) => {
+    if (!answerText.trim() || submitting) return;
+    setSubmitting(true);
+    const result = await answerQuestion(questionId, answerText.trim());
+    setSubmitting(false);
+    if (result.success) {
+      setAnsweringId(null);
+      setAnswerText('');
+      await onAnswered();
+    }
+  };
+
+  if (!questions.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <MessageCircle className="h-8 w-8 text-muted-foreground/40 mb-2" />
+        <p className="text-sm text-muted-foreground">Nenhuma pergunta recebida ainda.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 mt-4">
+      {unanswered.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-accent mb-3">Aguardando resposta ({unanswered.length})</h3>
+          <div className="space-y-3">
+            {unanswered.map(q => (
+              <Card key={q.id} className="glass border-accent/20">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{q.userName}</span>
+                        {' perguntou em '}
+                        <Link href={`/card/${q.listingId}`} className="text-accent hover:underline">{q.cardName}</Link>
+                      </p>
+                      <p className="text-sm mt-1">{q.question}</p>
+                      <p className="text-[11px] text-muted-foreground/60 mt-1">{new Date(q.questionDate).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                  </div>
+                  {answeringId === q.id ? (
+                    <div className="ml-4 pl-3 border-l-2 border-accent/30 space-y-2">
+                      <Textarea
+                        placeholder="Sua resposta..."
+                        value={answerText}
+                        onChange={(e) => setAnswerText(e.target.value)}
+                        className="min-h-[60px] resize-none text-sm"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={!answerText.trim() || submitting}
+                          onClick={() => handleSubmit(q.id)}
+                        >
+                          {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Enviar resposta'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { setAnsweringId(null); setAnswerText(''); }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs text-accent border-accent/20 hover:bg-accent/10"
+                      onClick={() => { setAnsweringId(q.id); setAnswerText(''); }}
+                    >
+                      Responder
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {answered.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Respondidas ({answered.length})</h3>
+          <div className="space-y-3">
+            {answered.map(q => (
+              <Card key={q.id} className="glass">
+                <CardContent className="p-4 space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{q.userName}</span>
+                    {' perguntou em '}
+                    <span className="text-foreground/70">{q.cardName}</span>
+                  </p>
+                  <p className="text-sm">{q.question}</p>
+                  <div className="ml-4 pl-3 border-l-2 border-accent/40">
+                    <p className="text-sm text-muted-foreground">{q.answer}</p>
+                    {q.answerDate && (
+                      <p className="text-[11px] text-muted-foreground/50 mt-1">{new Date(q.answerDate).toLocaleDateString('pt-BR')}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

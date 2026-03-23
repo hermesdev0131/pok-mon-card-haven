@@ -114,6 +114,7 @@ export interface Question {
   answer?: string;
   questionDate: string;
   answerDate?: string;
+  cardName?: string;
 }
 
 export interface Review {

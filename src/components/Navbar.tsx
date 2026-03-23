@@ -22,9 +22,9 @@ export function Navbar() {
   const { isAuthenticated, isAdmin, profile, signOut } = useAuth();
 
   async function handleSignOut() {
-    await signOut();
     setMobileOpen(false);
     router.push('/');
+    await signOut();
     router.refresh();
   }
 

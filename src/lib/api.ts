@@ -1020,6 +1020,69 @@ export async function answerQuestion(
   return { success: true };
 }
 
+/** Fetch all questions on the current seller's listings (unanswered first). */
+export async function getMyQuestions(): Promise<Question[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // Get all listing IDs owned by this seller
+  const { data: listings } = await supabase
+    .from('listings')
+    .select('id, card_base_id')
+    .eq('seller_id', user.id);
+  if (!listings?.length) return [];
+
+  const listingIds = listings.map((l: { id: string }) => l.id);
+
+  // Fetch questions for those listings
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: questions } = await (supabase as any)
+    .from('questions')
+    .select('*')
+    .in('listing_id', listingIds)
+    .order('created_at', { ascending: false });
+
+  const rows = (questions ?? []) as any[];
+  if (!rows.length) return [];
+
+  // Fetch card base names
+  const cardBaseIds = Array.from(new Set(listings.map((l: { card_base_id: string }) => l.card_base_id)));
+  const { data: cardBases } = await supabase
+    .from('card_bases')
+    .select('id, name')
+    .in('id', cardBaseIds);
+  const cardBaseMap: Record<string, string> = {};
+  (cardBases ?? []).forEach((cb: { id: string; name: string }) => { cardBaseMap[cb.id] = cb.name; });
+
+  // Map listing_id → card_base_id
+  const listingCardMap: Record<string, string> = {};
+  listings.forEach((l: { id: string; card_base_id: string }) => { listingCardMap[l.id] = l.card_base_id; });
+
+  // Fetch user profiles for question authors
+  const userIds = Array.from(new Set(rows.map((r: any) => r.user_id)));
+  const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
+  const profileMap: Record<string, string> = {};
+  (profiles ?? []).forEach((p: { id: string; full_name: string }) => { profileMap[p.id] = p.full_name; });
+
+  // Get seller name
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sellerProfile } = await (supabase as any).from('seller_profiles').select('store_name').eq('id', user.id).single();
+  const sellerName = (sellerProfile as any)?.store_name ?? 'Vendedor';
+
+  return rows.map((r: any) => ({
+    id: r.id,
+    listingId: r.listing_id,
+    sellerId: user.id,
+    sellerName,
+    userName: profileMap[r.user_id] ?? 'Usuário',
+    question: r.question,
+    answer: r.answer ?? undefined,
+    questionDate: r.created_at,
+    answerDate: r.answered_at ?? undefined,
+    cardName: cardBaseMap[listingCardMap[r.listing_id]] ?? 'Carta',
+  }));
+}
+
 // ════════════════════════════════════════════════
 // Private Order Messages
 // ════════════════════════════════════════════════
