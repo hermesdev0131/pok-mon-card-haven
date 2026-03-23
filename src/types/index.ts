@@ -115,6 +115,7 @@ export interface Question {
   questionDate: string;
   answerDate?: string;
   cardName?: string;
+  cardBaseId?: string;
 }
 
 export interface Review {

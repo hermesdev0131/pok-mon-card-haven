@@ -1080,6 +1080,7 @@ export async function getMyQuestions(): Promise<Question[]> {
     questionDate: r.created_at,
     answerDate: r.answered_at ?? undefined,
     cardName: cardBaseMap[listingCardMap[r.listing_id]] ?? 'Carta',
+    cardBaseId: listingCardMap[r.listing_id],
   }));
 }
 

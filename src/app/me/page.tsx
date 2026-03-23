@@ -518,7 +518,7 @@ function SellerQuestionsList({
                       <p className="text-xs text-muted-foreground">
                         <span className="font-medium text-foreground">{q.userName}</span>
                         {' perguntou em '}
-                        <Link href={`/card/${q.listingId}`} className="text-accent hover:underline">{q.cardName}</Link>
+                        <Link href={`/card/${q.cardBaseId}`} className="text-accent hover:underline">{q.cardName}</Link>
                       </p>
                       <p className="text-sm mt-1">{q.question}</p>
                       <p className="text-[11px] text-muted-foreground/60 mt-1">{new Date(q.questionDate).toLocaleDateString('pt-BR')}</p>
