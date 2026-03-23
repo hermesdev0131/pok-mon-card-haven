@@ -8,19 +8,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { openDispute } from '@/lib/api';
 
-const DISPUTE_REASONS = [
+const BUYER_REASONS = [
   { value: 'Item não recebido', label: 'Item não recebido' },
   { value: 'Item diferente do anunciado', label: 'Item diferente do anunciado' },
   { value: 'Item danificado', label: 'Item danificado' },
   { value: 'Outro', label: 'Outro' },
-] as const;
+];
+
+const SELLER_REASONS = [
+  { value: 'Comprador alega não recebido mas rastreio confirma entrega', label: 'Comprador alega não recebido mas rastreio confirma entrega' },
+  { value: 'Comprador solicitou estorno indevido', label: 'Comprador solicitou estorno indevido' },
+  { value: 'Comprador não responde', label: 'Comprador não responde' },
+  { value: 'Outro', label: 'Outro' },
+];
 
 interface OpenDisputeFormProps {
   orderId: string;
+  role?: 'buyer' | 'seller';
   onDisputeOpened?: () => void;
 }
 
-export function OpenDisputeForm({ orderId, onDisputeOpened }: OpenDisputeFormProps) {
+export function OpenDisputeForm({ orderId, role = 'buyer', onDisputeOpened }: OpenDisputeFormProps) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
@@ -106,7 +114,7 @@ export function OpenDisputeForm({ orderId, onDisputeOpened }: OpenDisputeFormPro
                     <SelectValue placeholder="Selecione o motivo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DISPUTE_REASONS.map(r => (
+                    {(role === 'seller' ? SELLER_REASONS : BUYER_REASONS).map(r => (
                       <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                     ))}
                   </SelectContent>

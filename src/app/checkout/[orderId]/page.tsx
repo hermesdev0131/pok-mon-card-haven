@@ -421,6 +421,7 @@ export default function Checkout() {
               <div className="mb-6 flex justify-end">
                 <OpenDisputeForm
                   orderId={order.id}
+                  role={isSeller ? 'seller' : 'buyer'}
                   onDisputeOpened={async () => {
                     const updated = await getOrder(order.id);
                     if (updated) setOrder(updated);
