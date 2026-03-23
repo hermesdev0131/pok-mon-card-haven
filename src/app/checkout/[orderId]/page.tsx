@@ -11,7 +11,7 @@ import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock, Package, 
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
-import { getOrder, cancelOrder, shipOrder, confirmDelivery } from '@/lib/api';
+import { getOrder, cancelOrder, shipOrder, confirmDelivery, updateOrderShipping } from '@/lib/api';
 import { OrderMessages } from '@/components/OrderMessages';
 import { ReviewForm } from '@/components/ReviewForm';
 import { OpenDisputeForm } from '@/components/OpenDisputeForm';
@@ -38,6 +38,9 @@ export default function Checkout() {
   const [confirming, setConfirming] = useState(false);
   const [confirmDeliveryOpen, setConfirmDeliveryOpen] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [buyerCep, setBuyerCep] = useState('');
+  const [calculatingShipping, setCalculatingShipping] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
   const verifyAttempts = useRef(0);
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const isBuyer = !!(user && order && user.id === order.buyerId);
@@ -130,6 +133,36 @@ export default function Checkout() {
       setPaying(false);
     }
   }, [order]);
+
+  const handleCalculateShipping = useCallback(async () => {
+    if (!order || !buyerCep.replace(/\D/g, '').match(/^\d{8}$/)) {
+      setShippingError('CEP inválido (8 dígitos)');
+      return;
+    }
+    setCalculatingShipping(true);
+    setShippingError(null);
+    try {
+      // Use a default origin CEP (São Paulo) — in production, use seller's CEP
+      const res = await fetch('/api/shipping/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originZip: '01001000', destinationZip: buyerCep.replace(/\D/g, '') }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setShippingError(data.error ?? 'Erro ao calcular frete'); setCalculatingShipping(false); return; }
+
+      // Save shipping cost to order
+      const updateResult = await updateOrderShipping(order.id, data.shippingCost);
+      setCalculatingShipping(false);
+      if (!updateResult.success) { setShippingError('Erro ao salvar frete'); return; }
+
+      // Update local order state
+      setOrder(prev => prev ? { ...prev, shippingCost: data.shippingCost } : prev);
+    } catch {
+      setShippingError('Erro de conexão');
+      setCalculatingShipping(false);
+    }
+  }, [order, buyerCep]);
 
   const handleCancel = useCallback(async () => {
     if (!order) return;
@@ -458,6 +491,33 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
+            {/* Shipping calculator — only for buyer, before payment */}
+            {isBuyer && !isPostPayment && !order.freeShipping && order.shippingCost === 0 && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-medium">Calcular frete</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Seu CEP (ex: 01001-000)"
+                      value={buyerCep}
+                      onChange={(e) => setBuyerCep(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                      className="flex-1 h-9 rounded-md bg-white/[0.06] border border-white/[0.08] px-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-accent/30"
+                      maxLength={9}
+                    />
+                    <Button
+                      size="sm"
+                      disabled={buyerCep.length < 8 || calculatingShipping}
+                      onClick={handleCalculateShipping}
+                    >
+                      {calculatingShipping ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Calcular'}
+                    </Button>
+                  </div>
+                  {shippingError && <p className="text-xs text-destructive">{shippingError}</p>}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Price summary */}
             <Card className="glass mb-6">
               <CardContent className="p-4 space-y-3">
@@ -467,7 +527,7 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  <span>{order.shippingCost > 0 ? `R$ ${formatPrice(order.shippingCost)}` : order.freeShipping ? 'Grátis' : 'A calcular'}</span>
+                  <span>{order.shippingCost > 0 ? `R$ ${formatPrice(order.shippingCost)}` : order.freeShipping ? 'Grátis' : 'Informe seu CEP'}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
@@ -493,7 +553,10 @@ export default function Checkout() {
 
                 {!isPostPayment && (
                   <>
-                    <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying}>
+                    {!order.freeShipping && order.shippingCost === 0 && (
+                      <p className="text-xs text-amber-400 text-center mb-3">Calcule o frete antes de pagar</p>
+                    )}
+                    <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying || (!order.freeShipping && order.shippingCost === 0)}>
                       {paying
                         ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> <span>Aguarde...</span></>
                         : 'Pagar com Mercado Pago'}
