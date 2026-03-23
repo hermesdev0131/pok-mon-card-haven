@@ -197,21 +197,24 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
       />
 
       {/* Q&A modal */}
-      <Dialog open={!!qnaListing} onOpenChange={(open) => !open && setQnaListing(null)}>
+      <Dialog open={!!qnaListing} onOpenChange={(open) => { if (!open) { setQnaListing(null); setQnaQuestions([]); } }}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-base">
               Perguntas — {qnaListing && sellers[qnaListing.sellerId]?.name}
             </DialogTitle>
           </DialogHeader>
-          <QnA
-            questions={qnaQuestions}
-            listingId={qnaListing?.id ?? ''}
-            sellerId={qnaListing?.sellerId ?? ''}
-            onQuestionSent={() => {
-              if (qnaListing) getQuestionsForListing(qnaListing.id).then(setQnaQuestions);
-            }}
-          />
+          {qnaListing && (
+            <QnA
+              key={qnaListing.id}
+              questions={qnaQuestions}
+              listingId={qnaListing.id}
+              sellerId={qnaListing.sellerId}
+              onQuestionSent={() => {
+                getQuestionsForListing(qnaListing.id).then(setQnaQuestions);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </>
