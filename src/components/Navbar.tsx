@@ -22,10 +22,8 @@ export function Navbar() {
   const { isAuthenticated, isAdmin, profile, signOut } = useAuth();
 
   async function handleSignOut() {
-    setMobileOpen(false);
-    router.push('/');
     await signOut();
-    router.refresh();
+    router.push('/');
   }
 
   return (
@@ -59,30 +57,23 @@ export function Navbar() {
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
               <Link href="/sell"><ShoppingBag className="h-3.5 w-3.5" /> Anunciar</Link>
             </Button>
-            {isAuthenticated ? (
-              <>
-                {isAdmin && (
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
-                    <Link href="/admin"><ShieldCheck className="h-3.5 w-3.5" /> Admin</Link>
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
-                  <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
-                </Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" onClick={handleSignOut} title="Sair">
-                  <LogOut className="h-3.5 w-3.5" />
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" asChild>
-                  <Link href="/me"><User className="h-4 w-4" /></Link>
-                </Button>
-                <Button size="sm" className="ml-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 h-8 text-xs" asChild>
-                  <Link href="/login">Entrar</Link>
-                </Button>
-              </>
-            )}
+            {/* Authenticated actions — hidden via CSS, not unmounted */}
+            <Button variant="ghost" size="sm" className={`text-muted-foreground hover:text-foreground gap-1.5 text-xs ${isAdmin ? '' : 'hidden'}`} asChild>
+              <Link href="/admin"><ShieldCheck className="h-3.5 w-3.5" /> Admin</Link>
+            </Button>
+            <Button variant="ghost" size="sm" className={`text-muted-foreground hover:text-foreground gap-1.5 text-xs ${isAuthenticated ? '' : 'hidden'}`} asChild>
+              <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
+            </Button>
+            <Button variant="ghost" size="icon" className={`text-muted-foreground hover:text-foreground h-8 w-8 ${isAuthenticated ? '' : 'hidden'}`} onClick={handleSignOut} title="Sair">
+              <LogOut className="h-3.5 w-3.5" />
+            </Button>
+            {/* Anonymous actions — hidden via CSS */}
+            <Button variant="ghost" size="icon" className={`text-muted-foreground hover:text-foreground h-8 w-8 ${isAuthenticated ? 'hidden' : ''}`} asChild>
+              <Link href="/me"><User className="h-4 w-4" /></Link>
+            </Button>
+            <Button size="sm" className={`ml-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 h-8 text-xs ${isAuthenticated ? 'hidden' : ''}`} asChild>
+              <Link href="/login">Entrar</Link>
+            </Button>
           </div>
 
           {/* Mobile toggle */}
@@ -126,68 +117,61 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="border-b border-white/[0.06] bg-background/95 backdrop-blur-xl p-4 md:hidden">
-          {/* Mobile search */}
-          <div className="relative mb-4">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-            <input
-              type="text"
-              placeholder="Buscar cartas..."
-              className="w-full h-10 rounded-full bg-white/[0.06] border border-white/[0.08] pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-accent/30"
-            />
-          </div>
-
-          {/* Mobile category tabs */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {categories.map(({ label, href }) => {
-              const isActive = href === '/marketplace'
-                ? pathname === '/marketplace'
-                : pathname === href || pathname.startsWith(href + '/');
-              return (
-                <Link
-                  key={label}
-                  href={href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    isActive
-                      ? 'bg-accent/10 border border-accent/30 text-accent'
-                      : 'bg-white/[0.06] border border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-accent/30'
-                  }`}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Mobile nav links */}
-          <nav className="flex flex-col gap-3 border-t border-white/[0.06] pt-4">
-            <Link href="/como-funciona" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> Como funciona
-            </Link>
-            <Link href="/sell" className="text-sm font-medium" onClick={() => setMobileOpen(false)}>Anunciar carta</Link>
-            <Link href="/me" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-              <User className="h-3.5 w-3.5" /> {isAuthenticated ? (profile?.full_name?.split(' ')[0] ?? 'Minha conta') : 'Minha conta'}
-            </Link>
-            {isAdmin && (
-              <Link href="/admin" className="text-sm font-medium flex items-center gap-2 text-accent" onClick={() => setMobileOpen(false)}>
-                <ShieldCheck className="h-3.5 w-3.5" /> Painel Admin
-              </Link>
-            )}
-            {isAuthenticated ? (
-              <Button size="sm" variant="outline" className="w-fit rounded-full px-4 gap-1.5" onClick={handleSignOut}>
-                <LogOut className="h-3.5 w-3.5" /> Sair
-              </Button>
-            ) : (
-              <Button size="sm" className="w-fit bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4" asChild>
-                <Link href="/login" onClick={() => setMobileOpen(false)}>Entrar</Link>
-              </Button>
-            )}
-          </nav>
+      {/* Mobile menu — always in DOM, toggled via CSS */}
+      <div className={`border-b border-white/[0.06] bg-background/95 backdrop-blur-xl p-4 md:hidden ${mobileOpen ? '' : 'hidden'}`}>
+        {/* Mobile search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+          <input
+            type="text"
+            placeholder="Buscar cartas..."
+            className="w-full h-10 rounded-full bg-white/[0.06] border border-white/[0.08] pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-accent/30"
+          />
         </div>
-      )}
+
+        {/* Mobile category tabs */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {categories.map(({ label, href }) => {
+            const isActive = href === '/marketplace'
+              ? pathname === '/marketplace'
+              : pathname === href || pathname.startsWith(href + '/');
+            return (
+              <Link
+                key={label}
+                href={href}
+                onClick={() => setMobileOpen(false)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-accent/10 border border-accent/30 text-accent'
+                    : 'bg-white/[0.06] border border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-accent/30'
+                }`}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Mobile nav links */}
+        <nav className="flex flex-col gap-3 border-t border-white/[0.06] pt-4">
+          <Link href="/como-funciona" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+            <Sparkles className="h-3.5 w-3.5 text-accent" /> Como funciona
+          </Link>
+          <Link href="/sell" className="text-sm font-medium" onClick={() => setMobileOpen(false)}>Anunciar carta</Link>
+          <Link href="/me" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+            <User className="h-3.5 w-3.5" /> {isAuthenticated ? (profile?.full_name?.split(' ')[0] ?? 'Minha conta') : 'Minha conta'}
+          </Link>
+          <Link href="/admin" className={`text-sm font-medium flex items-center gap-2 text-accent ${isAdmin ? '' : 'hidden'}`} onClick={() => setMobileOpen(false)}>
+            <ShieldCheck className="h-3.5 w-3.5" /> Painel Admin
+          </Link>
+          <Button size="sm" variant="outline" className={`w-fit rounded-full px-4 gap-1.5 ${isAuthenticated ? '' : 'hidden'}`} onClick={handleSignOut}>
+            <LogOut className="h-3.5 w-3.5" /> Sair
+          </Button>
+          <Button size="sm" className={`w-fit bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 ${isAuthenticated ? 'hidden' : ''}`} asChild>
+            <Link href="/login" onClick={() => setMobileOpen(false)}>Entrar</Link>
+          </Button>
+        </nav>
+      </div>
     </header>
   );
 }
