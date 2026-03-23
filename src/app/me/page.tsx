@@ -11,20 +11,21 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getMyOrders, getMyListings, getMyQuestions, answerQuestion, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
+import { getMyOrders, getMyListings, getMyQuestions, getSellerReviews, answerQuestion, replyToReview, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle } from 'lucide-react';
+import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle, Star } from 'lucide-react';
 import { GradeBadge } from '@/components/GradeBadge';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
-import type { Order, Listing, CardBase, Question } from '@/types';
+import type { Order, Listing, CardBase, Question, Review } from '@/types';
 
 export default function Profile() {
   const { user, profile, isSeller, tokenRefreshCount, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [myListings, setMyListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
   const [myQuestions, setMyQuestions] = useState<Question[]>([]);
+  const [myReviews, setMyReviews] = useState<Review[]>([]);
 
   // Become seller modal state
   const [becomeOpen, setBecomeOpen] = useState(false);
@@ -50,6 +51,7 @@ export default function Profile() {
       if (isSeller) {
         getMyListings().then(setMyListings);
         getMyQuestions().then(setMyQuestions);
+        getSellerReviews(user.id).then(setMyReviews);
       }
     }
   }, [user, isSeller, tokenRefreshCount]);
@@ -115,6 +117,16 @@ export default function Profile() {
             <TabsTrigger value="sales">Minhas vendas</TabsTrigger>
             {isSeller && <TabsTrigger value="listings">Meus anúncios</TabsTrigger>}
             {isSeller && (
+              <TabsTrigger value="reviews" className="gap-1.5">
+                Avaliações
+                {myReviews.filter(r => !r.sellerReply).length > 0 && (
+                  <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                    {myReviews.filter(r => !r.sellerReply).length}
+                  </span>
+                )}
+              </TabsTrigger>
+            )}
+            {isSeller && (
               <TabsTrigger value="questions" className="gap-1.5">
                 Perguntas
                 {myQuestions.filter(q => !q.answer).length > 0 && (
@@ -134,6 +146,14 @@ export default function Profile() {
           <TabsContent value="sales">
             <SalesOrderList orders={sales} />
           </TabsContent>
+          {isSeller && (
+            <TabsContent value="reviews">
+              <SellerReviewsList
+                reviews={myReviews}
+                onReplied={async () => { if (user) getSellerReviews(user.id).then(setMyReviews); }}
+              />
+            </TabsContent>
+          )}
           {isSeller && (
             <TabsContent value="questions">
               <SellerQuestionsList
@@ -584,6 +604,136 @@ function SellerQuestionsList({
                     <p className="text-sm text-muted-foreground">{q.answer}</p>
                     {q.answerDate && (
                       <p className="text-[11px] text-muted-foreground/50 mt-1">{new Date(q.answerDate).toLocaleDateString('pt-BR')}</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SellerReviewsList({
+  reviews,
+  onReplied,
+}: {
+  reviews: Review[];
+  onReplied: () => Promise<void>;
+}) {
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const unreplied = reviews.filter(r => !r.sellerReply);
+  const replied = reviews.filter(r => !!r.sellerReply);
+
+  const handleReply = async (reviewId: string) => {
+    if (!replyText.trim() || submitting) return;
+    setSubmitting(true);
+    const result = await replyToReview(reviewId, replyText.trim());
+    setSubmitting(false);
+    if (result.success) {
+      setReplyingId(null);
+      setReplyText('');
+      await onReplied();
+    }
+  };
+
+  if (!reviews.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <Star className="h-8 w-8 text-muted-foreground/40 mb-2" />
+        <p className="text-sm text-muted-foreground">Nenhuma avaliação recebida ainda.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 mt-4">
+      {unreplied.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-accent mb-3">Sem resposta ({unreplied.length})</h3>
+          <div className="space-y-3">
+            {unreplied.map(r => (
+              <Card key={r.id} className="glass border-accent/20">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`} />
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium">{r.buyerName}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  {r.comment && <p className="text-sm text-muted-foreground">{r.comment}</p>}
+                  {replyingId === r.id ? (
+                    <div className="ml-4 pl-3 border-l-2 border-accent/30 space-y-2">
+                      <Textarea
+                        placeholder="Sua resposta..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="min-h-[60px] resize-none text-sm"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={!replyText.trim() || submitting}
+                          onClick={() => handleReply(r.id)}
+                        >
+                          {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Enviar resposta'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { setReplyingId(null); setReplyText(''); }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs text-accent border-accent/20 hover:bg-accent/10"
+                      onClick={() => { setReplyingId(r.id); setReplyText(''); }}
+                    >
+                      Responder
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {replied.length > 0 && (
+        <div>
+          <h3 className="text-sm font-medium text-muted-foreground mb-3">Respondidas ({replied.length})</h3>
+          <div className="space-y-3">
+            {replied.map(r => (
+              <Card key={r.id} className="glass">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star key={s} className={`h-3.5 w-3.5 ${s <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`} />
+                      ))}
+                    </div>
+                    <span className="text-sm font-medium">{r.buyerName}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(r.date).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                  {r.comment && <p className="text-sm text-muted-foreground">{r.comment}</p>}
+                  <div className="ml-4 pl-3 border-l-2 border-accent/40">
+                    <p className="text-sm text-muted-foreground">{r.sellerReply}</p>
+                    {r.repliedAt && (
+                      <p className="text-[11px] text-muted-foreground/50 mt-1">{new Date(r.repliedAt).toLocaleDateString('pt-BR')}</p>
                     )}
                   </div>
                 </CardContent>
