@@ -146,6 +146,9 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
   const cardName = cardBase
     ? `${cardBase.name} ${listing.grade_company} ${listing.grade}`
     : 'Carta';
+  // Prefer seller's listing photo, fall back to card base reference image
+  const listingImages = listing?.images as string[] | null;
+  const listingImageUrl = listingImages?.[0] ?? cardBase?.image_url ?? undefined;
   return {
     id: row.id,
     status: mapOrderStatus(row.status),
@@ -158,6 +161,7 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
     price: row.price,
     shippingCost: row.shipping_cost ?? 0,
     freeShipping: listing?.free_shipping ?? false,
+    listingImageUrl,
     createdAt: row.created_at,
     trackingCode: row.tracking_code ?? undefined,
     mpPaymentId: row.mp_payment_id ?? undefined,
@@ -579,7 +583,7 @@ export async function getQuestionsForListing(listingId: string): Promise<Questio
 // Only join listings→card_bases (direct FKs in public schema)
 const ORDER_SELECT = `
   *,
-  listing:listings(card_base_id, grade, grade_company, card_base:card_bases(name))
+  listing:listings(card_base_id, grade, grade_company, images, card_base:card_bases(name, image_url))
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

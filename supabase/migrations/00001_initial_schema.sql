@@ -508,6 +508,9 @@ create policy "Seller profiles are publicly readable"
 create policy "Sellers can update own profile"
   on seller_profiles for update using (auth.uid() = id);
 
+create policy "Admins can update seller profiles"
+  on seller_profiles for update using (is_admin());
+
 create policy "Users can create their own seller profile"
   on seller_profiles for insert with check (auth.uid() = id);
 

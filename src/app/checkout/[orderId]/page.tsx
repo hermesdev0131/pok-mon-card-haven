@@ -235,7 +235,11 @@ export default function Checkout() {
             {/* Order info card */}
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                {order.listingImageUrl ? (
+                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-white/[0.06]" />
+                ) : (
+                  <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                )}
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
                   <p className="text-sm text-muted-foreground">
@@ -433,7 +437,7 @@ export default function Checkout() {
             {/* Private messages — visible on all post-payment statuses */}
             {order.status !== 'cancelado' && (
               <div className="mb-6">
-                <OrderMessages orderId={order.id} />
+                <OrderMessages orderId={order.id} readOnly={order.status === 'concluido'} />
               </div>
             )}
 
@@ -481,7 +485,11 @@ export default function Checkout() {
             {/* Item summary */}
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                {order.listingImageUrl ? (
+                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-white/[0.06]" />
+                ) : (
+                  <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                )}
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
                   <p className="text-sm text-muted-foreground">

@@ -10,9 +10,10 @@ import type { Message } from '@/types';
 
 interface OrderMessagesProps {
   orderId: string;
+  readOnly?: boolean;
 }
 
-export function OrderMessages({ orderId }: OrderMessagesProps) {
+export function OrderMessages({ orderId, readOnly }: OrderMessagesProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -110,24 +111,30 @@ export function OrderMessages({ orderId }: OrderMessagesProps) {
           )}
         </div>
 
-        <div className="flex gap-2">
-          <Textarea
-            placeholder="Escreva uma mensagem..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="min-h-[44px] max-h-[100px] resize-none text-sm"
-            rows={1}
-          />
-          <Button
-            size="icon"
-            className="self-end shrink-0"
-            disabled={!newMessage.trim() || sending}
-            onClick={handleSend}
-          >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
+        {readOnly ? (
+          <p className="text-center text-xs text-muted-foreground py-2">
+            Pedido concluído — mensagens encerradas.
+          </p>
+        ) : (
+          <div className="flex gap-2">
+            <Textarea
+              placeholder="Escreva uma mensagem..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="min-h-[44px] max-h-[100px] resize-none text-sm"
+              rows={1}
+            />
+            <Button
+              size="icon"
+              className="self-end shrink-0"
+              disabled={!newMessage.trim() || sending}
+              onClick={handleSend}
+            >
+              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

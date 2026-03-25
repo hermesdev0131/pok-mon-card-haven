@@ -99,6 +99,7 @@ export interface Order {
   shippingCost: number;
   freeShipping?: boolean;
   createdAt: string;
+  listingImageUrl?: string;
   trackingCode?: string;
   mpPaymentId?: string;
   paidAt?: string;
