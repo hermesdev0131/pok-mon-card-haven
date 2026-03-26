@@ -221,11 +221,11 @@ create table orders (
   refunded_at             timestamptz,
 
   created_at              timestamptz not null default now(),
-  updated_at              timestamptz not null default now(),
-
-  -- A listing can only be sold once
-  constraint uq_orders_listing unique (listing_id)
+  updated_at              timestamptz not null default now()
 );
+
+-- Only one non-cancelled order per listing (allows re-purchase after cancellation)
+create unique index uq_orders_listing_active on orders(listing_id) where status != 'cancelled';
 
 create index idx_orders_buyer    on orders(buyer_id);
 create index idx_orders_seller   on orders(seller_id);
@@ -463,6 +463,150 @@ $$ language plpgsql security definer;
 create trigger on_confirmed_sale_created
   after insert on confirmed_sales
   for each row execute function increment_seller_sales();
+
+-- 4.6 Auto-create confirmed_sale when order status transitions to 'completed'
+create or replace function fn_create_confirmed_sale()
+returns trigger as $$
+declare
+  v_listing listings%rowtype;
+begin
+  if NEW.status = 'completed' and (OLD.status is null or OLD.status != 'completed') then
+    select * into v_listing from listings where id = NEW.listing_id;
+
+    insert into confirmed_sales (
+      card_base_id, order_id, buyer_id, seller_id,
+      grade, grade_company, pristine, language,
+      sale_price, sold_at
+    ) values (
+      v_listing.card_base_id, NEW.id, NEW.buyer_id, NEW.seller_id,
+      v_listing.grade, v_listing.grade_company, v_listing.pristine, v_listing.language,
+      NEW.price, coalesce(NEW.completed_at, now())
+    )
+    on conflict (order_id) do nothing;
+  end if;
+  return NEW;
+end;
+$$ language plpgsql security definer;
+
+create trigger tr_orders_create_confirmed_sale
+  after update on orders
+  for each row execute function fn_create_confirmed_sale();
+
+-- 4.7 Atomic create_order (SECURITY DEFINER — bypasses RLS)
+create or replace function create_order(p_listing_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_listing record;
+  v_platform_fee integer;
+  v_seller_payout integer;
+  v_order_id uuid;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    return jsonb_build_object('success', false, 'error', 'Não autenticado');
+  end if;
+
+  select id, seller_id, price, status
+    into v_listing from listings where id = p_listing_id for update;
+
+  if not found then
+    return jsonb_build_object('success', false, 'error', 'Anúncio não encontrado');
+  end if;
+  if v_listing.status != 'active' then
+    return jsonb_build_object('success', false, 'error', 'Este anúncio não está mais disponível');
+  end if;
+  if v_listing.seller_id = v_user_id then
+    return jsonb_build_object('success', false, 'error', 'Você não pode comprar seu próprio anúncio');
+  end if;
+
+  v_platform_fee := round(v_listing.price * 0.10);
+  v_seller_payout := v_listing.price - v_platform_fee;
+
+  insert into orders (listing_id, buyer_id, seller_id, price, shipping_cost, platform_fee, seller_payout, status)
+  values (p_listing_id, v_user_id, v_listing.seller_id, v_listing.price, 0, v_platform_fee, v_seller_payout, 'awaiting_payment')
+  returning id into v_order_id;
+
+  update listings set status = 'reserved' where id = p_listing_id;
+
+  return jsonb_build_object('success', true, 'orderId', v_order_id);
+exception
+  when unique_violation then
+    return jsonb_build_object('success', false, 'error', 'Este anúncio já foi vendido');
+end;
+$$;
+
+-- 4.8 Atomic cancel_order (SECURITY DEFINER — bypasses RLS)
+create or replace function cancel_order(p_order_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_order record;
+begin
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    return jsonb_build_object('success', false, 'error', 'Não autenticado');
+  end if;
+
+  select id, listing_id, buyer_id, status into v_order from orders where id = p_order_id;
+
+  if not found then
+    return jsonb_build_object('success', false, 'error', 'Pedido não encontrado');
+  end if;
+  if v_order.buyer_id != v_user_id then
+    return jsonb_build_object('success', false, 'error', 'Sem permissão');
+  end if;
+  if v_order.status != 'awaiting_payment' then
+    return jsonb_build_object('success', false, 'error', 'Pedido não pode ser cancelado');
+  end if;
+
+  update orders set status = 'cancelled', cancelled_at = now(),
+    cancellation_reason = 'Cancelado pelo comprador' where id = p_order_id;
+  update listings set status = 'active' where id = v_order.listing_id;
+
+  return jsonb_build_object('success', true);
+end;
+$$;
+
+-- 4.9 Expire stale orders: cancel awaiting_payment orders older than 20 min
+create or replace function expire_stale_orders(p_listing_ids uuid[] default null)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_expired_count integer;
+begin
+  with stale as (
+    select o.id as order_id, o.listing_id
+    from orders o
+    where o.status = 'awaiting_payment'
+      and o.created_at < now() - interval '20 minutes'
+      and (p_listing_ids is null or o.listing_id = any(p_listing_ids))
+    for update of o skip locked
+  ),
+  cancel_orders as (
+    update orders
+    set status = 'cancelled', cancelled_at = now(),
+        cancellation_reason = 'Expirado — pagamento não realizado em 20 minutos'
+    from stale where orders.id = stale.order_id
+  )
+  update listings set status = 'active'
+  from stale where listings.id = stale.listing_id and listings.status = 'reserved';
+
+  get diagnostics v_expired_count = row_count;
+  return v_expired_count;
+end;
+$$;
 
 
 -- =========================

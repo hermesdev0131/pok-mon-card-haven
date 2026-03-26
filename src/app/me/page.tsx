@@ -16,6 +16,7 @@ import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle, Star } from 'lucide-react';
 import { GradeBadge } from '@/components/GradeBadge';
+import { AccountSettings } from '@/components/AccountSettings';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
 import type { Order, Listing, CardBase, Question, Review } from '@/types';
@@ -136,6 +137,7 @@ export default function Profile() {
                 )}
               </TabsTrigger>
             )}
+            <TabsTrigger value="account">Minha conta</TabsTrigger>
           </TabsList>
           <TabsContent value="purchases">
             <OrderList orders={purchases} onCancel={async (id) => {
@@ -177,6 +179,9 @@ export default function Profile() {
               />
             </TabsContent>
           )}
+          <TabsContent value="account">
+            <AccountSettings />
+          </TabsContent>
         </Tabs>
       </div>
 

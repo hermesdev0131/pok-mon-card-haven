@@ -11,13 +11,13 @@ import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock, Package, 
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
-import { getOrder, cancelOrder, shipOrder, confirmDelivery, updateOrderShipping } from '@/lib/api';
+import { getOrder, cancelOrder, shipOrder, confirmDelivery, updateOrderShipping, getSellerCep } from '@/lib/api';
 import { OrderMessages } from '@/components/OrderMessages';
 import { ReviewForm } from '@/components/ReviewForm';
 import { OpenDisputeForm } from '@/components/OpenDisputeForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
-import type { Order } from '@/types';
+import type { Order, ShippingOption } from '@/types';
 
 export default function Checkout() {
   const params = useParams<{ orderId: string }>();
@@ -41,6 +41,9 @@ export default function Checkout() {
   const [buyerCep, setBuyerCep] = useState('');
   const [calculatingShipping, setCalculatingShipping] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShipping, setSelectedShipping] = useState<number | null>(null);
+  const [isFallback, setIsFallback] = useState(false);
   const verifyAttempts = useRef(0);
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const isBuyer = !!(user && order && user.id === order.buyerId);
@@ -141,28 +144,43 @@ export default function Checkout() {
     }
     setCalculatingShipping(true);
     setShippingError(null);
+    setShippingOptions([]);
+    setSelectedShipping(null);
     try {
-      // Use a default origin CEP (São Paulo) — in production, use seller's CEP
+      // Fetch seller's CEP from their profile
+      const sellerCep = await getSellerCep(order.sellerId);
+      const originZip = sellerCep || '01001000'; // fallback to SP
+
       const res = await fetch('/api/shipping/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ originZip: '01001000', destinationZip: buyerCep.replace(/\D/g, '') }),
+        body: JSON.stringify({ originZip, destinationZip: buyerCep.replace(/\D/g, '') }),
       });
       const data = await res.json();
-      if (!res.ok) { setShippingError(data.error ?? 'Erro ao calcular frete'); setCalculatingShipping(false); return; }
-
-      // Save shipping cost to order
-      const updateResult = await updateOrderShipping(order.id, data.shippingCost);
       setCalculatingShipping(false);
-      if (!updateResult.success) { setShippingError('Erro ao salvar frete'); return; }
+      if (!res.ok) { setShippingError(data.error ?? 'Erro ao calcular frete'); return; }
 
-      // Update local order state
-      setOrder(prev => prev ? { ...prev, shippingCost: data.shippingCost } : prev);
+      setShippingOptions(data.options ?? []);
+      setIsFallback(data.fallback ?? false);
+
+      // Auto-select if only one option
+      if (data.options?.length === 1) {
+        handleSelectShipping(data.options[0], 0);
+      }
     } catch {
       setShippingError('Erro de conexão');
       setCalculatingShipping(false);
     }
   }, [order, buyerCep]);
+
+  const handleSelectShipping = async (option: ShippingOption, index: number) => {
+    if (!order) return;
+    setSelectedShipping(index);
+    const result = await updateOrderShipping(order.id, option.price);
+    if (result.success) {
+      setOrder(prev => prev ? { ...prev, shippingCost: option.price } : prev);
+    }
+  };
 
   const handleCancel = useCallback(async () => {
     if (!order) return;
@@ -501,10 +519,10 @@ export default function Checkout() {
             </Card>
 
             {/* Shipping calculator — only for buyer, before payment */}
-            {isBuyer && !isPostPayment && !order.freeShipping && order.shippingCost === 0 && (
+            {isBuyer && !isPostPayment && !order.freeShipping && (
               <Card className="glass mb-6">
                 <CardContent className="p-4 space-y-3">
-                  <p className="text-sm font-medium">Calcular frete</p>
+                  <p className="text-sm font-medium flex items-center gap-2"><Truck className="h-4 w-4 text-accent" /> Calcular frete</p>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -523,6 +541,35 @@ export default function Checkout() {
                     </Button>
                   </div>
                   {shippingError && <p className="text-xs text-destructive">{shippingError}</p>}
+
+                  {/* Shipping options */}
+                  {shippingOptions.length > 0 && (
+                    <div className="space-y-2 pt-1">
+                      {isFallback && (
+                        <p className="text-[11px] text-amber-400">Frete estimado (valor aproximado)</p>
+                      )}
+                      {shippingOptions.map((opt, i) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => handleSelectShipping(opt, i)}
+                          className={`w-full flex items-center justify-between p-3 rounded-lg border text-sm transition-all ${
+                            selectedShipping === i
+                              ? 'border-accent/40 bg-accent/5'
+                              : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.14]'
+                          }`}
+                        >
+                          <div className="text-left">
+                            <p className="font-medium">{opt.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {opt.company}{opt.deliveryDays ? ` · ${opt.deliveryDays} dias úteis` : ''}
+                            </p>
+                          </div>
+                          <p className="font-semibold text-accent">R$ {formatPrice(opt.price)}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

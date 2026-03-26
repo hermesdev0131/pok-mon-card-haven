@@ -880,6 +880,37 @@ export async function becomeSeller(
   return { success: true };
 }
 
+export async function updateProfile(input: {
+  full_name?: string;
+  phone?: string;
+  address_zip?: string;
+  address_line?: string;
+  address_city?: string;
+  address_state?: string;
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('profiles')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', user.id);
+
+  if (error) { logIfError('updateProfile', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+export async function getSellerCep(sellerId: string): Promise<string | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('profiles')
+    .select('address_zip')
+    .eq('id', sellerId)
+    .single();
+  return data?.address_zip ?? null;
+}
+
 export async function getMyListings(): Promise<(Listing & { cardBase: CardBase })[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return [];

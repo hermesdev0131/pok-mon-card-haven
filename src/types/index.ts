@@ -105,6 +105,14 @@ export interface Order {
   paidAt?: string;
 }
 
+export interface ShippingOption {
+  id: number;
+  name: string;
+  price: number;          // centavos
+  deliveryDays: number | null;
+  company: string;
+}
+
 export interface Question {
   id: string;
   listingId: string;
