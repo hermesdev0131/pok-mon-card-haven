@@ -885,6 +885,8 @@ export async function updateProfile(input: {
   phone?: string;
   address_zip?: string;
   address_line?: string;
+  address_number?: string;
+  address_complement?: string;
   address_city?: string;
   address_state?: string;
 }): Promise<{ success: true } | { success: false; error: string }> {

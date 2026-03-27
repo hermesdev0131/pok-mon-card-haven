@@ -17,6 +17,8 @@ export type Database = {
           phone: string | null;
           cpf_hash: string | null;
           address_line: string | null;
+          address_number: string | null;
+          address_complement: string | null;
           address_city: string | null;
           address_state: string | null;
           address_zip: string | null;
@@ -31,6 +33,8 @@ export type Database = {
           phone?: string | null;
           cpf_hash?: string | null;
           address_line?: string | null;
+          address_number?: string | null;
+          address_complement?: string | null;
           address_city?: string | null;
           address_state?: string | null;
           address_zip?: string | null;
@@ -45,6 +49,8 @@ export type Database = {
           phone?: string | null;
           cpf_hash?: string | null;
           address_line?: string | null;
+          address_number?: string | null;
+          address_complement?: string | null;
           address_city?: string | null;
           address_state?: string | null;
           address_zip?: string | null;

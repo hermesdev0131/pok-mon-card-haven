@@ -57,6 +57,7 @@ async function fetchMelhorEnvio(
 
     const options: ShippingOpt[] = services
       .filter(s => !s.error && parseFloat(s.price) > 0)
+      .filter(s => s.company?.name?.toLowerCase() === 'correios')
       .map(s => ({
         id: s.id,
         name: s.name,

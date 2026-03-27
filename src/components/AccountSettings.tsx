@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Search, CheckCircle } from 'lucide-react';
+import { Loader2, Search, CheckCircle, Lock, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile } from '@/lib/api';
 import { lookupCep } from '@/lib/viacep';
@@ -30,11 +30,14 @@ export function AccountSettings() {
   const [phone, setPhone] = useState('');
   const [cep, setCep] = useState('');
   const [addressLine, setAddressLine] = useState('');
+  const [addressNumber, setAddressNumber] = useState('');
+  const [addressComplement, setAddressComplement] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
 
   const [saving, setSaving] = useState(false);
   const [cepLoading, setCepLoading] = useState(false);
+  const [cepValid, setCepValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -44,52 +47,69 @@ export function AccountSettings() {
       setPhone(profile.phone ? formatPhone(profile.phone) : '');
       setCep(profile.address_zip ? formatCep(profile.address_zip) : '');
       setAddressLine(profile.address_line || '');
+      setAddressNumber((profile as Record<string, unknown>).address_number as string || '');
+      setAddressComplement((profile as Record<string, unknown>).address_complement as string || '');
       setCity(profile.address_city || '');
       setState(profile.address_state || '');
+      // If profile already has city/state from CEP, mark as valid
+      if (profile.address_zip && profile.address_city && profile.address_state) {
+        setCepValid(true);
+      }
     }
   }, [profile]);
 
-  const handleCepLookup = async () => {
-    const clean = cep.replace(/\D/g, '');
-    if (clean.length !== 8) {
+  const handleCepLookup = async (cleanCep: string) => {
+    if (cleanCep.length !== 8) {
       setError('CEP deve ter 8 dígitos');
       return;
     }
     setCepLoading(true);
     setError(null);
-    const result = await lookupCep(clean);
+    setCepValid(false);
+    const result = await lookupCep(cleanCep);
     setCepLoading(false);
     if (!result) {
-      setError('CEP não encontrado');
+      setError('CEP não encontrado. Verifique o número e tente novamente.');
+      setCity('');
+      setState('');
+      setAddressLine('');
       return;
     }
     setAddressLine(result.logradouro || '');
     setCity(result.localidade || '');
     setState(result.uf || '');
+    setCepValid(true);
   };
 
   const handleCepChange = (value: string) => {
     const formatted = formatCep(value);
     setCep(formatted);
-    // Auto-lookup when 8 digits entered
     const clean = value.replace(/\D/g, '');
+    // Reset locked fields when CEP changes
+    if (clean.length < 8) {
+      setCepValid(false);
+      setCity('');
+      setState('');
+      setAddressLine('');
+    }
+    // Auto-lookup when 8 digits entered
     if (clean.length === 8) {
-      setCepLoading(true);
-      setError(null);
-      lookupCep(clean).then(result => {
-        setCepLoading(false);
-        if (result) {
-          setAddressLine(result.logradouro || '');
-          setCity(result.localidade || '');
-          setState(result.uf || '');
-        }
-      });
+      handleCepLookup(clean);
     }
   };
 
   const handleSave = async () => {
     if (!fullName.trim()) {
       setError('Nome completo é obrigatório');
+      return;
+    }
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length > 0 && cleanCep.length !== 8) {
+      setError('CEP deve ter 8 dígitos');
+      return;
+    }
+    if (cleanCep.length === 8 && !cepValid) {
+      setError('CEP inválido. Busque um CEP válido antes de salvar.');
       return;
     }
     setSaving(true);
@@ -99,8 +119,10 @@ export function AccountSettings() {
     const result = await updateProfile({
       full_name: fullName.trim(),
       phone: phone.replace(/\D/g, '') || undefined,
-      address_zip: cep.replace(/\D/g, '') || undefined,
+      address_zip: cleanCep || undefined,
       address_line: addressLine.trim() || undefined,
+      address_number: addressNumber.trim() || undefined,
+      address_complement: addressComplement.trim() || undefined,
       address_city: city.trim() || undefined,
       address_state: state.trim().toUpperCase() || undefined,
     });
@@ -155,13 +177,21 @@ export function AccountSettings() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleCepLookup}
+              onClick={() => handleCepLookup(cep.replace(/\D/g, ''))}
               disabled={cepLoading}
               className="shrink-0"
             >
               {cepLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>
+          <a
+            href="https://buscacep.correios.com.br/app/endereco/index.php"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+          >
+            Não sabe seu CEP? Consulte nos Correios <ExternalLink className="h-3 w-3" />
+          </a>
         </div>
 
         <div className="space-y-2">
@@ -170,28 +200,58 @@ export function AccountSettings() {
             id="addressLine"
             value={addressLine}
             onChange={e => setAddressLine(e.target.value)}
-            placeholder="Rua, número, complemento"
+            placeholder={cepValid ? "Endereço" : "Preencha o CEP primeiro"}
+            disabled={!cepValid && cep.replace(/\D/g, '').length === 0}
           />
         </div>
 
         <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-1 space-y-2">
+            <Label htmlFor="addressNumber">Número</Label>
+            <Input
+              id="addressNumber"
+              value={addressNumber}
+              onChange={e => setAddressNumber(e.target.value)}
+              placeholder="Nº"
+            />
+          </div>
           <div className="col-span-2 space-y-2">
-            <Label htmlFor="city">Cidade</Label>
+            <Label htmlFor="addressComplement">Complemento</Label>
+            <Input
+              id="addressComplement"
+              value={addressComplement}
+              onChange={e => setAddressComplement(e.target.value)}
+              placeholder="Apto, bloco, sala..."
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-2 space-y-2">
+            <Label htmlFor="city" className="flex items-center gap-1">
+              Cidade {cepValid && <Lock className="h-3 w-3 text-muted-foreground" />}
+            </Label>
             <Input
               id="city"
               value={city}
-              onChange={e => setCity(e.target.value)}
-              placeholder="Cidade"
+              readOnly
+              disabled
+              placeholder="Preenchido pelo CEP"
+              className={cepValid ? "bg-muted cursor-not-allowed" : ""}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="state">Estado</Label>
+            <Label htmlFor="state" className="flex items-center gap-1">
+              Estado {cepValid && <Lock className="h-3 w-3 text-muted-foreground" />}
+            </Label>
             <Input
               id="state"
               value={state}
-              onChange={e => setState(e.target.value.toUpperCase().slice(0, 2))}
+              readOnly
+              disabled
               placeholder="UF"
               maxLength={2}
+              className={cepValid ? "bg-muted cursor-not-allowed" : ""}
             />
           </div>
         </div>
