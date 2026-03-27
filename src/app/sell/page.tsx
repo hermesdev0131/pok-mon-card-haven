@@ -132,7 +132,7 @@ export default function Sell() {
             <p className="text-sm text-muted-foreground">
               Para anunciar suas cartas, é necessário cadastrar seu endereço. Isso permite calcular o frete correto para os compradores.
             </p>
-            <Button onClick={() => router.push('/me?tab=account')}>
+            <Button onClick={() => { window.location.href = '/me?tab=account'; }}>
               Ir para Minha Conta
             </Button>
           </CardContent>
