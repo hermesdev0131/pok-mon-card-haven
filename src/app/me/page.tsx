@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { getMyOrders, getMyListings, getMyQuestions, getSellerReviews, answerQuestion, replyToReview, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,9 +28,13 @@ export default function Profile() {
   const [myQuestions, setMyQuestions] = useState<Question[]>([]);
   const [myReviews, setMyReviews] = useState<Review[]>([]);
 
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab');
-  const [activeTab, setActiveTab] = useState(tabParam || 'purchases');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('tab') || 'purchases';
+    }
+    return 'purchases';
+  });
 
   // Become seller modal state
   const [becomeOpen, setBecomeOpen] = useState(false);
