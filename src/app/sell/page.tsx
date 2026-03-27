@@ -11,6 +11,7 @@ import { ImagePlus, Loader2, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/RequireAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { searchCardBases, createListing } from '@/lib/api';
 import type { CardBase, GradeCompany } from '@/types';
 
@@ -18,6 +19,7 @@ const IMAGE_SLOTS = ['Frente', 'Verso', 'Label', 'Case'] as const;
 
 export default function Sell() {
   const router = useRouter();
+  const { profile } = useAuth();
   const [step, setStep] = useState(1);
 
   // Step 1 — Card data
@@ -121,6 +123,23 @@ export default function Sell() {
   return (
     <RequireAuth role="seller">
       <div className="container mx-auto max-w-2xl px-4 py-8">
+
+      {/* Block if seller has no address */}
+      {!profile?.address_zip && (
+        <Card className="glass mb-8">
+          <CardContent className="p-6 text-center space-y-3">
+            <p className="text-lg font-semibold">Configure seu endereço</p>
+            <p className="text-sm text-muted-foreground">
+              Para anunciar suas cartas, é necessário cadastrar seu endereço. Isso permite calcular o frete correto para os compradores.
+            </p>
+            <Button onClick={() => router.push('/me?tab=account')}>
+              Ir para Minha Conta
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {profile?.address_zip && (<>
       <h1 className="text-2xl font-bold mb-2">Criar anúncio</h1>
       <p className="text-sm text-muted-foreground mb-8">Preencha os dados da sua carta graduada</p>
 
@@ -356,6 +375,7 @@ export default function Sell() {
           </CardContent>
         </Card>
       )}
+      </>)}
       </div>
     </RequireAuth>
   );

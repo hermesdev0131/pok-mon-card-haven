@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { getMyOrders, getMyListings, getMyQuestions, getSellerReviews, answerQuestion, replyToReview, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle, Star } from 'lucide-react';
+import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle, Star, MapPin } from 'lucide-react';
 import { GradeBadge } from '@/components/GradeBadge';
 import { AccountSettings } from '@/components/AccountSettings';
 import { usePagination } from '@/hooks/usePagination';
@@ -112,6 +112,24 @@ export default function Profile() {
           </button>
         )}
 
+        {/* Address warning for sellers without CEP */}
+        {isSeller && !profile?.address_zip && (
+          <button
+            onClick={() => {
+              const el = document.querySelector('[data-value="account"]');
+              if (el instanceof HTMLElement) el.click();
+            }}
+            className="w-full flex items-center gap-3 mb-6 p-4 rounded-xl bg-amber-500/[0.06] border border-amber-500/20 hover:border-amber-500/30 hover:bg-amber-500/[0.1] transition-all duration-200 text-left"
+          >
+            <MapPin className="h-5 w-5 text-amber-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-amber-400">Complete seu endereço</p>
+              <p className="text-xs text-muted-foreground">Necessário para calcular o frete dos seus anúncios</p>
+            </div>
+            <span className="text-xs text-amber-400 font-medium shrink-0">Configurar &rarr;</span>
+          </button>
+        )}
+
         <Tabs defaultValue="purchases">
           <TabsList>
             <TabsTrigger value="purchases">Minhas compras</TabsTrigger>
@@ -137,7 +155,7 @@ export default function Profile() {
                 )}
               </TabsTrigger>
             )}
-            <TabsTrigger value="account">Minha conta</TabsTrigger>
+            <TabsTrigger value="account" data-value="account">Minha conta</TabsTrigger>
           </TabsList>
           <TabsContent value="purchases">
             <OrderList orders={purchases} onCancel={async (id) => {

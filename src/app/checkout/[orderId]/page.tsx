@@ -24,7 +24,7 @@ export default function Checkout() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const paymentStatus = searchParams.get('status');
-  const { user, tokenRefreshCount } = useAuth();
+  const { user, profile, tokenRefreshCount } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -58,6 +58,45 @@ export default function Checkout() {
       });
     }
   }, [params.orderId, tokenRefreshCount]);
+
+  // Auto-fill buyer CEP from profile and auto-calculate shipping
+  const autoCalcDone = useRef(false);
+  useEffect(() => {
+    if (!order || !profile || !isBuyer || order.status !== 'aguardando_pagamento') return;
+    if (order.shippingCost > 0 || order.freeShipping) return;
+    if (autoCalcDone.current) return;
+    if (profile.address_zip && !buyerCep) {
+      const cep = profile.address_zip.replace(/\D/g, '');
+      setBuyerCep(cep);
+      // Auto-calculate shipping
+      autoCalcDone.current = true;
+      (async () => {
+        setCalculatingShipping(true);
+        try {
+          const sellerCep = await getSellerCep(order.sellerId);
+          const res = await fetch('/api/shipping/calculate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ originZip: sellerCep || '01001000', destinationZip: cep }),
+          });
+          const data = await res.json();
+          setCalculatingShipping(false);
+          if (res.ok && data.options?.length) {
+            setShippingOptions(data.options);
+            setIsFallback(data.fallback ?? false);
+            if (data.options.length === 1) {
+              const opt = data.options[0];
+              setSelectedShipping(0);
+              const result = await updateOrderShipping(order.id, opt.price);
+              if (result.success) setOrder(prev => prev ? { ...prev, shippingCost: opt.price } : prev);
+            }
+          }
+        } catch {
+          setCalculatingShipping(false);
+        }
+      })();
+    }
+  }, [order, profile, isBuyer, buyerCep]);
 
   // Countdown timer for awaiting_payment orders (30 min expiry)
   useEffect(() => {
