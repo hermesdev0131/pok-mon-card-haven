@@ -583,7 +583,7 @@ export async function getQuestionsForListing(listingId: string): Promise<Questio
 // Only join listings→card_bases (direct FKs in public schema)
 const ORDER_SELECT = `
   *,
-  listing:listings(card_base_id, grade, grade_company, images, card_base:card_bases(name, image_url))
+  listing:listings(card_base_id, grade, grade_company, images, free_shipping, card_base:card_bases(name, image_url))
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
