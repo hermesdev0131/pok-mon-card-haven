@@ -28,6 +28,8 @@ export default function Profile() {
   const [myQuestions, setMyQuestions] = useState<Question[]>([]);
   const [myReviews, setMyReviews] = useState<Review[]>([]);
 
+  const [activeTab, setActiveTab] = useState('purchases');
+
   // Become seller modal state
   const [becomeOpen, setBecomeOpen] = useState(false);
   const [storeName, setStoreName] = useState('');
@@ -115,10 +117,7 @@ export default function Profile() {
         {/* Address warning for sellers without CEP */}
         {isSeller && !profile?.address_zip && (
           <button
-            onClick={() => {
-              const el = document.querySelector('[data-value="account"]');
-              if (el instanceof HTMLElement) el.click();
-            }}
+            onClick={() => setActiveTab('account')}
             className="w-full flex items-center gap-3 mb-6 p-4 rounded-xl bg-amber-500/[0.06] border border-amber-500/20 hover:border-amber-500/30 hover:bg-amber-500/[0.1] transition-all duration-200 text-left"
           >
             <MapPin className="h-5 w-5 text-amber-400 shrink-0" />
@@ -130,7 +129,7 @@ export default function Profile() {
           </button>
         )}
 
-        <Tabs defaultValue="purchases">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="purchases">Minhas compras</TabsTrigger>
             <TabsTrigger value="sales">Minhas vendas</TabsTrigger>
@@ -155,7 +154,7 @@ export default function Profile() {
                 )}
               </TabsTrigger>
             )}
-            <TabsTrigger value="account" data-value="account">Minha conta</TabsTrigger>
+            <TabsTrigger value="account">Minha conta</TabsTrigger>
           </TabsList>
           <TabsContent value="purchases">
             <OrderList orders={purchases} onCancel={async (id) => {
