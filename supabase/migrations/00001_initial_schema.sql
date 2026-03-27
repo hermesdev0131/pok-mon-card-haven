@@ -816,8 +816,8 @@ insert into grade_companies (code, name, logo_url, website, active, sort_order) 
   ('Beckett',  'Beckett Grading Services',          null, 'https://www.beckett.com/grading', true, 3),
   ('TAG',      'TAG Grading',                       null, 'https://www.taggrading.com.br',  true, 4),
   ('ARS',      'ARS Grading',                       null, 'https://www.arsgrading.com.br',  true, 5),
-  ('Mana Fix', 'Mana Fix Grading',                  null, null,                              true, 6),
-  ('BGA',      'BGA Grading',                       null, null,                              true, 7),
+  ('ManaFix',  'ManaFix Grading',                    null, null,                              true, 6),
+  ('GBA',      'GBA Grading',                       null, null,                              true, 7),
   ('Capy',     'Capy Grading',                      null, null,                              true, 8),
   ('Taverna',  'Taverna Grading',                    null, null,                              true, 9),
   ('AGS',      'AGS Grading',                        null, null,                              true, 10),
@@ -830,7 +830,7 @@ insert into platform_config (key, value) values
   ('cancellation_timeout_hours', '24'),
   ('min_listing_price', '500'),
   ('max_images_per_listing', '8'),
-  ('supported_grade_companies', '["PSA", "CGC", "Beckett", "TAG", "ARS", "Mana Fix", "BGA", "Capy", "Taverna", "AGS", "OTHER"]');
+  ('supported_grade_companies', '["PSA", "CGC", "Beckett", "TAG", "ARS", "ManaFix", "GBA", "Capy", "Taverna", "AGS", "OTHER"]');
 
 
 -- =========================

@@ -185,7 +185,7 @@ export function AccountSettings() {
             </Button>
           </div>
           <a
-            href="https://buscacep.correios.com.br/app/endereco/index.php"
+            href="https://buscacepinter.correios.com.br/app/endereco/index.php"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"

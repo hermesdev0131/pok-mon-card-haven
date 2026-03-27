@@ -214,8 +214,8 @@ export default function Sell() {
                     <SelectItem value="CGC">CGC</SelectItem>
                     <SelectItem value="TAG">TAG</SelectItem>
                     <SelectItem value="Beckett">Beckett</SelectItem>
-                    <SelectItem value="Mana Fix">Mana Fix</SelectItem>
-                    <SelectItem value="BGA">BGA</SelectItem>
+                    <SelectItem value="ManaFix">ManaFix</SelectItem>
+                    <SelectItem value="GBA">GBA</SelectItem>
                     <SelectItem value="ARS">ARS</SelectItem>
                     <SelectItem value="AGS">AGS</SelectItem>
                     <SelectItem value="Capy">Capy</SelectItem>

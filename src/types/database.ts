@@ -435,7 +435,7 @@ export type CardType =
   | 'ghost' | 'flying' | 'grass' | 'water' | 'normal'
   | 'fighting' | 'steel' | 'fairy' | 'colorless';
 
-export type GradeCompany = 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'Mana Fix' | 'BGA' | 'Capy' | 'Taverna' | 'AGS' | 'OTHER';
+export type GradeCompany = 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'ManaFix' | 'GBA' | 'Capy' | 'Taverna' | 'AGS' | 'OTHER';
 
 export type ListingStatus = 'active' | 'sold' | 'reserved' | 'cancelled';
 

@@ -2,7 +2,7 @@
 export type CardType = 'fire' | 'water' | 'grass' | 'electric' | 'psychic' | 'fighting' | 'dark' | 'steel' | 'dragon' | 'fairy' | 'ghost' | 'flying' | 'normal' | 'colorless';
 
 // Grade companies — matches grade_companies lookup table. New companies can be added via admin.
-export type GradeCompany = 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'Mana Fix' | 'BGA' | 'Capy' | 'Taverna';
+export type GradeCompany = 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'ManaFix' | 'GBA' | 'Capy' | 'Taverna';
 
 // Lookup table row types (for fetching from Supabase)
 export interface CardTypeRow {
