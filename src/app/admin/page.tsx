@@ -196,6 +196,7 @@ export default function Admin() {
                     <TableHead>Vendedor</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Pagamento</TableHead>
+                    <TableHead>Rastreio</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -226,6 +227,13 @@ export default function Admin() {
                               </p>
                             )}
                           </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {order.trackingCode ? (
+                          <span className="font-mono text-xs text-accent">{order.trackingCode}</span>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}

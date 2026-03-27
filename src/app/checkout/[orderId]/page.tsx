@@ -470,8 +470,8 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* Review form — buyer on completed orders */}
-            {order.status === 'concluido' && isBuyer && (
+            {/* Review form — buyer on delivered or completed orders */}
+            {(order.status === 'entregue' || order.status === 'concluido') && isBuyer && (
               <div className="mb-6">
                 <ReviewForm orderId={order.id} sellerId={order.sellerId} />
               </div>
@@ -494,7 +494,7 @@ export default function Checkout() {
             {/* Private messages — visible on all post-payment statuses */}
             {order.status !== 'cancelado' && (
               <div className="mb-6">
-                <OrderMessages orderId={order.id} readOnly={order.status === 'concluido'} />
+                <OrderMessages orderId={order.id} readOnly={order.status === 'entregue' || order.status === 'concluido'} />
               </div>
             )}
 
