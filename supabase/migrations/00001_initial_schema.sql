@@ -825,7 +825,7 @@ insert into grade_companies (code, name, logo_url, website, active, sort_order) 
 
 -- 6.3 Platform Config
 insert into platform_config (key, value) values
-  ('commission_rate', '"10.00"'),
+  ('commission_rate', '"5.00"'),
   ('auto_complete_days', '7'),
   ('cancellation_timeout_hours', '24'),
   ('min_listing_price', '500'),
