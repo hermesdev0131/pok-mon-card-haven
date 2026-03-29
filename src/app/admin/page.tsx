@@ -417,10 +417,19 @@ export default function Admin() {
                   {resolveDialogId && (() => {
                     const d = disputes.find(d => d.id === resolveDialogId);
                     return d ? (
-                      <div className="text-sm space-y-1 p-3 rounded-lg bg-muted/50">
-                        <p><span className="font-medium">Motivo:</span> {d.reason}</p>
-                        {d.description && <p><span className="font-medium">Descrição:</span> {d.description}</p>}
-                        <p><span className="font-medium">Aberto por:</span> {d.openedByName}</p>
+                      <div className="space-y-3">
+                        <div className="text-sm space-y-1 p-3 rounded-lg bg-muted/50">
+                          <p className="font-medium text-xs text-muted-foreground mb-1">Comprador</p>
+                          <p><span className="font-medium">Motivo:</span> {d.reason}</p>
+                          {d.description && <p><span className="font-medium">Descrição:</span> {d.description}</p>}
+                          <p><span className="font-medium">Aberto por:</span> {d.openedByName}</p>
+                        </div>
+                        {d.sellerResponse && (
+                          <div className="text-sm space-y-1 p-3 rounded-lg bg-muted/50">
+                            <p className="font-medium text-xs text-muted-foreground mb-1">Resposta do vendedor</p>
+                            <p>{d.sellerResponse}</p>
+                          </div>
+                        )}
                       </div>
                     ) : null;
                   })()}

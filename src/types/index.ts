@@ -159,6 +159,7 @@ export interface Dispute {
   openedByName: string;
   reason: string;
   description?: string;
+  sellerResponse?: string;
   status: DisputeStatus;
   adminNotes?: string;
   resolvedAt?: string;

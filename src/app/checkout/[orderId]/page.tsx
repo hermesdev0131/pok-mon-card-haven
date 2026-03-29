@@ -11,13 +11,14 @@ import { Shield, MessageCircle, Loader2, CheckCircle2, XCircle, Clock, Package, 
 import { RequireAuth } from '@/components/RequireAuth';
 import { StatusPill } from '@/components/StatusPill';
 import Link from 'next/link';
-import { getOrder, cancelOrder, shipOrder, confirmDelivery, updateOrderShipping, getSellerCep } from '@/lib/api';
+import { getOrder, cancelOrder, shipOrder, confirmDelivery, updateOrderShipping, getSellerCep, getDisputeByOrder, respondToDispute } from '@/lib/api';
 import { OrderMessages } from '@/components/OrderMessages';
 import { ReviewForm } from '@/components/ReviewForm';
 import { OpenDisputeForm } from '@/components/OpenDisputeForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
-import type { Order, ShippingOption } from '@/types';
+import { Textarea } from '@/components/ui/textarea';
+import type { Order, ShippingOption, Dispute } from '@/types';
 
 export default function Checkout() {
   const params = useParams<{ orderId: string }>();
@@ -39,11 +40,17 @@ export default function Checkout() {
   const [confirmDeliveryOpen, setConfirmDeliveryOpen] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [buyerCep, setBuyerCep] = useState('');
+  const [cepLocked, setCepLocked] = useState(false);
   const [calculatingShipping, setCalculatingShipping] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedShipping, setSelectedShipping] = useState<number | null>(null);
   const [isFallback, setIsFallback] = useState(false);
+  const [dispute, setDispute] = useState<Dispute | null>(null);
+  const [sellerResponse, setSellerResponse] = useState('');
+  const [respondingDispute, setRespondingDispute] = useState(false);
+  const [responseError, setResponseError] = useState<string | null>(null);
+  const [responseSent, setResponseSent] = useState(false);
   const verifyAttempts = useRef(0);
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const isBuyer = !!(user && order && user.id === order.buyerId);
@@ -55,6 +62,13 @@ export default function Checkout() {
       getOrder(params.orderId).then(o => {
         setOrder(o);
         setLoading(false);
+        // Fetch dispute if order is in dispute
+        if (o && o.status === 'disputa') {
+          getDisputeByOrder(o.id).then(d => {
+            setDispute(d);
+            if (d?.sellerResponse) setResponseSent(true);
+          });
+        }
       });
     }
   }, [params.orderId, tokenRefreshCount]);
@@ -68,6 +82,7 @@ export default function Checkout() {
     if (profile.address_zip && !buyerCep) {
       const cep = profile.address_zip.replace(/\D/g, '');
       setBuyerCep(cep);
+      setCepLocked(true);
       // Auto-calculate shipping
       autoCalcDone.current = true;
       (async () => {
@@ -477,18 +492,82 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* Open dispute — buyer/seller on shipped or delivered orders */}
-            {(order.status === 'enviado' || order.status === 'entregue') && (
+            {/* Open dispute — only buyer on shipped orders (before confirming delivery) */}
+            {order.status === 'enviado' && isBuyer && (
               <div className="mb-6 flex justify-end">
                 <OpenDisputeForm
                   orderId={order.id}
-                  role={isSeller ? 'seller' : 'buyer'}
+                  role="buyer"
                   onDisputeOpened={async () => {
                     const updated = await getOrder(order.id);
                     if (updated) setOrder(updated);
+                    const d = await getDisputeByOrder(order.id);
+                    setDispute(d);
                   }}
                 />
               </div>
+            )}
+
+            {/* Dispute detail — show when order is in dispute */}
+            {order.status === 'disputa' && dispute && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>Pedido em disputa</span>
+                  </div>
+                  <div className="text-sm space-y-1 p-3 rounded-lg bg-muted/50">
+                    <p><span className="font-medium">Motivo:</span> {dispute.reason}</p>
+                    {dispute.description && <p><span className="font-medium">Descrição:</span> {dispute.description}</p>}
+                    <p className="text-xs text-muted-foreground">Aberta em {new Date(dispute.createdAt).toLocaleDateString('pt-BR')}</p>
+                  </div>
+
+                  {/* Seller response section */}
+                  {isSeller && !responseSent && !dispute.sellerResponse && (
+                    <div className="space-y-2 pt-1">
+                      <label className="text-sm font-medium block">Sua resposta</label>
+                      <Textarea
+                        placeholder="Descreva sua versão dos fatos..."
+                        value={sellerResponse}
+                        onChange={(e) => setSellerResponse(e.target.value)}
+                        className="min-h-[80px] resize-none"
+                      />
+                      {responseError && <p className="text-sm text-destructive">{responseError}</p>}
+                      <Button
+                        disabled={!sellerResponse.trim() || respondingDispute}
+                        onClick={async () => {
+                          setRespondingDispute(true);
+                          setResponseError(null);
+                          const result = await respondToDispute(order.id, sellerResponse.trim());
+                          setRespondingDispute(false);
+                          if (result.success) {
+                            setResponseSent(true);
+                            setDispute(prev => prev ? { ...prev, sellerResponse: sellerResponse.trim() } : prev);
+                          } else {
+                            setResponseError('error' in result ? result.error : 'Erro ao enviar resposta');
+                          }
+                        }}
+                        className="w-full"
+                      >
+                        {respondingDispute ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Enviar resposta
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Show seller response if already sent */}
+                  {(responseSent || dispute.sellerResponse) && (
+                    <div className="text-sm space-y-1 p-3 rounded-lg bg-muted/50">
+                      <p className="font-medium">Resposta do vendedor:</p>
+                      <p>{dispute.sellerResponse || sellerResponse}</p>
+                    </div>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    Nossa equipe está analisando o caso e entrará em contato.
+                  </p>
+                </CardContent>
+              </Card>
             )}
 
             {/* Private messages — visible on all post-payment statuses */}
@@ -568,16 +647,35 @@ export default function Checkout() {
                       placeholder="Seu CEP (ex: 01001-000)"
                       value={buyerCep}
                       onChange={(e) => setBuyerCep(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                      className="flex-1 h-9 rounded-md bg-white/[0.06] border border-white/[0.08] px-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-accent/30"
+                      readOnly={cepLocked}
+                      className={`flex-1 h-9 rounded-md border px-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none ${
+                        cepLocked
+                          ? 'bg-muted border-white/[0.06] cursor-not-allowed'
+                          : 'bg-white/[0.06] border-white/[0.08] focus:border-accent/30'
+                      }`}
                       maxLength={9}
                     />
-                    <Button
-                      size="sm"
-                      disabled={buyerCep.length < 8 || calculatingShipping}
-                      onClick={handleCalculateShipping}
-                    >
-                      {calculatingShipping ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Calcular'}
-                    </Button>
+                    {cepLocked ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setCepLocked(false);
+                          setShippingOptions([]);
+                          setSelectedShipping(null);
+                        }}
+                      >
+                        Alterar
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        disabled={buyerCep.length < 8 || calculatingShipping}
+                        onClick={handleCalculateShipping}
+                      >
+                        {calculatingShipping ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Calcular'}
+                      </Button>
+                    )}
                   </div>
                   {shippingError && <p className="text-xs text-destructive">{shippingError}</p>}
 

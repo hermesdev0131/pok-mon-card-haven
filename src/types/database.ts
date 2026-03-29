@@ -350,6 +350,7 @@ export type Database = {
           opened_by: string;
           reason: string;
           description: string | null;
+          seller_response: string | null;
           status: DisputeStatus;
           admin_notes: string | null;
           resolved_by: string | null;
@@ -363,11 +364,13 @@ export type Database = {
           opened_by: string;
           reason: string;
           description?: string | null;
+          seller_response?: string | null;
           status?: DisputeStatus;
           created_at?: string;
         };
         Update: {
           status?: DisputeStatus;
+          seller_response?: string | null;
           admin_notes?: string | null;
           resolved_by?: string | null;
           resolved_at?: string | null;

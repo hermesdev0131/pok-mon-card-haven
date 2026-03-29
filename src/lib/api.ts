@@ -1308,6 +1308,22 @@ export async function openDispute(
     .update({ status: 'disputed' })
     .eq('id', orderId);
 
+  // Change listing status from 'sold' to 'reserved' while in dispute
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orderData } = await (supabase as any)
+    .from('orders')
+    .select('listing_id')
+    .eq('id', orderId)
+    .single();
+
+  if (orderData?.listing_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('listings')
+      .update({ status: 'reserved' })
+      .eq('id', orderData.listing_id);
+  }
+
   return { success: true };
 }
 
@@ -1332,11 +1348,55 @@ export async function getAllDisputes(): Promise<Dispute[]> {
     openedByName: profiles[r.opened_by]?.full_name ?? 'Usuário',
     reason: r.reason,
     description: r.description ?? undefined,
+    sellerResponse: r.seller_response ?? undefined,
     status: r.status as DisputeStatus,
     adminNotes: r.admin_notes ?? undefined,
     resolvedAt: r.resolved_at ?? undefined,
     createdAt: r.created_at,
   }));
+}
+
+export async function getDisputeByOrder(orderId: string): Promise<Dispute | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('disputes')
+    .select('*')
+    .eq('order_id', orderId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const profiles = await fetchProfilesByIds([data.opened_by]);
+  return {
+    id: data.id,
+    orderId: data.order_id,
+    openedBy: data.opened_by,
+    openedByName: profiles[data.opened_by]?.full_name ?? 'Usuário',
+    reason: data.reason,
+    description: data.description ?? undefined,
+    sellerResponse: data.seller_response ?? undefined,
+    status: data.status as DisputeStatus,
+    adminNotes: data.admin_notes ?? undefined,
+    resolvedAt: data.resolved_at ?? undefined,
+    createdAt: data.created_at,
+  };
+}
+
+export async function respondToDispute(
+  orderId: string,
+  response: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('disputes')
+    .update({ seller_response: response, updated_at: new Date().toISOString() })
+    .eq('order_id', orderId);
+
+  if (error) { logIfError('respondToDispute', error); return { success: false, error: error.message }; }
+  return { success: true };
 }
 
 export async function resolveDispute(
@@ -1359,6 +1419,39 @@ export async function resolveDispute(
     .eq('id', disputeId);
 
   if (error) { logIfError('resolveDispute', error); return { success: false, error: error.message }; }
+
+  // Get the order linked to this dispute to update listing status
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: dispute } = await (supabase as any)
+    .from('disputes')
+    .select('order_id')
+    .eq('id', disputeId)
+    .single();
+
+  if (dispute?.order_id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: orderData } = await (supabase as any)
+      .from('orders')
+      .select('listing_id')
+      .eq('id', dispute.order_id)
+      .single();
+
+    if (orderData?.listing_id) {
+      if (status === 'resolved_buyer') {
+        // Buyer wins — listing goes back to active (available for sale)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listings').update({ status: 'active' }).eq('id', orderData.listing_id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('orders').update({ status: 'cancelled' }).eq('id', dispute.order_id);
+      } else if (status === 'resolved_seller' || status === 'closed') {
+        // Seller wins — listing stays sold, order back to previous flow
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listings').update({ status: 'sold' }).eq('id', orderData.listing_id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('orders').update({ status: 'completed' }).eq('id', dispute.order_id);
+      }
+    }
+  }
 
   // Log admin action
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
