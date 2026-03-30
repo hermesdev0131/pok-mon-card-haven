@@ -1386,17 +1386,18 @@ export async function respondToDispute(
   orderId: string,
   response: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autenticado' };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('disputes')
-    .update({ seller_response: response, updated_at: new Date().toISOString() })
-    .eq('order_id', orderId);
-
-  if (error) { logIfError('respondToDispute', error); return { success: false, error: error.message }; }
-  return { success: true };
+  try {
+    const res = await fetch('/api/disputes/respond', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, response }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error ?? 'Erro ao enviar resposta' };
+    return { success: true };
+  } catch {
+    return { success: false, error: 'Erro de conexão' };
+  }
 }
 
 export async function resolveDispute(
