@@ -14,10 +14,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_profiles_cpf_hash ON profiles(cpf_hash) WHE
 CREATE UNIQUE INDEX IF NOT EXISTS uq_profiles_cnpj ON profiles(cnpj) WHERE cnpj IS NOT NULL;
 
 -- Update trigger to extract all metadata fields on signup
-CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
-  INSERT INTO profiles (
+  INSERT INTO public.profiles (
     id, full_name, avatar_url, nickname, cpf_hash, rg, date_of_birth,
     account_type, cnpj, razao_social,
     phone, address_zip, address_line, address_number, address_complement,
@@ -30,7 +34,7 @@ BEGIN
     new.raw_user_meta_data->>'nickname',
     new.raw_user_meta_data->>'cpf_hash',
     new.raw_user_meta_data->>'rg',
-    (new.raw_user_meta_data->>'date_of_birth')::date,
+    nullif(new.raw_user_meta_data->>'date_of_birth', '')::date,
     coalesce(new.raw_user_meta_data->>'account_type', 'individual'),
     new.raw_user_meta_data->>'cnpj',
     new.raw_user_meta_data->>'razao_social',
@@ -44,4 +48,4 @@ BEGIN
   );
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;

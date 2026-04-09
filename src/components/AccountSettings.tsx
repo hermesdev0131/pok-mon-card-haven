@@ -9,7 +9,7 @@ import { Loader2, Search, CheckCircle, Lock, ExternalLink, ShieldCheck, User, Bu
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile } from '@/lib/api';
 import { lookupCep } from '@/lib/viacep';
-import { formatCep, formatPhone, validateNickname } from '@/lib/validators';
+import { formatCep, formatPhone, formatCNPJ, validateNickname } from '@/lib/validators';
 import { createClient } from '@/lib/supabase/client';
 
 export function AccountSettings() {
@@ -191,7 +191,7 @@ export function AccountSettings() {
         {profile?.cnpj && (
           <div className="space-y-2">
             <Label className="flex items-center gap-1.5">CNPJ <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /></Label>
-            <p className="text-sm text-muted-foreground">CNPJ cadastrado</p>
+            <Input value={formatCNPJ(profile.cnpj)} readOnly className="bg-muted/50" />
           </div>
         )}
 
