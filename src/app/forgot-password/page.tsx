@@ -1,45 +1,59 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2 } from 'lucide-react';
 
-export default function Login() {
+export default function ForgotPassword() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
-  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const { error } = await signIn(email, password);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset`,
+    });
 
     if (error) {
-      setError(error === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : error);
-      setLoading(false);
+      setError(error.message);
     } else {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      let destination = '/';
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if ((profile as { role?: string } | null)?.role === 'admin') destination = '/admin';
-      }
-      router.push(destination);
-      router.refresh();
+      setSuccess(true);
     }
+    setLoading(false);
+  }
+
+  if (success) {
+    return (
+      <div className="container mx-auto flex min-h-[70vh] items-center justify-center px-4 py-12">
+        <div className="relative w-full max-w-md">
+          <Card className="relative glass glow-accent">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">E-mail enviado!</CardTitle>
+              <CardDescription>Verifique sua caixa de entrada para redefinir a senha.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Enviamos um link de redefinição para <strong className="text-foreground">{email}</strong>
+              </p>
+              <Button onClick={() => window.location.href = '/login'} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                Voltar ao login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -48,8 +62,8 @@ export default function Login() {
         <div className="blob blob-accent w-[400px] h-[400px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10" />
         <Card className="relative glass glow-accent">
           <CardHeader className="text-center">
-            <CardTitle className="text-xl">Entrar na sua conta</CardTitle>
-            <CardDescription>Acesse o marketplace GradedBR</CardDescription>
+            <CardTitle className="text-xl">Esqueci minha senha</CardTitle>
+            <CardDescription>Digite seu e-mail para receber o link de redefinição</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -57,23 +71,15 @@ export default function Login() {
                 <Label htmlFor="email">E-mail</Label>
                 <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  <Link href="/forgot-password" className="text-xs text-accent hover:underline">Esqueci minha senha</Link>
-                </div>
-                <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
-              </div>
 
               {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
               <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Entrar'}
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Enviar link'}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                Não tem conta?{' '}
-                <Link href="/register" className="text-accent hover:underline font-medium">Criar conta</Link>
+                <Link href="/login" className="text-accent hover:underline font-medium">Voltar ao login</Link>
               </p>
             </form>
           </CardContent>

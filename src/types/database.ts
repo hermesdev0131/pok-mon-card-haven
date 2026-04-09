@@ -16,6 +16,12 @@ export type Database = {
           avatar_url: string | null;
           phone: string | null;
           cpf_hash: string | null;
+          nickname: string | null;
+          rg: string | null;
+          date_of_birth: string | null;
+          account_type: 'individual' | 'business';
+          cnpj: string | null;
+          razao_social: string | null;
           address_line: string | null;
           address_number: string | null;
           address_complement: string | null;
@@ -32,6 +38,12 @@ export type Database = {
           avatar_url?: string | null;
           phone?: string | null;
           cpf_hash?: string | null;
+          nickname?: string | null;
+          rg?: string | null;
+          date_of_birth?: string | null;
+          account_type?: 'individual' | 'business';
+          cnpj?: string | null;
+          razao_social?: string | null;
           address_line?: string | null;
           address_number?: string | null;
           address_complement?: string | null;
@@ -48,6 +60,12 @@ export type Database = {
           avatar_url?: string | null;
           phone?: string | null;
           cpf_hash?: string | null;
+          nickname?: string | null;
+          rg?: string | null;
+          date_of_birth?: string | null;
+          account_type?: 'individual' | 'business';
+          cnpj?: string | null;
+          razao_social?: string | null;
           address_line?: string | null;
           address_number?: string | null;
           address_complement?: string | null;

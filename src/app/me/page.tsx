@@ -68,7 +68,7 @@ export default function Profile() {
   const purchases = orders.filter(o => o.buyerId === user?.id);
   const sales = orders.filter(o => o.sellerId === user?.id);
 
-  const displayName = profile?.full_name ?? 'Usuário';
+  const displayName = profile?.nickname ?? profile?.full_name ?? 'Usuário';
   const roleLine = sales.length > 0 ? 'Comprador & Vendedor' : 'Comprador';
 
   return (

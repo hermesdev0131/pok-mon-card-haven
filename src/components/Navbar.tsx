@@ -62,7 +62,7 @@ export function Navbar() {
               <Link href="/admin"><ShieldCheck className="h-3.5 w-3.5" /> Admin</Link>
             </Button>
             <Button variant="ghost" size="sm" className={`text-muted-foreground hover:text-foreground gap-1.5 text-xs ${isAuthenticated ? '' : 'hidden'}`} asChild>
-              <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
+              <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.nickname ?? profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
             </Button>
             <Button variant="ghost" size="icon" className={`text-muted-foreground hover:text-foreground h-8 w-8 ${isAuthenticated ? '' : 'hidden'}`} onClick={handleSignOut} title="Sair">
               <LogOut className="h-3.5 w-3.5" />
@@ -159,7 +159,7 @@ export function Navbar() {
           </Link>
           <Link href="/sell" className="text-sm font-medium" onClick={() => setMobileOpen(false)}>Anunciar carta</Link>
           <Link href="/me" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-            <User className="h-3.5 w-3.5" /> {isAuthenticated ? (profile?.full_name?.split(' ')[0] ?? 'Minha conta') : 'Minha conta'}
+            <User className="h-3.5 w-3.5" /> {isAuthenticated ? (profile?.nickname ?? profile?.full_name?.split(' ')[0] ?? 'Minha conta') : 'Minha conta'}
           </Link>
           <Link href="/admin" className={`text-sm font-medium flex items-center gap-2 text-accent ${isAdmin ? '' : 'hidden'}`} onClick={() => setMobileOpen(false)}>
             <ShieldCheck className="h-3.5 w-3.5" /> Painel Admin

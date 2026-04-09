@@ -24,9 +24,27 @@ interface AuthState {
   isAdmin: boolean;
 }
 
+export interface SignUpMetadata {
+  account_type: 'individual' | 'business';
+  full_name: string;
+  nickname: string;
+  cpf_hash?: string | null;
+  cnpj?: string | null;
+  razao_social?: string | null;
+  rg?: string | null;
+  date_of_birth?: string | null;
+  phone: string;
+  address_zip: string;
+  address_line: string;
+  address_number: string;
+  address_complement?: string | null;
+  address_city: string;
+  address_state: string;
+}
+
 interface AuthContextType extends AuthState {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, metadata: SignUpMetadata) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   /** Increments each time the access token is successfully refreshed. Include in
@@ -247,12 +265,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = useCallback(
-    async (email: string, password: string, fullName: string) => {
+    async (email: string, password: string, metadata: SignUpMetadata) => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: fullName },
+          data: metadata,
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });

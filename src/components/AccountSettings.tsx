@@ -5,28 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Search, CheckCircle, Lock, ExternalLink } from 'lucide-react';
+import { Loader2, Search, CheckCircle, Lock, ExternalLink, ShieldCheck, User, Building2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile } from '@/lib/api';
 import { lookupCep } from '@/lib/viacep';
-
-function formatCep(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 8);
-  if (digits.length <= 5) return digits;
-  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-}
-
-function formatPhone(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
-}
+import { formatCep, formatPhone, validateNickname } from '@/lib/validators';
+import { createClient } from '@/lib/supabase/client';
 
 export function AccountSettings() {
   const { profile, refreshProfile } = useAuth();
 
   const [fullName, setFullName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [cep, setCep] = useState('');
   const [addressLine, setAddressLine] = useState('');
@@ -41,17 +31,19 @@ export function AccountSettings() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const isBusinessAccount = profile?.account_type === 'business';
+
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || '');
+      setNickname(profile.nickname || '');
       setPhone(profile.phone ? formatPhone(profile.phone) : '');
       setCep(profile.address_zip ? formatCep(profile.address_zip) : '');
       setAddressLine(profile.address_line || '');
-      setAddressNumber((profile as Record<string, unknown>).address_number as string || '');
-      setAddressComplement((profile as Record<string, unknown>).address_complement as string || '');
+      setAddressNumber(profile.address_number || '');
+      setAddressComplement(profile.address_complement || '');
       setCity(profile.address_city || '');
       setState(profile.address_state || '');
-      // If profile already has city/state from CEP, mark as valid
       if (profile.address_zip && profile.address_city && profile.address_state) {
         setCepValid(true);
       }
@@ -85,14 +77,12 @@ export function AccountSettings() {
     const formatted = formatCep(value);
     setCep(formatted);
     const clean = value.replace(/\D/g, '');
-    // Reset locked fields when CEP changes
     if (clean.length < 8) {
       setCepValid(false);
       setCity('');
       setState('');
       setAddressLine('');
     }
-    // Auto-lookup when 8 digits entered
     if (clean.length === 8) {
       handleCepLookup(clean);
     }
@@ -100,8 +90,28 @@ export function AccountSettings() {
 
   const handleSave = async () => {
     if (!fullName.trim()) {
-      setError('Nome completo é obrigatório');
+      setError(isBusinessAccount ? 'Razão Social é obrigatória' : 'Nome completo é obrigatório');
       return;
+    }
+    if (nickname.trim()) {
+      const nickResult = validateNickname(nickname);
+      if (!nickResult.valid) {
+        setError(nickResult.error!);
+        return;
+      }
+      if (nickname.trim() !== (profile?.nickname || '')) {
+        const supabase = createClient();
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('nickname', nickname.trim())
+          .neq('id', profile?.id ?? '')
+          .maybeSingle();
+        if (existing) {
+          setError('Este apelido já está em uso.');
+          return;
+        }
+      }
     }
     const cleanCep = cep.replace(/\D/g, '');
     if (cleanCep.length > 0 && cleanCep.length !== 8) {
@@ -118,6 +128,7 @@ export function AccountSettings() {
 
     const result = await updateProfile({
       full_name: fullName.trim(),
+      nickname: nickname.trim() || undefined,
       phone: phone.replace(/\D/g, '') || undefined,
       address_zip: cleanCep || undefined,
       address_line: addressLine.trim() || undefined,
@@ -140,18 +151,49 @@ export function AccountSettings() {
   return (
     <Card className="glass">
       <CardHeader>
-        <CardTitle className="text-lg">Minha conta</CardTitle>
+        <CardTitle className="text-lg flex items-center gap-2">
+          Minha conta
+          {isBusinessAccount ? (
+            <span className="text-xs font-normal text-muted-foreground flex items-center gap-1"><Building2 className="h-3.5 w-3.5" /> Pessoa Jurídica</span>
+          ) : (
+            <span className="text-xs font-normal text-muted-foreground flex items-center gap-1"><User className="h-3.5 w-3.5" /> Pessoa Física</span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="fullName">Nome completo</Label>
+          <Label htmlFor="nickname">Apelido (nome público)</Label>
+          <Input
+            id="nickname"
+            value={nickname}
+            onChange={e => setNickname(e.target.value)}
+            placeholder="Como você será visto no marketplace"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="fullName">{isBusinessAccount ? 'Razão Social' : 'Nome completo'}</Label>
           <Input
             id="fullName"
             value={fullName}
             onChange={e => setFullName(e.target.value)}
-            placeholder="Seu nome completo"
+            placeholder={isBusinessAccount ? 'Nome da empresa' : 'Seu nome completo'}
           />
         </div>
+
+        {profile?.cpf_hash && (
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">CPF <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /></Label>
+            <p className="text-sm text-muted-foreground">CPF cadastrado</p>
+          </div>
+        )}
+
+        {profile?.cnpj && (
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">CNPJ <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /></Label>
+            <p className="text-sm text-muted-foreground">CNPJ cadastrado</p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="phone">Telefone</Label>

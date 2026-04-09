@@ -883,6 +883,13 @@ export async function becomeSeller(
 export async function updateProfile(input: {
   full_name?: string;
   phone?: string;
+  nickname?: string;
+  rg?: string;
+  date_of_birth?: string;
+  cpf_hash?: string;
+  account_type?: 'individual' | 'business';
+  cnpj?: string;
+  razao_social?: string;
   address_zip?: string;
   address_line?: string;
   address_number?: string;
