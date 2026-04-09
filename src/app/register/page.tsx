@@ -262,10 +262,10 @@ export default function Register() {
             </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
               {/* Step 0: Account type */}
               {step === 0 && (
-                <div className="grid grid-cols-2 gap-3">
+                <div key="step-0" className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => { setAccountType('individual'); setError(null); }}
@@ -293,32 +293,32 @@ export default function Register() {
 
               {/* Step 1: Conta */}
               {step === 1 && (
-                <>
+                <div key="step-1" className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
-                    <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmEmail">Confirmar e-mail</Label>
-                    <Input id="confirmEmail" type="email" placeholder="Repita o e-mail" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} required />
+                    <Input id="confirmEmail" type="email" placeholder="Repita o e-mail" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} required autoComplete="off" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Senha</Label>
-                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirmar senha</Label>
-                    <Input id="confirmPassword" type="password" placeholder="Repita a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                    <Input id="confirmPassword" type="password" placeholder="Repita a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
                   </div>
-                </>
+                </div>
               )}
 
               {/* Step 2: Dados (PF or PJ) */}
               {step === 2 && (
-                <>
+                <div key="step-2" className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="nickname">Apelido (nome público)</Label>
-                    <Input id="nickname" placeholder="Como você será visto no marketplace" value={nickname} onChange={(e) => setNickname(e.target.value)} required />
+                    <Input id="nickname" placeholder="Como você será visto no marketplace" value={nickname} onChange={(e) => setNickname(e.target.value)} required autoComplete="off" />
                   </div>
                   {accountType === 'individual' ? (
                     <>
@@ -345,14 +345,14 @@ export default function Register() {
                   )}
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefone</Label>
-                    <Input id="phone" placeholder="(11) 99999-9999" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} required />
+                    <Input id="phone" placeholder="(11) 99999-9999" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} required autoComplete="off" />
                   </div>
-                </>
+                </div>
               )}
 
               {/* Step 3: Endereço */}
               {step === 3 && (
-                <>
+                <div key="step-3" className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="cep">CEP</Label>
                     <div className="relative">
@@ -392,7 +392,7 @@ export default function Register() {
                       <Link href="/privacidade" className="text-accent hover:underline">Política de Privacidade</Link>
                     </Label>
                   </div>
-                </>
+                </div>
               )}
 
               {error && <p className="text-sm text-destructive text-center">{error}</p>}
