@@ -600,8 +600,8 @@ export default function Register() {
                     <Checkbox id="terms" className="mt-0.5" checked={terms} onCheckedChange={(v) => { setTerms(v === true); if (v === true) setError(null); }} />
                     <Label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
                       Li e concordo com os{' '}
-                      <Link href="/termos" className="text-accent hover:underline">Termos de Uso</Link> e{' '}
-                      <Link href="/privacidade" className="text-accent hover:underline">Política de Privacidade</Link>
+                      <Link href="/termos" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Termos de Uso</Link> e{' '}
+                      <Link href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Política de Privacidade</Link>
                     </Label>
                   </div>
                 </div>
