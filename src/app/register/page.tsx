@@ -385,7 +385,7 @@ export default function Register() {
             </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off" noValidate>
               {/* Step 0: Account type */}
               {step === 0 && (
                 <div key="step-0" className="grid grid-cols-2 gap-3">
