@@ -62,9 +62,11 @@ export function AccountSettings() {
     setCepLoading(false);
     if (!result) {
       setError('CEP não encontrado. Verifique o número e tente novamente.');
+      setAddressLine('');
       setCity('');
       setState('');
-      setAddressLine('');
+      setAddressNumber('');
+      setAddressComplement('');
       return;
     }
     setAddressLine(result.logradouro || '');
@@ -79,9 +81,11 @@ export function AccountSettings() {
     const clean = value.replace(/\D/g, '');
     if (clean.length < 8) {
       setCepValid(false);
+      setAddressLine('');
       setCity('');
       setState('');
-      setAddressLine('');
+      setAddressNumber('');
+      setAddressComplement('');
     }
     if (clean.length === 8) {
       handleCepLookup(clean);
