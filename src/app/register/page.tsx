@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { lookupCep } from '@/lib/viacep';
+import { lookupCnpj } from '@/lib/brasilapi';
 import {
   validateCPF, formatCPF, hashCPF,
   validateCNPJ, formatCNPJ,
@@ -158,7 +159,7 @@ export default function Register() {
     return () => { cancelled = true; };
   }, [debouncedCpf]);
 
-  // CNPJ availability check
+  // CNPJ availability check + auto-fill from BrasilAPI
   useEffect(() => {
     if (!debouncedCnpj) {
       setCnpjStatus('idle');
@@ -170,16 +171,39 @@ export default function Register() {
     }
     let cancelled = false;
     setCnpjStatus('checking');
-    const supabase = createClient();
-    supabase
-      .from('profiles')
-      .select('id')
-      .eq('cnpj', debouncedCnpj.replace(/\D/g, ''))
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setCnpjStatus(data ? 'taken' : 'available');
-      });
+    (async () => {
+      const cnpjClean = debouncedCnpj.replace(/\D/g, '');
+      // First check if CNPJ already exists in our database
+      const supabase = createClient();
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('cnpj', cnpjClean)
+        .maybeSingle();
+      if (cancelled) return;
+      if (existing) {
+        setCnpjStatus('taken');
+        return;
+      }
+      // CNPJ is available — fetch company data from BrasilAPI for auto-fill
+      const company = await lookupCnpj(cnpjClean);
+      if (cancelled) return;
+      if (company) {
+        if (company.razao_social) setRazaoSocial(company.razao_social);
+        if (company.ddd_telefone_1) setPhone(formatPhone(company.ddd_telefone_1));
+        if (company.cep) {
+          const formattedCep = formatCep(company.cep);
+          setCep(formattedCep);
+          if (company.logradouro) setAddressLine(company.logradouro);
+          if (company.numero) setAddressNumber(company.numero);
+          if (company.complemento) setAddressComplement(company.complemento);
+          if (company.municipio) setCity(company.municipio);
+          if (company.uf) setAddressState(company.uf);
+          setCepLocked(true);
+        }
+      }
+      setCnpjStatus('available');
+    })();
     return () => { cancelled = true; };
   }, [debouncedCnpj]);
 
