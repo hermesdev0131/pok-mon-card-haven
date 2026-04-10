@@ -52,6 +52,7 @@ export default function Register() {
   const [addressState, setAddressState] = useState('');
   const [cepLoading, setCepLoading] = useState(false);
   const [cepLocked, setCepLocked] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
   const [terms, setTerms] = useState(false);
 
   // Async check status
@@ -221,7 +222,9 @@ export default function Register() {
   }
 
   function validateStep3(): string | null {
-    if (!cepLocked) return 'CEP é obrigatório.';
+    if (!cep.trim()) return 'CEP é obrigatório.';
+    if (cep.replace(/\D/g, '').length !== 8) return 'CEP incompleto.';
+    if (!cepLocked) return 'CEP inválido ou não encontrado.';
     if (!addressLine.trim()) return 'Endereço é obrigatório.';
     if (!addressNumber.trim()) return 'Número é obrigatório.';
     if (!terms) return 'Você precisa aceitar os termos de uso.';
@@ -251,8 +254,11 @@ export default function Register() {
         setCity(result.localidade);
         setAddressState(result.uf);
         setCepLocked(true);
+        setCepError(null);
+        setError(null); // clear stale form error
       } else {
         setCepLocked(false);
+        setCepError('CEP não encontrado');
         setAddressLine('');
         setCity('');
         setAddressState('');
@@ -262,6 +268,7 @@ export default function Register() {
       setCepLoading(false);
     } else {
       setCepLocked(false);
+      setCepError(null);
       setAddressLine('');
       setCity('');
       setAddressState('');
@@ -533,9 +540,12 @@ export default function Register() {
                   <div className="space-y-2">
                     <Label htmlFor="cep">CEP</Label>
                     <div className="relative">
-                      <Input id="cep" placeholder="00000-000" value={cep} onChange={(e) => handleCepChange(e.target.value)} required />
-                      {cepLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+                      <Input id="cep" placeholder="00000-000" value={cep} onChange={(e) => handleCepChange(e.target.value)} required className="pr-10" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {cepLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : cepLocked ? <Check className="h-4 w-4 text-emerald-400" /> : cepError ? <X className="h-4 w-4 text-destructive" /> : null}
+                      </div>
                     </div>
+                    {cepError && <FieldError message={cepError} />}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="addressLine">Endereço</Label>
@@ -562,7 +572,7 @@ export default function Register() {
                     </div>
                   </div>
                   <div className="flex items-start gap-2 pt-1">
-                    <Checkbox id="terms" className="mt-0.5" checked={terms} onCheckedChange={(v) => setTerms(v === true)} />
+                    <Checkbox id="terms" className="mt-0.5" checked={terms} onCheckedChange={(v) => { setTerms(v === true); if (v === true) setError(null); }} />
                     <Label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
                       Li e concordo com os{' '}
                       <Link href="/termos" className="text-accent hover:underline">Termos de Uso</Link> e{' '}
