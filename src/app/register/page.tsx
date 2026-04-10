@@ -27,6 +27,30 @@ type AccountType = 'individual' | 'business';
 type CheckStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
 const STEPS = ['Tipo', 'Conta', 'Dados', 'Endereço'];
+const STORAGE_KEY = 'gradedbr:register:draft';
+
+interface PersistedState {
+  step: number;
+  accountType: AccountType | null;
+  email: string;
+  confirmEmail: string;
+  password: string;
+  confirmPassword: string;
+  nickname: string;
+  fullName: string;
+  cpf: string;
+  razaoSocial: string;
+  cnpj: string;
+  phone: string;
+  cep: string;
+  addressLine: string;
+  addressNumber: string;
+  addressComplement: string;
+  city: string;
+  addressState: string;
+  cepLocked: boolean;
+  terms: boolean;
+}
 
 export default function Register() {
   const [step, setStep] = useState(0);
@@ -67,6 +91,71 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
+
+  // Restore persisted state on mount (survives tab discarding on mobile, accidental refresh, etc.)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as PersistedState;
+      if (saved.step !== undefined) setStep(saved.step);
+      if (saved.accountType !== undefined) setAccountType(saved.accountType);
+      if (saved.email) setEmail(saved.email);
+      if (saved.confirmEmail) setConfirmEmail(saved.confirmEmail);
+      if (saved.password) setPassword(saved.password);
+      if (saved.confirmPassword) setConfirmPassword(saved.confirmPassword);
+      if (saved.nickname) setNickname(saved.nickname);
+      if (saved.fullName) setFullName(saved.fullName);
+      if (saved.cpf) setCpf(saved.cpf);
+      if (saved.razaoSocial) setRazaoSocial(saved.razaoSocial);
+      if (saved.cnpj) setCnpj(saved.cnpj);
+      if (saved.phone) setPhone(saved.phone);
+      if (saved.cep) setCep(saved.cep);
+      if (saved.addressLine) setAddressLine(saved.addressLine);
+      if (saved.addressNumber) setAddressNumber(saved.addressNumber);
+      if (saved.addressComplement) setAddressComplement(saved.addressComplement);
+      if (saved.city) setCity(saved.city);
+      if (saved.addressState) setAddressState(saved.addressState);
+      if (saved.cepLocked !== undefined) setCepLocked(saved.cepLocked);
+      if (saved.terms !== undefined) setTerms(saved.terms);
+    } catch {
+      // Ignore corrupted storage
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save state to sessionStorage on every change. Includes password — sessionStorage is
+  // origin-isolated, cleared on tab close, and cleared on successful signup.
+  useEffect(() => {
+    if (success) return; // don't save after successful signup
+    const state: PersistedState = {
+      step,
+      accountType,
+      email,
+      confirmEmail,
+      password,
+      confirmPassword,
+      nickname,
+      fullName,
+      cpf,
+      razaoSocial,
+      cnpj,
+      phone,
+      cep,
+      addressLine,
+      addressNumber,
+      addressComplement,
+      city,
+      addressState,
+      cepLocked,
+      terms,
+    };
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Ignore quota/serialization errors
+    }
+  }, [success, step, accountType, email, confirmEmail, password, confirmPassword, nickname, fullName, cpf, razaoSocial, cnpj, phone, cep, addressLine, addressNumber, addressComplement, city, addressState, cepLocked, terms]);
 
   // Debounced values for async checks
   const debouncedEmail = useDebounce(email, 600);
@@ -346,6 +435,7 @@ export default function Register() {
         if (error) { setError(error); setLoading(false); return; }
       }
 
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
       setSuccess(true);
     } catch {
       setError('Erro inesperado. Tente novamente.');

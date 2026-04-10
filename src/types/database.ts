@@ -17,6 +17,7 @@ export type Database = {
           phone: string | null;
           cpf_hash: string | null;
           nickname: string | null;
+          nickname_changed_at: string | null;
           rg: string | null;
           date_of_birth: string | null;
           account_type: 'individual' | 'business';
@@ -39,6 +40,7 @@ export type Database = {
           phone?: string | null;
           cpf_hash?: string | null;
           nickname?: string | null;
+          nickname_changed_at?: string | null;
           rg?: string | null;
           date_of_birth?: string | null;
           account_type?: 'individual' | 'business';
@@ -61,6 +63,7 @@ export type Database = {
           phone?: string | null;
           cpf_hash?: string | null;
           nickname?: string | null;
+          nickname_changed_at?: string | null;
           rg?: string | null;
           date_of_birth?: string | null;
           account_type?: 'individual' | 'business';

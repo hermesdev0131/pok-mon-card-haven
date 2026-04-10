@@ -880,6 +880,8 @@ export async function becomeSeller(
   return { success: true };
 }
 
+export const NICKNAME_COOLDOWN_DAYS = 90;
+
 export async function updateProfile(input: {
   full_name?: string;
   phone?: string;
@@ -900,10 +902,35 @@ export async function updateProfile(input: {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { success: false, error: 'Não autenticado' };
 
+  // If nickname is being changed, enforce 90-day cooldown
+  const updates: Record<string, unknown> = { ...input, updated_at: new Date().toISOString() };
+  if (input.nickname !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: current } = await (supabase as any)
+      .from('profiles')
+      .select('nickname, nickname_changed_at')
+      .eq('id', user.id)
+      .single();
+    const currentNickname = (current as { nickname: string | null; nickname_changed_at: string | null } | null);
+    if (currentNickname && currentNickname.nickname !== input.nickname) {
+      // Nickname is actually changing — check cooldown
+      if (currentNickname.nickname_changed_at) {
+        const lastChange = new Date(currentNickname.nickname_changed_at).getTime();
+        const cooldownMs = NICKNAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+        const elapsed = Date.now() - lastChange;
+        if (elapsed < cooldownMs) {
+          const daysLeft = Math.ceil((cooldownMs - elapsed) / (24 * 60 * 60 * 1000));
+          return { success: false, error: `Você só pode alterar o apelido a cada ${NICKNAME_COOLDOWN_DAYS} dias. Próxima alteração disponível em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}.` };
+        }
+      }
+      updates.nickname_changed_at = new Date().toISOString();
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('profiles')
-    .update({ ...input, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', user.id);
 
   if (error) { logIfError('updateProfile', error); return { success: false, error: error.message }; }

@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Search, CheckCircle, Lock, ExternalLink, ShieldCheck, User, Building2 } from 'lucide-react';
+import { Loader2, Search, CheckCircle, Lock, ExternalLink, ShieldCheck, User, Building2, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateProfile } from '@/lib/api';
+import { updateProfile, NICKNAME_COOLDOWN_DAYS } from '@/lib/api';
 import { lookupCep } from '@/lib/viacep';
 import { formatCep, formatPhone, formatCNPJ, validateNickname } from '@/lib/validators';
 import { createClient } from '@/lib/supabase/client';
@@ -30,8 +30,21 @@ export function AccountSettings() {
   const [cepValid, setCepValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showCpfChangeInfo, setShowCpfChangeInfo] = useState(false);
+  const [showCnpjChangeInfo, setShowCnpjChangeInfo] = useState(false);
 
   const isBusinessAccount = profile?.account_type === 'business';
+
+  // Nickname cooldown calculation
+  const nicknameDaysLeft = (() => {
+    if (!profile?.nickname_changed_at) return 0;
+    const lastChange = new Date(profile.nickname_changed_at).getTime();
+    const cooldownMs = NICKNAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+    const elapsed = Date.now() - lastChange;
+    if (elapsed >= cooldownMs) return 0;
+    return Math.ceil((cooldownMs - elapsed) / (24 * 60 * 60 * 1000));
+  })();
+  const nicknameLocked = nicknameDaysLeft > 0;
 
   useEffect(() => {
     if (profile) {
@@ -166,13 +179,27 @@ export function AccountSettings() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="nickname">Apelido (nome público)</Label>
+          <Label htmlFor="nickname" className="flex items-center gap-1.5">
+            Apelido (nome público)
+            {nicknameLocked && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+          </Label>
           <Input
             id="nickname"
             value={nickname}
             onChange={e => setNickname(e.target.value)}
             placeholder="Como você será visto no marketplace"
+            disabled={nicknameLocked}
+            className={nicknameLocked ? 'bg-muted/50 cursor-not-allowed' : ''}
           />
+          {nicknameLocked ? (
+            <p className="text-xs text-muted-foreground">
+              Você poderá alterar o apelido novamente em <strong className="text-foreground">{nicknameDaysLeft} dia{nicknameDaysLeft > 1 ? 's' : ''}</strong>.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              O apelido pode ser alterado a cada {NICKNAME_COOLDOWN_DAYS} dias.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -187,15 +214,56 @@ export function AccountSettings() {
 
         {profile?.cpf_hash && (
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5">CPF <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /></Label>
-            <p className="text-sm text-muted-foreground">CPF cadastrado</p>
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">CPF <Lock className="h-3.5 w-3.5 text-muted-foreground" /></Label>
+              <button
+                type="button"
+                onClick={() => setShowCpfChangeInfo(!showCpfChangeInfo)}
+                className="text-xs text-accent hover:underline flex items-center gap-1"
+              >
+                {showCpfChangeInfo ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                Solicitar alteração
+              </button>
+            </div>
+            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span className="text-sm text-muted-foreground">CPF cadastrado e protegido</span>
+            </div>
+            {showCpfChangeInfo && (
+              <div className="flex items-start gap-2 rounded-md border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-muted-foreground">
+                <Info className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                <p>
+                  Para corrigir seu CPF, é necessário enviar justificativa e cópia de documento que comprove a alteração para{' '}
+                  <a href="mailto:gradedbr@gmail.com" className="text-accent hover:underline">gradedbr@gmail.com</a>.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         {profile?.cnpj && (
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5">CNPJ <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /></Label>
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-1.5">CNPJ <Lock className="h-3.5 w-3.5 text-muted-foreground" /></Label>
+              <button
+                type="button"
+                onClick={() => setShowCnpjChangeInfo(!showCnpjChangeInfo)}
+                className="text-xs text-accent hover:underline flex items-center gap-1"
+              >
+                {showCnpjChangeInfo ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                Solicitar alteração
+              </button>
+            </div>
             <Input value={formatCNPJ(profile.cnpj)} readOnly className="bg-muted/50" />
+            {showCnpjChangeInfo && (
+              <div className="flex items-start gap-2 rounded-md border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-muted-foreground">
+                <Info className="h-3.5 w-3.5 text-accent shrink-0 mt-0.5" />
+                <p>
+                  Para corrigir seu CNPJ, é necessário enviar justificativa e cópia de documento que comprove a alteração para{' '}
+                  <a href="mailto:gradedbr@gmail.com" className="text-accent hover:underline">gradedbr@gmail.com</a>.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
