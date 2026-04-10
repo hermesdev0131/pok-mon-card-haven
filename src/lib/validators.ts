@@ -72,12 +72,50 @@ export function formatCNPJ(value: string): string {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
+export interface NicknameChecks {
+  length: boolean;
+  noSpaces: boolean;
+  validChars: boolean;
+}
+
+export function checkNickname(nickname: string): NicknameChecks {
+  return {
+    length: nickname.length >= 4 && nickname.length <= 20,
+    noSpaces: nickname.length > 0 && !/\s/.test(nickname),
+    validChars: nickname.length > 0 && /^[a-zA-Z0-9_\-]+$/.test(nickname),
+  };
+}
+
 export function validateNickname(nickname: string): { valid: boolean; error?: string } {
-  const trimmed = nickname.trim();
-  if (trimmed.length < 3) return { valid: false, error: 'Apelido deve ter no mínimo 3 caracteres' };
-  if (trimmed.length > 30) return { valid: false, error: 'Apelido deve ter no máximo 30 caracteres' };
-  if (!/^[a-zA-Z0-9_\-\s]+$/.test(trimmed))
-    return { valid: false, error: 'Apelido pode conter apenas letras, números, espaços, _ e -' };
+  const checks = checkNickname(nickname);
+  if (!checks.length) return { valid: false, error: 'Apelido deve ter entre 4 e 20 caracteres' };
+  if (!checks.noSpaces) return { valid: false, error: 'Apelido não pode conter espaços' };
+  if (!checks.validChars) return { valid: false, error: 'Apelido pode conter apenas letras, números, _ e -' };
+  return { valid: true };
+}
+
+export interface PasswordChecks {
+  length: boolean;
+  uppercase: boolean;
+  number: boolean;
+  special: boolean;
+}
+
+export function checkPassword(password: string): PasswordChecks {
+  return {
+    length: password.length >= 10 && password.length <= 128,
+    uppercase: /[A-Z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(password),
+  };
+}
+
+export function validatePassword(password: string): { valid: boolean; error?: string } {
+  const checks = checkPassword(password);
+  if (!checks.length) return { valid: false, error: 'Senha deve ter entre 10 e 128 caracteres' };
+  if (!checks.uppercase) return { valid: false, error: 'Senha deve ter ao menos 1 letra maiúscula' };
+  if (!checks.number) return { valid: false, error: 'Senha deve ter ao menos 1 número' };
+  if (!checks.special) return { valid: false, error: 'Senha deve ter ao menos 1 caractere especial' };
   return { valid: true };
 }
 

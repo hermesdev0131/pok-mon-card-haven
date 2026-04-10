@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,30 +11,39 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { lookupCep } from '@/lib/viacep';
-import { validateCPF, formatCPF, hashCPF, validateCNPJ, formatCNPJ, validateNickname, formatPhone, formatCep } from '@/lib/validators';
-import { Loader2, Lock, ChevronRight, ChevronLeft, User, Building2 } from 'lucide-react';
+import {
+  validateCPF, formatCPF, hashCPF,
+  validateCNPJ, formatCNPJ,
+  checkNickname, validateNickname,
+  checkPassword,
+  formatPhone, formatCep,
+} from '@/lib/validators';
+import { useDebounce } from '@/hooks/useDebounce';
+import { RequirementChecklist } from '@/components/RequirementChecklist';
+import { Loader2, Lock, ChevronRight, ChevronLeft, User, Building2, Check, X } from 'lucide-react';
 
 type AccountType = 'individual' | 'business';
+type CheckStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
-const STEPS = ['Tipo de Conta', 'Conta', 'Dados', 'Endereço'];
+const STEPS = ['Tipo', 'Conta', 'Dados', 'Endereço'];
 
 export default function Register() {
   const [step, setStep] = useState(0);
-  // Step 0: Account type
+  // Step 0
   const [accountType, setAccountType] = useState<AccountType | null>(null);
-  // Step 1: Account
+  // Step 1
   const [email, setEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  // Step 2: Personal/Business data
+  // Step 2
   const [nickname, setNickname] = useState('');
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
   const [razaoSocial, setRazaoSocial] = useState('');
   const [cnpj, setCnpj] = useState('');
   const [phone, setPhone] = useState('');
-  // Step 3: Address
+  // Step 3
   const [cep, setCep] = useState('');
   const [addressLine, setAddressLine] = useState('');
   const [addressNumber, setAddressNumber] = useState('');
@@ -45,11 +54,135 @@ export default function Register() {
   const [cepLocked, setCepLocked] = useState(false);
   const [terms, setTerms] = useState(false);
 
+  // Async check status
+  const [emailStatus, setEmailStatus] = useState<CheckStatus>('idle');
+  const [nicknameStatus, setNicknameStatus] = useState<CheckStatus>('idle');
+  const [cpfStatus, setCpfStatus] = useState<CheckStatus>('idle');
+  const [cnpjStatus, setCnpjStatus] = useState<CheckStatus>('idle');
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const router = useRouter();
+
+  // Debounced values for async checks
+  const debouncedEmail = useDebounce(email, 600);
+  const debouncedNickname = useDebounce(nickname, 600);
+  const debouncedCpf = useDebounce(cpf, 600);
+  const debouncedCnpj = useDebounce(cnpj, 600);
+
+  // Local validation state (computed, not async)
+  const passwordChecks = useMemo(() => checkPassword(password), [password]);
+  const nicknameChecks = useMemo(() => checkNickname(nickname), [nickname]);
+  const passwordValid = passwordChecks.length && passwordChecks.uppercase && passwordChecks.number && passwordChecks.special;
+  const nicknameLocalValid = nicknameChecks.length && nicknameChecks.noSpaces && nicknameChecks.validChars;
+
+  // Email format check
+  const emailFormatValid = /\S+@\S+\.\S+/.test(email);
+  const emailsMatch = email && confirmEmail && email.trim().toLowerCase() === confirmEmail.trim().toLowerCase();
+  const passwordsMatch = password && confirmPassword && password === confirmPassword;
+
+  // ----- ASYNC CHECKS -----
+
+  // Email availability check
+  useEffect(() => {
+    if (!debouncedEmail || !/\S+@\S+\.\S+/.test(debouncedEmail)) {
+      setEmailStatus('idle');
+      return;
+    }
+    let cancelled = false;
+    setEmailStatus('checking');
+    fetch('/api/auth/check-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: debouncedEmail }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        if (data.error) setEmailStatus('idle');
+        else setEmailStatus(data.exists ? 'taken' : 'available');
+      })
+      .catch(() => { if (!cancelled) setEmailStatus('idle'); });
+    return () => { cancelled = true; };
+  }, [debouncedEmail]);
+
+  // Nickname availability check
+  useEffect(() => {
+    if (!debouncedNickname || !nicknameLocalValid) {
+      setNicknameStatus('idle');
+      return;
+    }
+    let cancelled = false;
+    setNicknameStatus('checking');
+    const supabase = createClient();
+    supabase
+      .from('profiles')
+      .select('id')
+      .eq('nickname', debouncedNickname.trim())
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setNicknameStatus(data ? 'taken' : 'available');
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedNickname, nicknameLocalValid]);
+
+  // CPF availability check
+  useEffect(() => {
+    if (!debouncedCpf) {
+      setCpfStatus('idle');
+      return;
+    }
+    if (!validateCPF(debouncedCpf)) {
+      setCpfStatus('invalid');
+      return;
+    }
+    let cancelled = false;
+    setCpfStatus('checking');
+    (async () => {
+      const cpfHash = await hashCPF(debouncedCpf);
+      if (cancelled) return;
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('cpf_hash', cpfHash)
+        .maybeSingle();
+      if (cancelled) return;
+      setCpfStatus(data ? 'taken' : 'available');
+    })();
+    return () => { cancelled = true; };
+  }, [debouncedCpf]);
+
+  // CNPJ availability check
+  useEffect(() => {
+    if (!debouncedCnpj) {
+      setCnpjStatus('idle');
+      return;
+    }
+    if (!validateCNPJ(debouncedCnpj)) {
+      setCnpjStatus('invalid');
+      return;
+    }
+    let cancelled = false;
+    setCnpjStatus('checking');
+    const supabase = createClient();
+    supabase
+      .from('profiles')
+      .select('id')
+      .eq('cnpj', debouncedCnpj.replace(/\D/g, ''))
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        setCnpjStatus(data ? 'taken' : 'available');
+      });
+    return () => { cancelled = true; };
+  }, [debouncedCnpj]);
+
+  // ----- VALIDATION -----
 
   function validateStep0(): string | null {
     if (!accountType) return 'Selecione o tipo de conta.';
@@ -58,22 +191,29 @@ export default function Register() {
 
   function validateStep1(): string | null {
     if (!email.trim()) return 'E-mail é obrigatório.';
-    if (!/\S+@\S+\.\S+/.test(email)) return 'E-mail inválido.';
-    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) return 'Os e-mails não coincidem.';
-    if (password.length < 8) return 'A senha deve ter no mínimo 8 caracteres.';
-    if (password !== confirmPassword) return 'As senhas não coincidem.';
+    if (!emailFormatValid) return 'E-mail inválido.';
+    if (emailStatus === 'taken') return 'Este e-mail já está cadastrado.';
+    if (emailStatus === 'checking') return 'Verificando e-mail, aguarde...';
+    if (!emailsMatch) return 'Os e-mails não coincidem.';
+    if (!passwordValid) return 'A senha não atende aos requisitos.';
+    if (!passwordsMatch) return 'As senhas não coincidem.';
     return null;
   }
 
   function validateStep2(): string | null {
-    const nickResult = validateNickname(nickname);
-    if (!nickResult.valid) return nickResult.error!;
+    if (!nicknameLocalValid) return validateNickname(nickname).error || 'Apelido inválido.';
+    if (nicknameStatus === 'taken') return 'Este apelido já está em uso.';
+    if (nicknameStatus === 'checking') return 'Verificando apelido, aguarde...';
     if (accountType === 'individual') {
       if (!fullName.trim()) return 'Nome completo é obrigatório.';
       if (!validateCPF(cpf)) return 'CPF inválido.';
+      if (cpfStatus === 'taken') return 'Este CPF já está cadastrado.';
+      if (cpfStatus === 'checking') return 'Verificando CPF, aguarde...';
     } else {
       if (!razaoSocial.trim()) return 'Razão Social é obrigatória.';
       if (!validateCNPJ(cnpj)) return 'CNPJ inválido.';
+      if (cnpjStatus === 'taken') return 'Este CNPJ já está cadastrado.';
+      if (cnpjStatus === 'checking') return 'Verificando CNPJ, aguarde...';
     }
     const phoneDigits = phone.replace(/\D/g, '');
     if (phoneDigits.length < 10 || phoneDigits.length > 11) return 'Telefone inválido.';
@@ -135,34 +275,8 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Check nickname uniqueness
-      const { data: existingNick } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('nickname', nickname.trim())
-        .maybeSingle();
-      if (existingNick) {
-        setError('Este apelido já está em uso.');
-        setLoading(false);
-        return;
-      }
-
       if (accountType === 'individual') {
         const cpfHash = await hashCPF(cpf);
-        // Check CPF uniqueness
-        const { data: existingCpf } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('cpf_hash', cpfHash)
-          .maybeSingle();
-        if (existingCpf) {
-          setError('Este CPF já está cadastrado.');
-          setLoading(false);
-          return;
-        }
-
         const { error } = await signUp(email, password, {
           account_type: 'individual',
           full_name: fullName.trim(),
@@ -178,24 +292,11 @@ export default function Register() {
         });
         if (error) { setError(error); setLoading(false); return; }
       } else {
-        const cnpjClean = cnpj.replace(/\D/g, '');
-        // Check CNPJ uniqueness
-        const { data: existingCnpj } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('cnpj', cnpjClean)
-          .maybeSingle();
-        if (existingCnpj) {
-          setError('Este CNPJ já está cadastrado.');
-          setLoading(false);
-          return;
-        }
-
         const { error } = await signUp(email, password, {
           account_type: 'business',
           full_name: razaoSocial.trim(),
           nickname: nickname.trim(),
-          cnpj: cnpjClean,
+          cnpj: cnpj.replace(/\D/g, ''),
           razao_social: razaoSocial.trim(),
           phone: phone.replace(/\D/g, ''),
           address_zip: cep.replace(/\D/g, ''),
@@ -214,6 +315,22 @@ export default function Register() {
     }
     setLoading(false);
   }
+
+  // ----- HELPERS -----
+
+  function StatusIcon({ status }: { status: CheckStatus }) {
+    if (status === 'checking') return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+    if (status === 'available') return <Check className="h-4 w-4 text-emerald-400" />;
+    if (status === 'taken' || status === 'invalid') return <X className="h-4 w-4 text-destructive" />;
+    return null;
+  }
+
+  function FieldError({ message }: { message: string | null }) {
+    if (!message) return null;
+    return <p className="text-xs text-destructive mt-1">{message}</p>;
+  }
+
+  // ----- SUCCESS SCREEN -----
 
   if (success) {
     return (
@@ -296,19 +413,36 @@ export default function Register() {
                 <div key="step-1" className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">E-mail</Label>
-                    <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" />
+                    <div className="relative">
+                      <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="off" className="pr-10" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <StatusIcon status={emailStatus} />
+                      </div>
+                    </div>
+                    {email && !emailFormatValid && <FieldError message="Formato de e-mail inválido" />}
+                    {emailStatus === 'taken' && <FieldError message="Este e-mail já está cadastrado" />}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmEmail">Confirmar e-mail</Label>
                     <Input id="confirmEmail" type="email" placeholder="Repita o e-mail" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} required autoComplete="off" />
+                    {confirmEmail && !emailsMatch && <FieldError message="Os e-mails não coincidem" />}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Senha</Label>
-                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+                    <Input id="password" type="password" placeholder="Crie uma senha forte" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+                    <RequirementChecklist
+                      requirements={[
+                        { label: 'Entre 10 e 128 caracteres', met: passwordChecks.length },
+                        { label: 'Ao menos 1 letra maiúscula (A-Z)', met: passwordChecks.uppercase },
+                        { label: 'Ao menos 1 número (0-9)', met: passwordChecks.number },
+                        { label: 'Ao menos 1 caractere especial (!@#$...)', met: passwordChecks.special },
+                      ]}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirmar senha</Label>
                     <Input id="confirmPassword" type="password" placeholder="Repita a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
+                    {confirmPassword && !passwordsMatch && <FieldError message="As senhas não coincidem" />}
                   </div>
                 </div>
               )}
@@ -318,28 +452,55 @@ export default function Register() {
                 <div key="step-2" className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="nickname">Apelido (nome público)</Label>
-                    <Input id="nickname" placeholder="Como você será visto no marketplace" value={nickname} onChange={(e) => setNickname(e.target.value)} required autoComplete="off" />
+                    <div className="relative">
+                      <Input id="nickname" placeholder="Seu apelido no marketplace" value={nickname} onChange={(e) => setNickname(e.target.value)} required autoComplete="off" className="pr-10" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <StatusIcon status={nicknameStatus} />
+                      </div>
+                    </div>
+                    <RequirementChecklist
+                      requirements={[
+                        { label: 'Entre 4 e 20 caracteres', met: nicknameChecks.length },
+                        { label: 'Sem espaços', met: nicknameChecks.noSpaces },
+                        { label: 'Apenas letras, números, _ e -', met: nicknameChecks.validChars },
+                      ]}
+                    />
+                    {nicknameStatus === 'taken' && <FieldError message="Este apelido já está em uso" />}
                   </div>
                   {accountType === 'individual' ? (
                     <>
                       <div className="space-y-2">
                         <Label htmlFor="fullName">Nome completo</Label>
-                        <Input id="fullName" placeholder="Seu nome completo" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                        <Input id="fullName" placeholder="Seu nome completo" value={fullName} onChange={(e) => setFullName(e.target.value)} required autoComplete="off" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="cpf">CPF</Label>
-                        <Input id="cpf" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))} required />
+                        <div className="relative">
+                          <Input id="cpf" placeholder="000.000.000-00" value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))} required autoComplete="off" className="pr-10" />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <StatusIcon status={cpfStatus} />
+                          </div>
+                        </div>
+                        {cpfStatus === 'invalid' && <FieldError message="CPF inválido" />}
+                        {cpfStatus === 'taken' && <FieldError message="Este CPF já está cadastrado" />}
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="space-y-2">
                         <Label htmlFor="razaoSocial">Razão Social</Label>
-                        <Input id="razaoSocial" placeholder="Nome da empresa" value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} required />
+                        <Input id="razaoSocial" placeholder="Nome da empresa" value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} required autoComplete="off" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="cnpj">CNPJ</Label>
-                        <Input id="cnpj" placeholder="00.000.000/0000-00" value={cnpj} onChange={(e) => setCnpj(formatCNPJ(e.target.value))} required />
+                        <div className="relative">
+                          <Input id="cnpj" placeholder="00.000.000/0000-00" value={cnpj} onChange={(e) => setCnpj(formatCNPJ(e.target.value))} required autoComplete="off" className="pr-10" />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <StatusIcon status={cnpjStatus} />
+                          </div>
+                        </div>
+                        {cnpjStatus === 'invalid' && <FieldError message="CNPJ inválido" />}
+                        {cnpjStatus === 'taken' && <FieldError message="Este CNPJ já está cadastrado" />}
                       </div>
                     </>
                   )}
