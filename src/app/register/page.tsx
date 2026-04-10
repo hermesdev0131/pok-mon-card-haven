@@ -535,10 +535,6 @@ export default function Register() {
                   ) : (
                     <>
                       <div className="space-y-2">
-                        <Label htmlFor="razaoSocial">Razão Social</Label>
-                        <Input id="razaoSocial" placeholder="Nome da empresa" value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} required autoComplete="off" />
-                      </div>
-                      <div className="space-y-2">
                         <Label htmlFor="cnpj">CNPJ</Label>
                         <div className="relative">
                           <Input id="cnpj" placeholder="00.000.000/0000-00" value={cnpj} onChange={(e) => setCnpj(formatCNPJ(e.target.value))} required autoComplete="off" className="pr-10" />
@@ -548,6 +544,11 @@ export default function Register() {
                         </div>
                         {cnpjStatus === 'invalid' && <FieldError message="CNPJ inválido" />}
                         {cnpjStatus === 'taken' && <FieldError message="Este CNPJ já está cadastrado" />}
+                        <p className="text-xs text-muted-foreground">Os dados da empresa serão preenchidos automaticamente</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="razaoSocial">Razão Social</Label>
+                        <Input id="razaoSocial" placeholder="Preenchido automaticamente pelo CNPJ" value={razaoSocial} onChange={(e) => setRazaoSocial(e.target.value)} required autoComplete="off" />
                       </div>
                     </>
                   )}
