@@ -432,7 +432,7 @@ export default function Register() {
                     <Input id="password" type="password" placeholder="Crie uma senha forte" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
                     <RequirementChecklist
                       requirements={[
-                        { label: 'Entre 10 e 128 caracteres', met: passwordChecks.length },
+                        { label: 'Ao menos 10 caracteres', met: passwordChecks.length },
                         { label: 'Ao menos 1 letra maiúscula (A-Z)', met: passwordChecks.uppercase },
                         { label: 'Ao menos 1 número (0-9)', met: passwordChecks.number },
                         { label: 'Ao menos 1 caractere especial (!@#$...)', met: passwordChecks.special },
