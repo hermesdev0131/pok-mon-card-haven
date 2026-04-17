@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { checkPassword } from '@/lib/validators';
+import { RequirementChecklist } from '@/components/RequirementChecklist';
+import { Loader2, Check, X } from 'lucide-react';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -17,6 +19,10 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [hasSession, setHasSession] = useState<boolean | null>(null);
   const router = useRouter();
+
+  const passwordChecks = useMemo(() => checkPassword(password), [password]);
+  const passwordValid = passwordChecks.length && passwordChecks.uppercase && passwordChecks.number && passwordChecks.special;
+  const passwordsMatch = password && confirmPassword && password === confirmPassword;
 
   useEffect(() => {
     const supabase = createClient();
@@ -29,8 +35,8 @@ export default function ResetPassword() {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError('A senha deve ter no mínimo 8 caracteres.');
+    if (!passwordValid) {
+      setError('A senha não atende aos requisitos.');
       return;
     }
     if (password !== confirmPassword) {
@@ -108,14 +114,28 @@ export default function ResetPassword() {
             <CardDescription>Digite sua nova senha</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="password">Nova senha</Label>
-                <Input id="password" type="password" placeholder="Mínimo 8 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <Input id="password" type="password" placeholder="Crie uma senha forte" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+                <RequirementChecklist
+                  requirements={[
+                    { label: 'Ao menos 10 caracteres', met: passwordChecks.length },
+                    { label: 'Ao menos 1 letra maiúscula (A-Z)', met: passwordChecks.uppercase },
+                    { label: 'Ao menos 1 número (0-9)', met: passwordChecks.number },
+                    { label: 'Ao menos 1 caractere especial (!@#$...)', met: passwordChecks.special },
+                  ]}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm">Confirmar nova senha</Label>
-                <Input id="confirm" type="password" placeholder="Repita a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                <div className="relative">
+                  <Input id="confirm" type="password" placeholder="Repita a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" className="pr-10" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {confirmPassword ? (passwordsMatch ? <Check className="h-4 w-4 text-emerald-400" /> : <X className="h-4 w-4 text-destructive" />) : null}
+                  </div>
+                </div>
+                {confirmPassword && !passwordsMatch && <p className="text-xs text-destructive mt-1">As senhas não coincidem</p>}
               </div>
 
               {error && <p className="text-sm text-destructive text-center">{error}</p>}

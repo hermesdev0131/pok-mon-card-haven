@@ -18,6 +18,10 @@ export default function ForgotPassword() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError('E-mail inválido.');
+      return;
+    }
     setLoading(true);
 
     const supabase = createClient();
@@ -66,7 +70,7 @@ export default function ForgotPassword() {
             <CardDescription>Digite seu e-mail para receber o link de redefinição</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
