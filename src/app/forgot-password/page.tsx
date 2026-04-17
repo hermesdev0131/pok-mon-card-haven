@@ -44,7 +44,7 @@ export default function ForgotPassword() {
           <Card className="relative glass glow-accent">
             <CardHeader className="text-center">
               <CardTitle className="text-xl">E-mail enviado!</CardTitle>
-              <CardDescription>Verifique sua caixa de entrada para redefinir a senha.</CardDescription>
+              <CardDescription className="text-accent">Verifique sua caixa de entrada para redefinir a senha.</CardDescription>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
