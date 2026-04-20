@@ -48,7 +48,7 @@ export default function ForgotPassword() {
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
-                Enviamos um link de redefinição para <strong className="text-foreground">{email}</strong>
+                Enviamos um link de redefinição para <strong className="text-accent">{email}</strong>
               </p>
               <Button onClick={() => window.location.href = '/login'} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 Voltar ao login

@@ -13,7 +13,14 @@ import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
 import type { CardBaseWithStats } from '@/types';
 
-export default function Marketplace() {
+interface MarketplaceGridProps {
+  gradingGroup: 'nacional' | 'internacional';
+  title: string;
+  description: string;
+  emptyMessage?: string;
+}
+
+export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage }: MarketplaceGridProps) {
   const { tokenRefreshCount } = useAuth();
   const [items, setItems] = useState<CardBaseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,19 +34,20 @@ export default function Marketplace() {
     getCardBasesWithStats({
       search,
       sort: sort === 'price_asc' ? 'price_asc' : sort === 'price_desc' ? 'price_desc' : undefined,
+      gradingGroup,
     }).then((data) => {
       setItems(data);
       setLoading(false);
     }).catch(() => {
       setLoading(false);
     });
-  }, [search, sort, tokenRefreshCount]);
+  }, [search, sort, gradingGroup, tokenRefreshCount]);
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8 space-y-1">
-        <h1 className="text-2xl font-bold">Marketplace</h1>
-        <p className="text-sm text-muted-foreground">Explore cartas Pokémon graduadas de vendedores verificados</p>
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
 
       {/* Search & filters */}
@@ -85,7 +93,7 @@ export default function Marketplace() {
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-muted-foreground">Nenhuma carta encontrada.</p>
+          <p className="text-muted-foreground">{emptyMessage ?? 'Nenhuma carta encontrada.'}</p>
         </div>
       ) : (
         <>

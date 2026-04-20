@@ -192,6 +192,7 @@ export async function getCardBasesWithStats(filters?: {
   search?: string;
   type?: string;
   sort?: string;
+  gradingGroup?: 'nacional' | 'internacional';
 }): Promise<CardBaseWithStats[]> {
   let cbQuery = supabase.from('card_bases').select('*');
   if (filters?.search) {
@@ -206,10 +207,18 @@ export async function getCardBasesWithStats(filters?: {
   const cardBaseRows = (cardRows ?? []) as CardBaseRow[];
   if (!cardBaseRows.length) return [];
 
-  const { data: listingRows, error: lErr } = await supabase
+  let listingsQuery = supabase
     .from('listings')
     .select('*')
     .eq('status', 'active' as string);
+
+  if (filters?.gradingGroup) {
+    const { getCompaniesForGroup } = await import('@/lib/grading-groups');
+    const companies = getCompaniesForGroup(filters.gradingGroup);
+    listingsQuery = listingsQuery.in('grade_company', companies);
+  }
+
+  const { data: listingRows, error: lErr } = await listingsQuery;
   logIfError('getCardBasesWithStats.listings', lErr);
 
   const listingsArr = (listingRows ?? []) as ListingRow[];
@@ -648,52 +657,6 @@ export async function getOrder(id: string): Promise<Order | null> {
 // ════════════════════════════════════════════════
 // Specialized queries for pages
 // ════════════════════════════════════════════════
-
-/** Card bases that have at least one PSA 10 active listing (for PSA10 page) */
-export async function getCardBasesWithPSA10(): Promise<CardBaseWithStats[]> {
-  const { data: psa10Listings } = await supabase
-    .from('listings')
-    .select('*')
-    .eq('status', 'active' as string)
-    .eq('grade_company', 'PSA' as string)
-    .eq('grade', 10);
-
-  const psa10Rows = (psa10Listings ?? []) as ListingRow[];
-  if (!psa10Rows.length) return [];
-
-  const psa10CardIds = Array.from(new Set(psa10Rows.map(l => l.card_base_id)));
-
-  const { data: cardRows } = await supabase
-    .from('card_bases')
-    .select('*')
-    .in('id', psa10CardIds);
-
-  const cardRowsTyped = (cardRows ?? []) as CardBaseRow[];
-  if (!cardRowsTyped.length) return [];
-
-  const { data: allListings } = await supabase
-    .from('listings')
-    .select('*')
-    .eq('status', 'active' as string)
-    .in('card_base_id', psa10CardIds);
-
-  const allListingsTyped = (allListings ?? []) as ListingRow[];
-  const listingsByCard: Record<string, number[]> = {};
-  for (const l of allListingsTyped) {
-    if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
-    listingsByCard[l.card_base_id].push(l.price);
-  }
-
-  return cardRowsTyped.map(row => {
-    const prices = listingsByCard[row.id] ?? [];
-    return {
-      cardBase: mapCardBase(row),
-      listingCount: prices.length,
-      lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
-      highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
-    };
-  });
-}
 
 /** Sellers map for a set of listings (for card detail page) */
 export async function getSellersForListings(sellerIds: string[]): Promise<Record<string, Seller>> {

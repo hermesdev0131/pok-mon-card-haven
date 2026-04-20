@@ -76,7 +76,7 @@ export default function Home() {
               </p>
               <div className="flex flex-col gap-3 sm:flex-row pt-2">
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
-                  <Link href="/marketplace">Explorar marketplace <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link href="/marketplace/nacional">Explorar marketplace <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
                 <Button variant="outline" size="lg" className="border-accent/30 text-accent hover:bg-accent/10" asChild>
                   <Link href="/sell">Vender carta</Link>
@@ -132,7 +132,7 @@ export default function Home() {
             <p className="text-sm text-muted-foreground mt-1">As cartas mais procuradas do marketplace</p>
           </div>
           <Button variant="ghost" className="text-accent hover:text-accent/80 gap-1" asChild>
-            <Link href="/marketplace">Ver todas <ChevronRight className="h-4 w-4" /></Link>
+            <Link href="/marketplace/nacional">Ver todas <ChevronRight className="h-4 w-4" /></Link>
           </Button>
         </div>
         <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
@@ -150,7 +150,7 @@ export default function Home() {
             <p className="text-sm text-muted-foreground mt-1">As últimas cartas com anúncios no marketplace</p>
           </div>
           <Button variant="ghost" className="text-accent hover:text-accent/80 gap-1" asChild>
-            <Link href="/marketplace">Ver todas <ChevronRight className="h-4 w-4" /></Link>
+            <Link href="/marketplace/nacional">Ver todas <ChevronRight className="h-4 w-4" /></Link>
           </Button>
         </div>
         <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
