@@ -99,7 +99,7 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
         <>
           <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {paged.map((item) => (
-              <CardBaseCard key={item.cardBase.id} item={item} />
+              <CardBaseCard key={item.cardBase.id} item={item} gradingGroup={gradingGroup} />
             ))}
           </div>
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />

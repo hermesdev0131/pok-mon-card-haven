@@ -12,9 +12,11 @@ const PriceChart = dynamic(() => import('@/components/PriceChart').then(m => ({ 
   loading: () => <div className="h-64 rounded-lg bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />,
 });
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getSellersForListings } from '@/lib/api';
+import { getCompaniesForGroup } from '@/lib/grading-groups';
+import type { GradingGroup } from '@/lib/grading-groups';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -30,7 +32,9 @@ export default function CardDetailPageGuarded() {
 
 function CardDetailPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const id = params.id;
+  const gradingGroup = (searchParams.get('group') as GradingGroup | null) ?? null;
   const { tokenRefreshCount } = useAuth();
 
   const [cardBase, setCardBase] = useState<CardBase | null>(null);
@@ -50,7 +54,9 @@ function CardDetailPage() {
       getPriceHistory(id),
     ]).then(async ([cb, ls, s, p]) => {
       setCardBase(cb);
-      setCardListings(ls);
+      const allowedCompanies = gradingGroup ? getCompaniesForGroup(gradingGroup) : null;
+      const filteredListings = allowedCompanies ? ls.filter(l => (allowedCompanies as string[]).includes(l.gradeCompany)) : ls;
+      setCardListings(filteredListings);
       setSales(s);
       setPrices(p);
       // Fetch sellers for the listings

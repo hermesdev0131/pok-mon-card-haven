@@ -8,8 +8,8 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const categories = [
-  { label: 'Cartas Nacionais', href: '/marketplace/nacional' },
-  { label: 'Cartas Internacionais', href: '/marketplace/internacional' },
+  { label: 'Graduadas Nacionais', href: '/marketplace/nacional' },
+  { label: 'Graduadas Internacionais', href: '/marketplace/internacional' },
   { label: 'Últimos Anúncios', href: '/marketplace/ultimos-anuncios' },
   { label: 'Últimas Vendas', href: '/marketplace/ultimas-vendas' },
   { label: 'Vendedores', href: '/vendedores' },

@@ -5,13 +5,15 @@ import type { CardBaseWithStats } from '@/types';
 
 interface CardBaseCardProps {
   item: CardBaseWithStats;
+  gradingGroup?: 'nacional' | 'internacional';
 }
 
-export function CardBaseCard({ item }: CardBaseCardProps) {
+export function CardBaseCard({ item, gradingGroup }: CardBaseCardProps) {
   const { cardBase, listingCount, lowestPrice } = item;
+  const href = gradingGroup ? `/card/${cardBase.id}?group=${gradingGroup}` : `/card/${cardBase.id}`;
 
   return (
-    <Link href={`/card/${cardBase.id}`} className="group block">
+    <Link href={href} className="group block">
       <div className="overflow-hidden rounded-2xl bg-white/[0.03] border border-white/[0.06] transition-all duration-300 hover:border-accent/30 hover:shadow-[0_4px_40px_hsl(var(--accent)/0.1)] hover:-translate-y-1">
         {/* Card image */}
         <div className="relative aspect-[3/4] bg-gradient-to-br from-white/[0.06] to-white/[0.02] flex items-center justify-center overflow-hidden">

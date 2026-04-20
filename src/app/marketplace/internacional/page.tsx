@@ -4,7 +4,7 @@ export default function MarketplaceInternacional() {
   return (
     <MarketplaceGrid
       gradingGroup="internacional"
-      title="Cartas Internacionais"
+      title="Graduadas Internacionais"
       description="Cartas graduadas por empresas internacionais (PSA, CGC, TAG, ARS, Beckett)"
     />
   );
