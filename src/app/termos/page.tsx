@@ -6,11 +6,11 @@ export default function Termos() {
       <div className="space-y-8">
         <section>
           <h2 className="text-lg font-semibold mb-3">1. Aceitação dos Termos</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">Ao acessar e usar o GradedBR, você concorda com estes termos de uso. Se não concordar, não utilize a plataforma.</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">Ao acessar e usar o Graduada, você concorda com estes termos de uso. Se não concordar, não utilize a plataforma.</p>
         </section>
         <section>
           <h2 className="text-lg font-semibold mb-3">2. Sobre o Serviço</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">O GradedBR é um marketplace para compra e venda de cartas Pokémon graduadas (PSA, BGS, CGC). Atuamos como intermediários, garantindo segurança nas transações através do sistema de pagamento protegido.</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">O Graduada é um marketplace para compra e venda de cartas Pokémon graduadas (PSA, BGS, CGC). Atuamos como intermediários, garantindo segurança nas transações através do sistema de pagamento protegido.</p>
         </section>
         <section>
           <h2 className="text-lg font-semibold mb-3">3. Pagamento Protegido</h2>

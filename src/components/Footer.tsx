@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { Instagram, Mail } from 'lucide-react';
 
 const socialLinks = [
-  { icon: Instagram, href: 'https://instagram.com/gradedbr', label: 'Instagram' },
+  { icon: Instagram, href: 'https://instagram.com/graduada', label: 'Instagram' },
   { icon: WhatsAppIcon, href: 'https://wa.me/5511987813451', label: 'WhatsApp' },
-  { icon: XIcon, href: 'https://x.com/gradedbr', label: 'X' },
-  { icon: Mail, href: 'mailto:contato@gradedbr.com.br', label: 'Email' },
+  { icon: XIcon, href: 'https://x.com/graduada', label: 'X' },
+  { icon: Mail, href: 'mailto:contato@graduada.com.br', label: 'Email' },
 ];
 
 // WhatsApp icon — lucide doesn't include brand icons
@@ -34,8 +34,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="font-bold text-xl">
-              <span className="text-accent text-glow-accent">Graded</span>
-              <span className="text-foreground">BR</span>
+              <span className="text-accent text-glow-accent">Graduada</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               O 1º marketplace brasileiro dedicado exclusivamente a cartas Pokémon graduadas, com segurança e transparência em cada negociação.
@@ -51,7 +50,7 @@ export function Footer() {
           <div>
             <h4 className="font-semibold text-sm mb-3">Institucional</h4>
             <nav className="flex flex-col gap-2">
-              <Link href="/sobre" className="text-sm text-muted-foreground transition-colors hover:text-accent">Sobre o GradedBR</Link>
+              <Link href="/sobre" className="text-sm text-muted-foreground transition-colors hover:text-accent">Sobre a Graduada</Link>
               <Link href="/como-funciona" className="text-sm text-muted-foreground transition-colors hover:text-accent">Como funciona</Link>
               <Link href="/termos" className="text-sm text-muted-foreground transition-colors hover:text-accent">Termos de uso</Link>
               <Link href="/privacidade" className="text-sm text-muted-foreground transition-colors hover:text-accent">Privacidade</Link>
@@ -83,7 +82,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-10 border-t border-white/[0.06] pt-6 text-center">
-          <p className="text-xs text-muted-foreground">© 2026 GradedBR. Todos os direitos reservados.</p>
+          <p className="text-xs text-muted-foreground">© 2026 Graduada. Todos os direitos reservados.</p>
           <p className="text-[10px] text-muted-foreground/50 mt-2">Pokémon TCG e suas respectivas propriedades são marcas registradas e copyrights da The Pokémon Company International. Este site não é afiliado, endossado ou patrocinado pela The Pokémon Company International.</p>
         </div>
       </div>

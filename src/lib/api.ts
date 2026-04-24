@@ -193,6 +193,7 @@ export async function getCardBasesWithStats(filters?: {
   type?: string;
   sort?: string;
   gradingGroup?: 'nacional' | 'internacional';
+  company?: string;
 }): Promise<CardBaseWithStats[]> {
   let cbQuery = supabase.from('card_bases').select('*');
   if (filters?.search) {
@@ -212,7 +213,9 @@ export async function getCardBasesWithStats(filters?: {
     .select('*')
     .eq('status', 'active' as string);
 
-  if (filters?.gradingGroup) {
+  if (filters?.company) {
+    listingsQuery = listingsQuery.eq('grade_company', filters.company);
+  } else if (filters?.gradingGroup) {
     const { getCompaniesForGroup } = await import('@/lib/grading-groups');
     const companies = getCompaniesForGroup(filters.gradingGroup);
     listingsQuery = listingsQuery.in('grade_company', companies);

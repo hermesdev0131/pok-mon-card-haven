@@ -102,7 +102,7 @@ export default function Profile() {
             <BadgeCheck className="h-5 w-5 text-accent shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">Quer o selo verificado?</p>
-              <p className="text-xs text-muted-foreground">Saiba como se tornar um vendedor verificado no GradedBR</p>
+              <p className="text-xs text-muted-foreground">Saiba como se tornar um vendedor verificado na Graduada</p>
             </div>
             <span className="text-xs text-accent font-medium shrink-0">Saiba mais &rarr;</span>
           </Link>

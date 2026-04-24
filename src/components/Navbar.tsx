@@ -33,8 +33,7 @@ export function Navbar() {
         <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight shrink-0">
-            <span className="text-accent text-glow-accent">Graded</span>
-            <span className="text-foreground">BR</span>
+            <span className="text-accent text-glow-accent">Graduada</span>
           </Link>
 
           {/* Search */}

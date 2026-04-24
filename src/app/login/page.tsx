@@ -49,7 +49,7 @@ export default function Login() {
         <Card className="relative glass glow-accent">
           <CardHeader className="text-center">
             <CardTitle className="text-xl">Entrar na sua conta</CardTitle>
-            <CardDescription>Acesse o marketplace GradedBR</CardDescription>
+            <CardDescription>Acesse o marketplace Graduada</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

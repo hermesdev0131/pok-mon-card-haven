@@ -27,7 +27,7 @@ type AccountType = 'individual' | 'business';
 type CheckStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
 
 const STEPS = ['Tipo', 'Conta', 'Dados', 'Endereço'];
-const STORAGE_KEY = 'gradedbr:register:draft';
+const STORAGE_KEY = 'graduada:register:draft';
 
 interface PersistedState {
   step: number;
@@ -489,7 +489,7 @@ export default function Register() {
         <Card className="relative glass glow-accent">
           <CardHeader className="text-center">
             <CardTitle className="text-xl">Criar sua conta</CardTitle>
-            <CardDescription>Comece a comprar e vender no GradedBR</CardDescription>
+            <CardDescription>Comece a comprar e vender na Graduada</CardDescription>
             {/* Step indicators */}
             <div className="flex items-center justify-center gap-1.5 pt-3">
               {STEPS.map((label, i) => (

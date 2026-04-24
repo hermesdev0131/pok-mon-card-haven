@@ -39,7 +39,7 @@ async function fetchMelhorEnvio(
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'User-Agent': 'GradedBR contato@gradedbr.com.br',
+        'User-Agent': 'Graduada contato@graduada.com.br',
       },
       body: JSON.stringify({
         from: { postal_code: originZip },

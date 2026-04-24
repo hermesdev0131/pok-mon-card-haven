@@ -8,13 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithStats } from '@/lib/api';
+import { getCompaniesForGroup } from '@/lib/grading-groups';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
 import type { CardBaseWithStats } from '@/types';
 
 interface MarketplaceGridProps {
-  gradingGroup: 'nacional' | 'internacional';
+  gradingGroup?: 'nacional' | 'internacional';
   title: string;
   description: string;
   emptyMessage?: string;
@@ -27,21 +28,31 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
   const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(items, 12);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('newest');
+  const [group, setGroup] = useState<'all' | 'nacional' | 'internacional'>('all');
+  const [company, setCompany] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+
+  const activeGroup = gradingGroup ?? (group === 'all' ? undefined : group);
+  const companies = activeGroup ? getCompaniesForGroup(activeGroup) : [];
+
+  useEffect(() => {
+    setCompany('all');
+  }, [group]);
 
   useEffect(() => {
     setLoading(true);
     getCardBasesWithStats({
       search,
       sort: sort === 'price_asc' ? 'price_asc' : sort === 'price_desc' ? 'price_desc' : undefined,
-      gradingGroup,
+      gradingGroup: activeGroup,
+      company: company === 'all' ? undefined : company,
     }).then((data) => {
       setItems(data);
       setLoading(false);
     }).catch(() => {
       setLoading(false);
     });
-  }, [search, sort, gradingGroup, tokenRefreshCount]);
+  }, [search, sort, activeGroup, company, tokenRefreshCount]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -52,7 +63,7 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
 
       {/* Search & filters */}
       <div className="mb-6 space-y-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -62,6 +73,27 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
               className="pl-9"
             />
           </div>
+          {!gradingGroup && (
+            <Select value={group} onValueChange={(v) => setGroup(v as 'all' | 'nacional' | 'internacional')}>
+              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas graduações</SelectItem>
+                <SelectItem value="nacional">Graduadas Nacionais</SelectItem>
+                <SelectItem value="internacional">Graduadas Internacionais</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {activeGroup && (
+            <Select value={company} onValueChange={setCompany}>
+              <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {companies.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="outline" size="icon" onClick={() => setShowFilters(!showFilters)}>
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
@@ -99,7 +131,7 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
         <>
           <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {paged.map((item) => (
-              <CardBaseCard key={item.cardBase.id} item={item} gradingGroup={gradingGroup} />
+              <CardBaseCard key={item.cardBase.id} item={item} gradingGroup={activeGroup} />
             ))}
           </div>
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />

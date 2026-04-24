@@ -1,6 +1,8 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { SalesHistoryTable } from '@/components/SalesHistoryTable';
 
 import { ListingTable } from '@/components/ListingTable';
@@ -13,9 +15,9 @@ const PriceChart = dynamic(() => import('@/components/PriceChart').then(m => ({ 
 });
 
 import { useParams, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getSellersForListings } from '@/lib/api';
-import { getCompaniesForGroup } from '@/lib/grading-groups';
+import { isNacionalCompany, NACIONAL_COMPANIES, INTERNACIONAL_COMPANIES } from '@/lib/grading-groups';
 import type { GradingGroup } from '@/lib/grading-groups';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,15 +36,35 @@ function CardDetailPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const id = params.id;
-  const gradingGroup = (searchParams.get('group') as GradingGroup | null) ?? null;
+  const urlGroup = (searchParams.get('group') as GradingGroup | null) ?? null;
   const { tokenRefreshCount } = useAuth();
 
   const [cardBase, setCardBase] = useState<CardBase | null>(null);
-  const [cardListings, setCardListings] = useState<Listing[]>([]);
+  const [allListings, setAllListings] = useState<Listing[]>([]);
   const [sales, setSales] = useState<SaleRecord[]>([]);
   const [prices, setPrices] = useState<PricePoint[]>([]);
   const [sellersMap, setSellersMap] = useState<Record<string, Seller>>({});
   const [loading, setLoading] = useState(true);
+
+  const [filterGroup, setFilterGroup] = useState<'all' | 'nacional' | 'internacional'>(urlGroup ?? 'all');
+  const [filterCompany, setFilterCompany] = useState<string>('all');
+
+  useEffect(() => {
+    setFilterCompany('all');
+  }, [filterGroup]);
+
+  const cardListings = useMemo(() => {
+    return allListings.filter((l) => {
+      if (filterGroup === 'nacional' && !isNacionalCompany(l.gradeCompany)) return false;
+      if (filterGroup === 'internacional' && isNacionalCompany(l.gradeCompany)) return false;
+      if (filterCompany !== 'all' && l.gradeCompany !== filterCompany) return false;
+      return true;
+    });
+  }, [allListings, filterGroup, filterCompany]);
+
+  const companiesForGroup = filterGroup === 'nacional' ? NACIONAL_COMPANIES
+    : filterGroup === 'internacional' ? INTERNACIONAL_COMPANIES
+    : [];
 
   useEffect(() => {
     if (!id) return;
@@ -54,12 +76,9 @@ function CardDetailPage() {
       getPriceHistory(id),
     ]).then(async ([cb, ls, s, p]) => {
       setCardBase(cb);
-      const allowedCompanies = gradingGroup ? getCompaniesForGroup(gradingGroup) : null;
-      const filteredListings = allowedCompanies ? ls.filter(l => (allowedCompanies as string[]).includes(l.gradeCompany)) : ls;
-      setCardListings(filteredListings);
+      setAllListings(ls);
       setSales(s);
       setPrices(p);
-      // Fetch sellers for the listings
       const sellerIds = Array.from(new Set(ls.map(l => l.sellerId)));
       const sellers = await getSellersForListings(sellerIds);
       setSellersMap(sellers);
@@ -131,6 +150,33 @@ function CardDetailPage() {
       </TabsList>
 
       <TabsContent value="buy">
+        <div className="flex flex-wrap gap-4 mb-4">
+          <div className="space-y-1">
+            <Label className="text-xs">Graduação</Label>
+            <Select value={filterGroup} onValueChange={(v) => setFilterGroup(v as 'all' | 'nacional' | 'internacional')}>
+              <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="nacional">Graduadas Nacionais</SelectItem>
+                <SelectItem value="internacional">Graduadas Internacionais</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {filterGroup !== 'all' && (
+            <div className="space-y-1">
+              <Label className="text-xs">Empresa</Label>
+              <Select value={filterCompany} onValueChange={setFilterCompany}>
+                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {companiesForGroup.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
         <ListingTable listings={cardListings} sellers={sellersMap} />
       </TabsContent>
       <TabsContent value="sales">

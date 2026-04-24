@@ -6,7 +6,7 @@ export default function Sobre() {
     <div className="container mx-auto max-w-3xl px-4 py-16">
       <div className="text-center mb-12">
         <h1 className="text-3xl font-bold mb-3">
-          Sobre o <span className="text-accent text-glow-accent">Graded</span>BR
+          Sobre a <span className="text-accent text-glow-accent">Graduada</span>
         </h1>
         <p className="text-muted-foreground">A história por trás do marketplace</p>
       </div>
@@ -14,7 +14,7 @@ export default function Sobre() {
       {/* Origin story */}
       <div className="space-y-6 text-sm text-muted-foreground leading-relaxed mb-12">
         <p>
-          O GradedBR nasceu das principais dores do mercado brasileiro de cartas Pokémon graduadas: a falta de
+          A Graduada nasceu das principais dores do mercado brasileiro de cartas Pokémon graduadas: a falta de
           dados reais sobre vendas no Brasil, a dificuldade de entender o valor real das cartas e a ausência de
           um lugar centralizado que reunisse as cartas disponíveis no mercado nacional.
         </p>
@@ -29,7 +29,7 @@ export default function Sobre() {
           disponíveis no Brasil, tornando o processo de compra, venda e precificação ainda mais complexo.
         </p>
         <p>
-          Foi para mudar esse cenário que criamos o GradedBR um marketplace especializado que organiza dados
+          Foi para mudar esse cenário que criamos a Graduada um marketplace especializado que organiza dados
           reais de vendas, centraliza ofertas e oferece um ambiente mais seguro, transparente e profissional
           para compradores e vendedores.
         </p>
@@ -61,7 +61,7 @@ export default function Sobre() {
           {
             icon: Heart,
             title: 'Paixão pelo hobby',
-            desc: 'O GradedBR nasceu da nossa própria paixão pelo colecionismo e da vontade de ver o mercado brasileiro evoluir com mais transparência, segurança e reconhecimento para quem vive esse hobby.',
+            desc: 'A Graduada nasceu da nossa própria paixão pelo colecionismo e da vontade de ver o mercado brasileiro evoluir com mais transparência, segurança e reconhecimento para quem vive esse hobby.',
           },
         ].map(({ icon: Icon, title, desc }) => (
           <Card key={title} className="glass">

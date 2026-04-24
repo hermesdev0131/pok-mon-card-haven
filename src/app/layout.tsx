@@ -12,11 +12,11 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "GradedBR — Marketplace de Cartas Pokémon Graduadas",
+  title: "Graduada — Marketplace de Cartas Pokémon Graduadas",
   description:
     "Compre e venda cartas Pokémon graduadas (PSA, BGS, CGC) com pagamento protegido, vendedores verificados e histórico real de preços.",
   openGraph: {
-    title: "GradedBR — Cartas Pokémon Graduadas",
+    title: "Graduada — Cartas Pokémon Graduadas",
     description:
       "Marketplace brasileiro de cartas Pokémon graduadas com confiança real.",
     type: "website",
