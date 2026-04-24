@@ -25,7 +25,7 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
   const { tokenRefreshCount } = useAuth();
   const [items, setItems] = useState<CardBaseWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(items, 12);
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(items, 10);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('newest');
   const [group, setGroup] = useState<'all' | 'nacional' | 'internacional'>('all');

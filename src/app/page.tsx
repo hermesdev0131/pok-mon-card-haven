@@ -87,7 +87,7 @@ export default function Home() {
             <p className="text-sm text-muted-foreground mt-1">As últimas cartas com anúncios no marketplace</p>
           </div>
           <Button variant="ghost" className="text-accent hover:text-accent/80 gap-1" asChild>
-            <Link href="/marketplace">Ver todas <ChevronRight className="h-4 w-4" /></Link>
+            <Link href="/marketplace/ultimos-anuncios">Ver todas <ChevronRight className="h-4 w-4" /></Link>
           </Button>
         </div>
         <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
