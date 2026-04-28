@@ -78,6 +78,10 @@ export default function Home() {
           <div className="grid w-full gap-8 lg:gap-12 lg:grid-cols-[1.1fr_1fr] items-center">
             {/* Left — Text */}
             <div className="space-y-6 lg:space-y-8 order-2 lg:order-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm text-accent">
+                <Sparkles className="h-3.5 w-3.5" />
+                1º marketplace brasileiro dedicado a cartas graduadas
+              </div>
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl leading-[1.05]">
                 O maior marketplace de{' '}
                 <span className="text-accent text-glow-accent">cartas graduadas</span>{' '}
@@ -120,12 +124,8 @@ export default function Home() {
       {/* Cartas Graduadas Disponíveis */}
       <section className="container mx-auto px-4 py-12 lg:py-16">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
-          <div className="space-y-3">
+          <div>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Cartas Graduadas Disponíveis</h2>
-            <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-xs text-accent">
-              <Sparkles className="h-3 w-3" />
-              1º marketplace brasileiro dedicado a cartas graduadas
-            </div>
           </div>
           <Button variant="ghost" className="text-accent hover:text-accent/80 gap-1 self-start sm:self-auto" asChild>
             <Link href="/marketplace">Ver todas <ChevronRight className="h-4 w-4" /></Link>
