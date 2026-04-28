@@ -6,7 +6,7 @@ import { SellerCard } from '@/components/SellerCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Shield, Star, Sparkles, ChevronRight, ArrowRight, ShieldCheck, BadgeCheck, Wallet } from 'lucide-react';
+import { Sparkles, ChevronRight, ArrowRight, ShieldCheck, BadgeCheck, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getCardBasesWithStats, getAllSellers, getRecentSales } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -156,7 +156,7 @@ export default function Home() {
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm font-semibold">Pagamento protegido</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">Seu pagamento seguro do início ao fim.</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Seu pagamento seguro do início ao fim. Valor liberado ao vendedor apenas após a confirmação do recebimento.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -165,7 +165,7 @@ export default function Home() {
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm font-semibold">Vendedores verificados</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">Vendedores com histórico comprovado.</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Vendedores verificados contam com histórico comprovado e maior nível de confiança.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -174,7 +174,7 @@ export default function Home() {
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm font-semibold">Preços transparentes</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">Acompanhe vendas reais do mercado.</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Acompanhe preços com base em vendas reais do mercado.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -183,7 +183,7 @@ export default function Home() {
               </div>
               <div className="space-y-0.5">
                 <p className="text-sm font-semibold">Histórico e gráfico de preços real</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">Evolução de preços baseada em dados.</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">Acompanhe a evolução real dos preços com base em vendas confirmadas no marketplace.</p>
               </div>
             </div>
           </div>
@@ -276,40 +276,6 @@ export default function Home() {
           {topSellers.map(seller => (
             <SellerCard key={seller.id} seller={seller} />
           ))}
-        </div>
-      </section>
-
-      {/* Trust footer (existing) */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="blob blob-accent w-[400px] h-[400px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10" />
-        </div>
-        <div className="container mx-auto px-4 py-16">
-          <div className="glass rounded-2xl p-8 md:p-12">
-            <div className="grid gap-8 md:grid-cols-3 text-center">
-              <div className="space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
-                  <Shield className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="font-semibold">Pagamento protegido</h3>
-                <p className="text-sm text-muted-foreground">Seu pagamento seguro do início ao fim. Valor liberado ao vendedor apenas após a confirmação do recebimento.</p>
-              </div>
-              <div className="space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
-                  <Star className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="font-semibold">Vendedores verificados</h3>
-                <p className="text-sm text-muted-foreground">Vendedores verificados contam com histórico comprovado e maior nível de confiança.</p>
-              </div>
-              <div className="space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 ring-1 ring-accent/20">
-                  <Sparkles className="h-6 w-6 text-accent" />
-                </div>
-                <h3 className="font-semibold">Preços transparentes</h3>
-                <p className="text-sm text-muted-foreground">Acompanhe preços com base em vendas reais do mercado.</p>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
