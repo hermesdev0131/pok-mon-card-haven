@@ -61,7 +61,7 @@ export default function Home() {
           <div className="blob blob-purple w-[500px] h-[500px] bottom-0 -left-[200px] opacity-60 animate-float-slow" />
         </div>
 
-        <div className="container relative mx-auto px-4 min-h-[calc(100vh-7rem)] lg:min-h-0 flex items-center py-8 lg:py-16">
+        <div className="container relative mx-auto px-4 min-h-[calc(100vh-7rem)] lg:min-h-0 flex items-center pt-8 pb-8 lg:pt-12 lg:pb-8">
           <div className="grid w-full gap-8 lg:gap-12 lg:grid-cols-[1.1fr_1fr] items-start">
             {/* Left — Text */}
             <div className="space-y-6 lg:space-y-8 order-2 lg:order-1">
@@ -136,8 +136,8 @@ export default function Home() {
       </section>
 
       {/* Cartas Graduadas Disponíveis */}
-      <section className="container mx-auto px-4 py-12 lg:py-16">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+      <section className="container mx-auto px-4 py-8 lg:pt-6 lg:pb-12">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold">Cartas Graduadas Disponíveis</h2>
           </div>
