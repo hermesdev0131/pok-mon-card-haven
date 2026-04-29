@@ -62,7 +62,7 @@ export default function Home() {
         </div>
 
         <div className="container relative mx-auto px-4 min-h-[calc(100vh-7rem)] lg:min-h-0 flex items-center py-8 lg:py-16">
-          <div className="grid w-full gap-8 lg:gap-12 lg:grid-cols-[1.1fr_1fr] items-center">
+          <div className="grid w-full gap-8 lg:gap-12 lg:grid-cols-[1.1fr_1fr] items-start">
             {/* Left — Text */}
             <div className="space-y-6 lg:space-y-8 order-2 lg:order-1">
               <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm text-accent">
@@ -88,13 +88,13 @@ export default function Home() {
             </div>
 
             {/* Right — Slab collage */}
-            <div className="relative order-1 lg:order-2">
+            <div className="relative order-1 lg:order-2 lg:pt-14">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-[280px] w-[280px] sm:h-[360px] sm:w-[360px] rounded-full bg-accent/10 blur-[100px]" />
               </div>
               <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-[5/4] w-full max-w-md lg:max-w-none mx-auto">
                 {/* Left card */}
-                <div className="absolute left-[5%] top-[15%] w-[32%] -rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:rotate-[-6deg] hover:-translate-y-1">
+                <div className="absolute left-[10%] top-[15%] w-[36%] -rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
                   <Image
                     src="/hero-1.png"
                     alt="Carta graduada"
@@ -106,7 +106,7 @@ export default function Home() {
                   />
                 </div>
                 {/* Center card (prominent) */}
-                <div className="absolute left-1/2 top-0 w-[42%] -translate-x-1/2 z-10 drop-shadow-[0_24px_50px_rgba(0,0,0,0.6)] transition-transform duration-500 hover:-translate-y-2">
+                <div className="absolute left-1/2 top-0 w-[42%] -translate-x-1/2 rotate-[3deg] z-10 drop-shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
                   <Image
                     src="/hero-2.png"
                     alt="Carta graduada"
@@ -118,7 +118,7 @@ export default function Home() {
                   />
                 </div>
                 {/* Right card */}
-                <div className="absolute right-[5%] top-[15%] w-[32%] rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:rotate-[6deg] hover:-translate-y-1">
+                <div className="absolute right-[10%] top-[15%] w-[36%] rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
                   <Image
                     src="/hero-3.png"
                     alt="Carta graduada"
