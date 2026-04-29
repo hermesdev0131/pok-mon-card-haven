@@ -88,11 +88,11 @@ export default function Home() {
             </div>
 
             {/* Right — Slab collage */}
-            <div className="relative order-1 lg:order-2 lg:pt-14">
+            <div className="relative order-1 lg:order-2 lg:pt-8">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-[280px] w-[280px] sm:h-[360px] sm:w-[360px] rounded-full bg-accent/10 blur-[100px]" />
               </div>
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-[5/4] w-full max-w-md lg:max-w-none mx-auto">
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-[3/2] w-full max-w-md lg:max-w-none mx-auto">
                 {/* Left card */}
                 <div className="absolute left-[10%] top-[15%] w-[36%] -rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
                   <Image
