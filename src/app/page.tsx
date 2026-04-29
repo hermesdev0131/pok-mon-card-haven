@@ -62,9 +62,9 @@ export default function Home() {
         </div>
 
         <div className="container relative mx-auto px-4 min-h-[calc(100vh-7rem)] lg:min-h-0 flex items-center pt-8 pb-8 lg:pt-12 lg:pb-8">
-          <div className="grid w-full gap-8 lg:gap-12 lg:grid-cols-[1.1fr_1fr] items-start">
-            {/* Left — Text */}
-            <div className="space-y-6 lg:space-y-8 order-2 lg:order-1">
+          <div className="grid w-full grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-y-6 lg:gap-y-8 lg:gap-x-12 items-start">
+            {/* Pill + Headline (mobile order 1, desktop top-left) */}
+            <div className="space-y-6 lg:space-y-8 order-1 lg:col-start-1 lg:row-start-1">
               <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm text-accent">
                 <Sparkles className="h-3.5 w-3.5" />
                 1º marketplace brasileiro dedicado a cartas graduadas
@@ -74,21 +74,10 @@ export default function Home() {
                 <span className="text-accent text-glow-accent">cartas graduadas</span>{' '}
                 do Brasil.
               </h1>
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg">
-                Compre e venda com segurança, transparência e as melhores condições do mercado.
-              </p>
-              <div className="flex flex-col gap-3 sm:flex-row pt-2">
-                <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
-                  <Link href="/marketplace">Ver cartas disponíveis <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                </Button>
-                <Button variant="outline" size="lg" className="border-white/10 hover:border-accent/30 hover:bg-accent/5" asChild>
-                  <Link href="/como-funciona">Como funciona</Link>
-                </Button>
-              </div>
             </div>
 
-            {/* Right — Slab collage */}
-            <div className="relative order-1 lg:order-2 lg:pt-8">
+            {/* Slab collage (mobile order 2, desktop right spanning both rows) */}
+            <div className="relative order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:pt-8">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-[280px] w-[280px] sm:h-[360px] sm:w-[360px] rounded-full bg-accent/10 blur-[100px]" />
               </div>
@@ -129,6 +118,21 @@ export default function Home() {
                     className="w-full h-auto"
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Subtitle + Buttons (mobile order 3, desktop bottom-left) */}
+            <div className="space-y-6 lg:space-y-8 order-3 lg:col-start-1 lg:row-start-2">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg">
+                Compre e venda com segurança, transparência e as melhores condições do mercado.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row pt-2">
+                <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
+                  <Link href="/marketplace">Ver cartas disponíveis <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
+                <Button variant="outline" size="lg" className="border-white/10 hover:border-accent/30 hover:bg-accent/5" asChild>
+                  <Link href="/como-funciona">Como funciona</Link>
+                </Button>
               </div>
             </div>
           </div>
