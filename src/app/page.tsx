@@ -21,19 +21,6 @@ type SaleWithCard = SaleRecord & {
   seller?: Seller;
 };
 
-function timeAgo(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return 'agora';
-  if (minutes < 60) return `há ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `há ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `há ${days} ${days === 1 ? 'dia' : 'dias'}`;
-  const months = Math.floor(days / 30);
-  return `há ${months} ${months === 1 ? 'mês' : 'meses'}`;
-}
-
 function SparklineIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 16" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -105,16 +92,43 @@ export default function Home() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="h-[280px] w-[280px] sm:h-[360px] sm:w-[360px] rounded-full bg-accent/10 blur-[100px]" />
               </div>
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-[5/4] w-full max-w-md lg:max-w-none mx-auto rounded-2xl overflow-hidden">
-                <Image
-                  src="/hero-cards.jpg"
-                  alt="Cartas Pokémon graduadas"
-                  fill
-                  priority
-                  quality={95}
-                  sizes="(max-width: 1024px) 90vw, 50vw"
-                  className="object-cover"
-                />
+              <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-[5/4] w-full max-w-md lg:max-w-none mx-auto">
+                {/* Left card */}
+                <div className="absolute left-[5%] top-[15%] w-[32%] -rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:rotate-[-6deg] hover:-translate-y-1">
+                  <Image
+                    src="/hero-1.png"
+                    alt="Carta graduada"
+                    width={734}
+                    height={1024}
+                    priority
+                    quality={95}
+                    className="w-full h-auto"
+                  />
+                </div>
+                {/* Center card (prominent) */}
+                <div className="absolute left-1/2 top-0 w-[42%] -translate-x-1/2 z-10 drop-shadow-[0_24px_50px_rgba(0,0,0,0.6)] transition-transform duration-500 hover:-translate-y-2">
+                  <Image
+                    src="/hero-2.png"
+                    alt="Carta graduada"
+                    width={734}
+                    height={1024}
+                    priority
+                    quality={95}
+                    className="w-full h-auto"
+                  />
+                </div>
+                {/* Right card */}
+                <div className="absolute right-[5%] top-[15%] w-[32%] rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:rotate-[6deg] hover:-translate-y-1">
+                  <Image
+                    src="/hero-3.png"
+                    alt="Carta graduada"
+                    width={600}
+                    height={825}
+                    priority
+                    quality={95}
+                    className="w-full h-auto"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -125,7 +139,7 @@ export default function Home() {
       <section className="container mx-auto px-4 py-12 lg:py-16">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Cartas Graduadas Disponíveis</h2>
+            <h2 className="text-2xl font-bold">Cartas Graduadas Disponíveis</h2>
           </div>
           <Button variant="ghost" className="text-accent hover:text-accent/80 gap-1 self-start sm:self-auto" asChild>
             <Link href="/marketplace">Ver todas <ChevronRight className="h-4 w-4" /></Link>
@@ -227,10 +241,8 @@ export default function Home() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{sale.cardName}</p>
                   <p className="text-base font-bold text-accent mt-0.5">R$ {formatPrice(sale.price)}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                    Vendido por <span className="text-foreground/80">{sale.sellerName}</span>
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{timeAgo(sale.date)}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">Vendido por</p>
+                  <p className="text-xs font-semibold truncate">{sale.sellerName}</p>
                 </div>
               </Link>
             ))}
