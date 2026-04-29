@@ -7,7 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import Image from 'next/image';
 import Link from 'next/link';
 import { Sparkles, ChevronRight, ArrowRight, ShieldCheck, BadgeCheck, Wallet } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getCardBasesWithStats, getAllSellers, getRecentSales } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
@@ -27,6 +27,59 @@ function SparklineIcon({ className }: { className?: string }) {
       <polyline points="1,12 5,9 9,11 13,6 17,7 21,3 23,4" />
       <circle cx="23" cy="4" r="1.5" fill="currentColor" stroke="none" />
     </svg>
+  );
+}
+
+function CardCarousel({ items }: { items: CardBaseWithStats[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleScroll = () => {
+      const first = el.children[0] as HTMLElement | undefined;
+      if (!first) return;
+      const stride = first.offsetWidth + 16;
+      const index = Math.round(el.scrollLeft / stride);
+      setActiveIndex(Math.min(Math.max(index, 0), items.length - 1));
+    };
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [items.length]);
+
+  const scrollToIndex = (index: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const first = el.children[0] as HTMLElement | undefined;
+    if (!first) return;
+    const stride = first.offsetWidth + 16;
+    el.scrollTo({ left: index * stride, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <div ref={scrollRef} className="flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 pb-2 md:grid md:gap-5 md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0 md:pb-0 lg:grid-cols-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((item) => (
+          <div key={item.cardBase.id} className="shrink-0 w-[72%] sm:w-[48%] snap-start md:w-auto md:shrink">
+            <CardBaseCard item={item} />
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-center gap-2 mt-4 md:hidden">
+        {items.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => scrollToIndex(i)}
+            aria-label={`Ir para carta ${i + 1}`}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              i === activeIndex ? 'w-6 bg-accent' : 'w-2 bg-foreground/20'
+            }`}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -150,17 +203,13 @@ export default function Home() {
           </Button>
         </div>
         {loading ? (
-          <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 pb-2 md:grid md:gap-5 md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0 md:pb-0 lg:grid-cols-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {Array(5).fill(0).map((_, i) => (
-              <div key={i} className="aspect-[4/5] rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
+              <div key={i} className="shrink-0 w-[72%] sm:w-[48%] snap-start aspect-[4/5] rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer md:w-auto md:shrink md:snap-align-none" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            {highlightCards.map(item => (
-              <CardBaseCard key={item.cardBase.id} item={item} />
-            ))}
-          </div>
+          <CardCarousel items={highlightCards} />
         )}
       </section>
 
@@ -266,17 +315,13 @@ export default function Home() {
           </Button>
         </div>
         {loading ? (
-          <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 pb-2 md:grid md:gap-5 md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0 md:pb-0 lg:grid-cols-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {Array(5).fill(0).map((_, i) => (
-              <div key={i} className="aspect-[4/5] rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer" />
+              <div key={i} className="shrink-0 w-[72%] sm:w-[48%] snap-start aspect-[4/5] rounded-2xl bg-secondary bg-shimmer-gradient bg-[length:200%_100%] animate-shimmer md:w-auto md:shrink md:snap-align-none" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            {recentCards.map(item => (
-              <CardBaseCard key={item.cardBase.id} item={item} />
-            ))}
-          </div>
+          <CardCarousel items={recentCards} />
         )}
       </section>
 
@@ -288,7 +333,7 @@ export default function Home() {
             <p className="text-sm text-muted-foreground mt-1">Compre de vendedores com selo de confiança</p>
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
           {topSellers.map(seller => (
             <SellerCard key={seller.id} seller={seller} />
           ))}
