@@ -108,7 +108,7 @@ export default function Home() {
     });
   }, [tokenRefreshCount]);
 
-  const highlightCards = [...allStats].sort((a, b) => b.highestPrice - a.highestPrice).slice(0, 5);
+  const highlightCards = [...allStats].sort((a, b) => b.lowestPrice - a.lowestPrice).slice(0, 5);
   const statsByCardId = new Map(allStats.map(s => [s.cardBase.id, s]));
   const recentCards = recentCardIds.map(id => statsByCardId.get(id)).filter((s): s is CardBaseWithStats => Boolean(s));
   const topSellers = sellers.filter(s => s.verified).sort((a, b) => b.totalSales - a.totalSales);
