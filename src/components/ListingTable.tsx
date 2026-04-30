@@ -70,7 +70,8 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
           <Button variant="ghost" size="sm" className="h-6 px-2 text-xs hover:bg-destructive/10" onClick={() => setBuyError(null)}>✕</Button>
         </div>
       )}
-      <div className="overflow-x-auto">
+      {/* Desktop: table */}
+      <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -185,6 +186,106 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
             })}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile: card-based layout */}
+      <div className="lg:hidden space-y-3">
+        {paged.map((listing) => {
+          const seller = sellers[listing.sellerId];
+          const isAvailable = listing.status === 'active';
+          return (
+            <div
+              key={listing.id}
+              className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-colors hover:border-accent/30 ${!isAvailable ? 'opacity-60' : ''}`}
+            >
+              {/* Seller row */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-9 w-9 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                  {seller?.name.charAt(0) || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      href={`/seller/${listing.sellerId}`}
+                      className="text-sm font-semibold hover:text-accent transition-colors truncate"
+                    >
+                      {seller?.name || 'Vendedor'}
+                    </Link>
+                    {seller?.verified && <VerifiedBadge />}
+                  </div>
+                  {seller && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                      <Star className="h-3 w-3 fill-gold text-gold" />
+                      <span>{seller.rating}</span>
+                      <span className="text-muted-foreground/40">·</span>
+                      <span>{seller.totalSales} vendas</span>
+                      {listing.freeShipping && (
+                        <>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="inline-flex items-center gap-0.5 text-accent">
+                            <Truck className="h-3 w-3" /> Frete grátis
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Grade + Language */}
+              <div className="flex items-center gap-2 mb-3">
+                <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
+                <FlagIcon code={listing.language} />
+              </div>
+
+              {/* Price */}
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className={`text-2xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
+                  R$ {formatPrice(listing.price)}
+                </span>
+                {!isAvailable && (
+                  <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">
+                    Reservado
+                  </Badge>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1 border-white/10 hover:border-accent/30 hover:bg-accent/5"
+                  onClick={() => setSelectedListing(listing)}
+                >
+                  <ImageIcon className="h-3.5 w-3.5" /> Fotos
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1 border-white/10 hover:border-accent/30 hover:bg-accent/5"
+                  onClick={() => setQnaListing(listing)}
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> Mensagem
+                </Button>
+                <Button
+                  size="sm"
+                  className={`gap-1.5 flex-1 ${isAvailable ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                  disabled={!isAvailable || buyingId === listing.id}
+                  onClick={() => isAvailable && handleBuy(listing)}
+                >
+                  {buyingId === listing.id ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Comprando</>
+                  ) : isAvailable ? (
+                    <><ShoppingCart className="h-3.5 w-3.5" /> Comprar</>
+                  ) : (
+                    <><Lock className="h-3.5 w-3.5" /> Indisponível</>
+                  )}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
 
