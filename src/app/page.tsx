@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Sparkles, ChevronRight, ArrowRight, ShieldCheck, BadgeCheck, Wallet } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import { getCardBasesWithStats, getAllSellers, getRecentSales } from '@/lib/api';
+import { getCardBasesWithStats, getAllSellers, getRecentSales, getRecentListings } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatPrice } from '@/lib/utils';
 import type { CardBaseWithStats, Seller, SaleRecord } from '@/types';
@@ -88,21 +88,29 @@ export default function Home() {
   const [allStats, setAllStats] = useState<CardBaseWithStats[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [recentSales, setRecentSales] = useState<SaleWithCard[]>([]);
+  const [recentCardIds, setRecentCardIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getCardBasesWithStats(), getAllSellers(), getRecentSales()]).then(([stats, s, sales]) => {
+    Promise.all([getCardBasesWithStats(), getAllSellers(), getRecentSales(), getRecentListings()]).then(([stats, s, sales, listings]) => {
       setAllStats(stats);
       setSellers(s);
       setRecentSales(sales.slice(0, 4));
+      const uniqueIds: string[] = [];
+      for (const l of listings) {
+        if (!uniqueIds.includes(l.cardBase.id)) uniqueIds.push(l.cardBase.id);
+        if (uniqueIds.length >= 5) break;
+      }
+      setRecentCardIds(uniqueIds);
       setLoading(false);
     }).catch(() => {
       setLoading(false);
     });
   }, [tokenRefreshCount]);
 
-  const highlightCards = allStats.slice(0, 5);
-  const recentCards = [...allStats].slice(0, 5);
+  const highlightCards = [...allStats].sort((a, b) => b.highestPrice - a.highestPrice).slice(0, 5);
+  const statsByCardId = new Map(allStats.map(s => [s.cardBase.id, s]));
+  const recentCards = recentCardIds.map(id => statsByCardId.get(id)).filter((s): s is CardBaseWithStats => Boolean(s));
   const topSellers = sellers.filter(s => s.verified).sort((a, b) => b.totalSales - a.totalSales);
 
   return (
