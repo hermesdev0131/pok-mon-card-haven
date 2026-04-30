@@ -198,8 +198,8 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
               key={listing.id}
               className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-colors hover:border-accent/30 ${!isAvailable ? 'opacity-60' : ''}`}
             >
-              {/* Seller row */}
-              <div className="flex items-center gap-3 mb-3">
+              {/* Seller row + Grade/Flag */}
+              <div className="flex items-start gap-3 mb-4">
                 <div className="h-9 w-9 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                   {seller?.name.charAt(0) || '?'}
                 </div>
@@ -230,17 +230,15 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                     </div>
                   )}
                 </div>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
+                  <FlagIcon code={listing.language} />
+                </div>
               </div>
 
-              {/* Grade + Language */}
-              <div className="flex items-center gap-2 mb-3">
-                <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
-                <FlagIcon code={listing.language} />
-              </div>
-
-              {/* Price */}
-              <div className="flex items-baseline gap-2 mb-4">
-                <span className={`text-2xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
+              {/* Price (full width, prominent) */}
+              <div className="flex items-baseline justify-between gap-2 mb-4">
+                <span className={`text-3xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
                   R$ {formatPrice(listing.price)}
                 </span>
                 {!isAvailable && (
