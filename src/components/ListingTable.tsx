@@ -238,7 +238,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
 
               {/* Price (full width, prominent) */}
               <div className="flex items-baseline justify-between gap-2 mb-4">
-                <span className={`text-3xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
+                <span className={`text-2xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
                   R$ {formatPrice(listing.price)}
                 </span>
                 {!isAvailable && (
