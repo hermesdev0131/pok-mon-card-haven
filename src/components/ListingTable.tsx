@@ -230,7 +230,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
                   <FlagIcon code={listing.language} />
                 </div>
