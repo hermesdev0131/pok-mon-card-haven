@@ -198,24 +198,30 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
               key={listing.id}
               className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-colors hover:border-accent/30 ${!isAvailable ? 'opacity-60' : ''}`}
             >
-              {/* Seller row + Grade/Flag */}
+              {/* Seller row */}
               <div className="flex items-start gap-3 mb-4">
                 <div className="h-9 w-9 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                   {seller?.name.charAt(0) || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
+                  {/* Top line: name + verified + grade + flag */}
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <Link
                       href={`/seller/${listing.sellerId}`}
-                      className="text-sm font-semibold hover:text-accent transition-colors truncate"
+                      className="text-sm font-semibold hover:text-accent transition-colors truncate min-w-0"
                     >
                       {seller?.name || 'Vendedor'}
                     </Link>
-                    {seller?.verified && <VerifiedBadge />}
+                    {seller?.verified && <span className="shrink-0"><VerifiedBadge /></span>}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                      <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
+                      <FlagIcon code={listing.language} />
+                    </div>
                   </div>
+                  {/* Bottom line: rating + sales + free shipping */}
                   {seller && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                      <Star className="h-3 w-3 fill-gold text-gold" />
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 whitespace-nowrap">
+                      <Star className="h-3 w-3 fill-gold text-gold shrink-0" />
                       <span>{seller.rating}</span>
                       <span className="text-muted-foreground/40">·</span>
                       <span>{seller.totalSales} vendas</span>
@@ -230,15 +236,11 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
-                  <FlagIcon code={listing.language} />
-                </div>
               </div>
 
               {/* Price (full width, prominent) */}
               <div className="flex items-baseline justify-between gap-2 mb-4">
-                <span className={`text-2xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
+                <span className={`text-xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
                   R$ {formatPrice(listing.price)}
                 </span>
                 {!isAvailable && (

@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { GradeBadge } from './GradeBadge';
 import { FlagIcon } from './FlagIcon';
+import { Pagination } from './Pagination';
+import { usePagination } from '@/hooks/usePagination';
 import { formatPrice } from '@/lib/utils';
 import { isNacionalCompany } from '@/lib/grading-groups';
 import type { SaleRecord } from '@/types';
@@ -27,6 +29,12 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
       return true;
     });
   }, [sales, gradingFilter, languageFilter]);
+
+  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(filteredSales, 10);
+
+  useEffect(() => {
+    setPage(1);
+  }, [gradingFilter, languageFilter, setPage]);
 
   if (!sales.length) {
     return (
@@ -84,7 +92,7 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSales.map((sale, i) => (
+                {paged.map((sale, i) => (
                   <TableRow key={i}>
                     <TableCell className="text-sm">{new Date(sale.date).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell className="text-sm">{sale.sellerName}</TableCell>
@@ -136,6 +144,15 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
               </div>
             ))}
           </div>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            total={total}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
         </>
       )}
     </div>
