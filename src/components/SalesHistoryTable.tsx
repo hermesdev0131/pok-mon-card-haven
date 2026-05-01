@@ -108,7 +108,7 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
 
           {/* Mobile: card-based layout */}
           <div className="lg:hidden space-y-3">
-            {filteredSales.map((sale, i) => (
+            {paged.map((sale, i) => (
               <div
                 key={i}
                 className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
