@@ -93,8 +93,8 @@ export default {
           "66%": { transform: "translate(-20px, 15px) scale(0.95)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 10px hsl(142 70% 50% / 0.2)" },
-          "50%": { boxShadow: "0 0 20px hsl(142 70% 50% / 0.4), 0 0 40px hsl(142 70% 50% / 0.1)" },
+          "0%, 100%": { boxShadow: "0 0 10px hsl(27 77% 59% / 0.2)" },
+          "50%": { boxShadow: "0 0 20px hsl(27 77% 59% / 0.4), 0 0 40px hsl(27 77% 59% / 0.1)" },
         },
         "pulse-glow-gold": {
           "0%, 100%": { boxShadow: "0 0 10px hsl(43 96% 56% / 0.25)" },

@@ -53,21 +53,21 @@ export function Navbar() {
 
           {/* Right actions */}
           <div className="hidden items-center gap-1 md:flex shrink-0">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 text-xs" asChild>
+            <Button variant="ghost" size="sm" className="text-foreground hover:text-accent gap-1.5 text-xs" asChild>
               <Link href="/sell"><ShoppingBag className="h-3.5 w-3.5" /> Anunciar</Link>
             </Button>
             {/* Authenticated actions — hidden via CSS, not unmounted */}
-            <Button variant="ghost" size="sm" className={`text-muted-foreground hover:text-foreground gap-1.5 text-xs ${isAdmin ? '' : 'hidden'}`} asChild>
+            <Button variant="ghost" size="sm" className={`text-foreground hover:text-accent gap-1.5 text-xs ${isAdmin ? '' : 'hidden'}`} asChild>
               <Link href="/admin"><ShieldCheck className="h-3.5 w-3.5" /> Admin</Link>
             </Button>
-            <Button variant="ghost" size="sm" className={`text-muted-foreground hover:text-foreground gap-1.5 text-xs ${isAuthenticated ? '' : 'hidden'}`} asChild>
+            <Button variant="ghost" size="sm" className={`text-foreground hover:text-accent gap-1.5 text-xs ${isAuthenticated ? '' : 'hidden'}`} asChild>
               <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.nickname ?? profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
             </Button>
-            <Button variant="ghost" size="icon" className={`text-muted-foreground hover:text-foreground h-8 w-8 ${isAuthenticated ? '' : 'hidden'}`} onClick={handleSignOut} title="Sair">
+            <Button variant="ghost" size="icon" className={`text-foreground hover:text-accent h-8 w-8 ${isAuthenticated ? '' : 'hidden'}`} onClick={handleSignOut} title="Sair">
               <LogOut className="h-3.5 w-3.5" />
             </Button>
             {/* Anonymous actions — hidden via CSS */}
-            <Button variant="ghost" size="icon" className={`text-muted-foreground hover:text-foreground h-8 w-8 ${isAuthenticated ? 'hidden' : ''}`} asChild>
+            <Button variant="ghost" size="icon" className={`text-foreground hover:text-accent h-8 w-8 ${isAuthenticated ? 'hidden' : ''}`} asChild>
               <Link href="/me"><User className="h-4 w-4" /></Link>
             </Button>
             <Button size="sm" className={`ml-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 h-8 text-xs ${isAuthenticated ? 'hidden' : ''}`} asChild>
@@ -97,7 +97,7 @@ export function Navbar() {
                   className={`px-3.5 h-full flex items-center text-[13px] font-medium border-b-2 transition-all duration-200 ${
                     isActive
                       ? 'text-accent border-accent'
-                      : 'text-muted-foreground hover:text-foreground border-transparent hover:border-accent/40'
+                      : 'text-foreground hover:text-accent border-transparent hover:border-accent/40'
                   }`}
                 >
                   {label}
@@ -142,7 +142,7 @@ export function Navbar() {
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   isActive
                     ? 'bg-accent/10 border border-accent/30 text-accent'
-                    : 'bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-accent/40'
+                    : 'bg-secondary border border-border text-foreground hover:text-accent hover:border-accent/40'
                 }`}
               >
                 {label}

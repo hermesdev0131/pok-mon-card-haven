@@ -38,7 +38,7 @@ export function CardBaseCard({ item, gradingGroup }: CardBaseCardProps) {
           )}
 
           {/* Listing count — top-right, solid accent */}
-          <div className="absolute top-2 right-2 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-[10px] font-semibold text-accent z-10">
+          <div className="absolute top-2 right-2 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-semibold text-accent-foreground z-10">
             {listingCount} {listingCount === 1 ? 'anúncio' : 'anúncios'}
           </div>
 
