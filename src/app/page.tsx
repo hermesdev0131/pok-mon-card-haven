@@ -117,7 +117,7 @@ export default function Home() {
     <>
       {/* Hero — light boutique feel, immersive on mobile, side-by-side on desktop */}
       <section className="relative overflow-hidden">
-        <div className="container relative mx-auto px-4 min-h-[calc(100vh-7rem)] lg:min-h-0 flex items-center pt-8 pb-8 lg:pt-12 lg:pb-8">
+        <div className="container relative mx-auto px-4 pt-6 pb-8 lg:pt-12 lg:pb-8">
           <div className="grid w-full grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-y-6 lg:gap-y-8 lg:gap-x-12 items-start">
             {/* Pill + Headline (mobile order 1, desktop top-left) */}
             <div className="space-y-6 lg:space-y-8 order-1 lg:col-start-1 lg:row-start-1">
@@ -134,7 +134,7 @@ export default function Home() {
 
             {/* Slab collage (mobile order 2, desktop right spanning both rows) */}
             <div className="relative order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:pt-8">
-              <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-[3/2] w-full max-w-md lg:max-w-none mx-auto">
+              <div className="relative aspect-[1/1] sm:aspect-[16/9] lg:aspect-[3/2] w-full max-w-md lg:max-w-none mx-auto">
                 {/* Left card */}
                 <div className="absolute left-[10%] top-[15%] w-[36%] -rotate-[10deg] drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]">
                   <Image
