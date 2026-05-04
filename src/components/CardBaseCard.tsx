@@ -14,9 +14,9 @@ export function CardBaseCard({ item, gradingGroup }: CardBaseCardProps) {
 
   return (
     <Link href={href} className="group block">
-      <div className="overflow-hidden rounded-2xl bg-white/[0.03] border border-white/[0.06] transition-all duration-300 hover:border-accent/30 hover:shadow-[0_4px_40px_hsl(var(--accent)/0.1)] hover:-translate-y-1">
+      <div className="overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:border-accent/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1">
         {/* Card image */}
-        <div className="relative aspect-[3/4] bg-gradient-to-br from-white/[0.06] to-white/[0.02] flex items-center justify-center overflow-hidden">
+        <div className="relative aspect-[3/4] bg-secondary flex items-center justify-center overflow-hidden">
           {cardBase.imageUrl ? (
             <Image
               src={cardBase.imageUrl}
@@ -37,8 +37,8 @@ export function CardBaseCard({ item, gradingGroup }: CardBaseCardProps) {
             </div>
           )}
 
-          {/* Listing count — top-right, solid dark */}
-          <div className="absolute top-2 right-2 rounded-full bg-black/70 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-semibold text-white z-10">
+          {/* Listing count — top-right, solid accent */}
+          <div className="absolute top-2 right-2 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-[10px] font-semibold text-accent z-10">
             {listingCount} {listingCount === 1 ? 'anúncio' : 'anúncios'}
           </div>
 

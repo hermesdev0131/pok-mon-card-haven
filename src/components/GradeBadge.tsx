@@ -18,7 +18,7 @@ export function GradeBadge({ grade, company, pristine, className }: GradeBadgePr
           ? 'bg-gray-950 text-gold border border-gold/30 hover:border-gold/50 animate-pulse-glow-gold [text-shadow:0_0_8px_hsl(43_96%_56%/0.4)]'
           : isPerfect
             ? 'bg-accent text-accent-foreground hover:bg-accent/90 animate-pulse-glow'
-            : 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border border-white/[0.06]',
+            : 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border border-border',
         className
       )}
     >

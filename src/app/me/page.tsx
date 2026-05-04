@@ -75,7 +75,7 @@ export default function Profile() {
     <RequireAuth>
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
-          <div className="h-16 w-16 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center">
+          <div className="h-16 w-16 rounded-full bg-secondary border border-border flex items-center justify-center">
             <User className="h-8 w-8 text-muted-foreground" />
           </div>
           <div>
@@ -307,7 +307,7 @@ function OrderList({ orders, onCancel }: { orders: Order[]; onCancel?: (id: stri
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-[11px] text-muted-foreground/50 hover:text-destructive"
+                    className="h-7 px-2 text-[11px] text-muted-foreground hover:text-destructive"
                     onClick={() => setConfirmId(order.id)}
                   >
                     Cancelar
@@ -436,7 +436,7 @@ function MyListingsList({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 px-3 text-[11px] font-medium border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14]"
+                  className="h-7 px-3 text-[11px] font-medium border-border bg-card hover:bg-secondary hover:border-white/[0.14]"
                   onClick={() => handleEditOpen(listing)}
                   disabled={listing.status !== 'active'}
                 >
@@ -459,7 +459,7 @@ function MyListingsList({
                     </button>
                     <span className="text-muted-foreground/30">·</span>
                     <button
-                      className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                      className="text-muted-foreground hover:text-muted-foreground transition-colors"
                       onClick={() => setConfirmingCancelId(null)}
                     >
                       Não
@@ -467,7 +467,7 @@ function MyListingsList({
                   </span>
                 ) : (
                   <button
-                    className="h-7 px-2 text-[11px] text-muted-foreground/50 hover:text-destructive transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    className="h-7 px-2 text-[11px] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-30 disabled:pointer-events-none"
                     disabled={cancellingId === listing.id || listing.status !== 'active'}
                     onClick={() => setConfirmingCancelId(listing.id)}
                   >
@@ -546,7 +546,7 @@ function SellerQuestionsList({
   if (!questions.length) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <MessageCircle className="h-8 w-8 text-muted-foreground/40 mb-2" />
+        <MessageCircle className="h-8 w-8 text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">Nenhuma pergunta recebida ainda.</p>
       </div>
     );
@@ -569,7 +569,7 @@ function SellerQuestionsList({
                         <Link href={`/card/${q.cardBaseId}`} className="text-accent hover:underline">{q.cardName}</Link>
                       </p>
                       <p className="text-sm mt-1">{q.question}</p>
-                      <p className="text-[11px] text-muted-foreground/60 mt-1">{new Date(q.questionDate).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">{new Date(q.questionDate).toLocaleDateString('pt-BR')}</p>
                     </div>
                   </div>
                   {answeringId === q.id ? (
@@ -631,7 +631,7 @@ function SellerQuestionsList({
                   <div className="ml-4 pl-3 border-l-2 border-accent/40">
                     <p className="text-sm text-muted-foreground">{q.answer}</p>
                     {q.answerDate && (
-                      <p className="text-[11px] text-muted-foreground/50 mt-1">{new Date(q.answerDate).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">{new Date(q.answerDate).toLocaleDateString('pt-BR')}</p>
                     )}
                   </div>
                 </CardContent>
@@ -673,7 +673,7 @@ function SellerReviewsList({
   if (!reviews.length) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <Star className="h-8 w-8 text-muted-foreground/40 mb-2" />
+        <Star className="h-8 w-8 text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">Nenhuma avaliação recebida ainda.</p>
       </div>
     );
@@ -761,7 +761,7 @@ function SellerReviewsList({
                   <div className="ml-4 pl-3 border-l-2 border-accent/40">
                     <p className="text-sm text-muted-foreground">{r.sellerReply}</p>
                     {r.repliedAt && (
-                      <p className="text-[11px] text-muted-foreground/50 mt-1">{new Date(r.repliedAt).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">{new Date(r.repliedAt).toLocaleDateString('pt-BR')}</p>
                     )}
                   </div>
                 </CardContent>

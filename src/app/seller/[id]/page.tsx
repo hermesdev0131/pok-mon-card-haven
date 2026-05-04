@@ -70,7 +70,7 @@ function SellerProfilePage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="h-16 w-16 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-2xl font-bold text-muted-foreground">
+        <div className="h-16 w-16 rounded-full bg-secondary border border-border flex items-center justify-center text-2xl font-bold text-muted-foreground">
           {seller.name.charAt(0)}
         </div>
         <div>
@@ -96,7 +96,7 @@ function SellerProfilePage() {
             <Link
               key={listing.id}
               href={`/card/${cardBase.id}`}
-              className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
+              className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-accent/40 hover:bg-secondary transition-all duration-200"
             >
               <div className="h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] flex items-center justify-center shrink-0">
                 <span className="text-xl opacity-40">🃏</span>

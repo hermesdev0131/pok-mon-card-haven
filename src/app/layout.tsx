@@ -32,12 +32,6 @@ export default function RootLayout({
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} font-sans`} suppressHydrationWarning>
         <Providers>
-          {/* Global background gradient blobs */}
-          <div className="fixed inset-0 -z-10 overflow-hidden">
-            <div className="blob blob-accent w-[600px] h-[600px] -top-[200px] -left-[200px] animate-float" />
-            <div className="blob blob-purple w-[500px] h-[500px] top-1/3 -right-[150px] animate-float-slow" />
-            <div className="blob blob-cyan w-[400px] h-[400px] bottom-0 left-1/4 animate-float" />
-          </div>
           <div className="flex min-h-screen flex-col relative">
             <Navbar />
             <main className="flex-1">{children}</main>

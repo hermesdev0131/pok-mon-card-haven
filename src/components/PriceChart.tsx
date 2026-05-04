@@ -179,7 +179,7 @@ export function PriceChart({ data }: PriceChartProps) {
         {/* Language pills */}
         {availableLanguages.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
-            <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider self-center mr-1">Idioma:</span>
+            <span className="text-[11px] text-muted-foreground uppercase tracking-wider self-center mr-1">Idioma:</span>
             {availableLanguages.map(lang => (
               <button
                 key={lang}
@@ -187,7 +187,7 @@ export function PriceChart({ data }: PriceChartProps) {
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all duration-150 ${
                   selectedLanguage === lang
                     ? 'bg-accent/10 border-accent/30 text-accent'
-                    : 'bg-white/[0.03] border-white/[0.06] text-muted-foreground/50 hover:text-muted-foreground/70'
+                    : 'bg-card border-border text-muted-foreground hover:text-muted-foreground/70'
                 }`}
               >
                 <FlagIcon code={lang} className="w-4 h-3" />
@@ -199,7 +199,7 @@ export function PriceChart({ data }: PriceChartProps) {
 
         {/* Company pills */}
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider self-center mr-1">Grading:</span>
+          <span className="text-[11px] text-muted-foreground uppercase tracking-wider self-center mr-1">Grading:</span>
           {availableCompanies.map(company => (
             <button
               key={company}
@@ -207,7 +207,7 @@ export function PriceChart({ data }: PriceChartProps) {
               className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all duration-150 ${
                 enabledCompanies.has(company)
                   ? 'bg-accent/10 border-accent/30 text-accent'
-                  : 'bg-white/[0.03] border-white/[0.06] text-muted-foreground/50'
+                  : 'bg-card border-border text-muted-foreground'
               }`}
             >
               {company}
@@ -217,14 +217,14 @@ export function PriceChart({ data }: PriceChartProps) {
 
         {/* Grade pills — numeric grades + BL (Black Label / Pristine) */}
         <div className="flex flex-wrap gap-1.5">
-          <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wider self-center mr-1">Nota:</span>
+          <span className="text-[11px] text-muted-foreground uppercase tracking-wider self-center mr-1">Nota:</span>
           {availableCompanies.includes('NM') && (
             <button
               onClick={() => toggleGrade(0)}
               className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all duration-150 ${
                 enabledGrades.has(0)
                   ? 'bg-accent/10 border-accent/30 text-accent'
-                  : 'bg-white/[0.03] border-white/[0.06] text-muted-foreground/50'
+                  : 'bg-card border-border text-muted-foreground'
               }`}
             >
               NM
@@ -237,7 +237,7 @@ export function PriceChart({ data }: PriceChartProps) {
               className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all duration-150 ${
                 enabledGrades.has(grade)
                   ? 'bg-accent/10 border-accent/30 text-accent'
-                  : 'bg-white/[0.03] border-white/[0.06] text-muted-foreground/50'
+                  : 'bg-card border-border text-muted-foreground'
               }`}
             >
               {grade === 'BL' ? 'Black Label' : grade}

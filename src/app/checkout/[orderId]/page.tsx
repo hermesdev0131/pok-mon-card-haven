@@ -308,9 +308,9 @@ export default function Checkout() {
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
                 {order.listingImageUrl ? (
-                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-white/[0.06]" />
+                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-border" />
                 ) : (
-                  <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                  <div className="h-20 w-16 rounded bg-secondary border border-border flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
                 )}
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
@@ -622,9 +622,9 @@ export default function Checkout() {
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
                 {order.listingImageUrl ? (
-                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-white/[0.06]" />
+                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-border" />
                 ) : (
-                  <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                  <div className="h-20 w-16 rounded bg-secondary border border-border flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
                 )}
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
@@ -648,10 +648,10 @@ export default function Checkout() {
                       value={buyerCep}
                       onChange={(e) => setBuyerCep(e.target.value.replace(/\D/g, '').slice(0, 8))}
                       readOnly={cepLocked}
-                      className={`flex-1 h-9 rounded-md border px-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none ${
+                      className={`flex-1 h-9 rounded-md border px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none ${
                         cepLocked
-                          ? 'bg-muted border-white/[0.06] cursor-not-allowed'
-                          : 'bg-white/[0.06] border-white/[0.08] focus:border-accent/30'
+                          ? 'bg-muted border-border cursor-not-allowed'
+                          : 'bg-secondary border-border focus:border-accent/30'
                       }`}
                       maxLength={9}
                     />
@@ -693,7 +693,7 @@ export default function Checkout() {
                           className={`w-full flex items-center justify-between p-3 rounded-lg border text-sm transition-all ${
                             selectedShipping === i
                               ? 'border-accent/40 bg-accent/5'
-                              : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.14]'
+                              : 'border-border bg-card hover:border-white/[0.14]'
                           }`}
                         >
                           <div className="text-left">
@@ -781,7 +781,7 @@ export default function Checkout() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs text-muted-foreground/60 hover:text-destructive"
+                          className="text-xs text-muted-foreground hover:text-destructive"
                           onClick={() => setConfirmCancel(true)}
                         >
                           Cancelar pedido

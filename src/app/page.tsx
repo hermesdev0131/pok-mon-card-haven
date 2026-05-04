@@ -115,13 +115,8 @@ export default function Home() {
 
   return (
     <>
-      {/* Hero — premium boutique feel, immersive on mobile, side-by-side on desktop */}
+      {/* Hero — light boutique feel, immersive on mobile, side-by-side on desktop */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="blob blob-accent w-[900px] h-[900px] -top-[400px] left-1/2 -translate-x-1/2 opacity-15 animate-float" />
-          <div className="blob blob-purple w-[500px] h-[500px] bottom-0 -left-[200px] opacity-60 animate-float-slow" />
-        </div>
-
         <div className="container relative mx-auto px-4 min-h-[calc(100vh-7rem)] lg:min-h-0 flex items-center pt-8 pb-8 lg:pt-12 lg:pb-8">
           <div className="grid w-full grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-y-6 lg:gap-y-8 lg:gap-x-12 items-start">
             {/* Pill + Headline (mobile order 1, desktop top-left) */}
@@ -132,19 +127,16 @@ export default function Home() {
               </div>
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl leading-[1.05]">
                 O maior marketplace de{' '}
-                <span className="text-accent text-glow-accent">cartas graduadas</span>{' '}
+                <span className="text-accent">cartas graduadas</span>{' '}
                 do Brasil.
               </h1>
             </div>
 
             {/* Slab collage (mobile order 2, desktop right spanning both rows) */}
             <div className="relative order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:pt-8">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-[280px] w-[280px] sm:h-[360px] sm:w-[360px] rounded-full bg-accent/10 blur-[100px]" />
-              </div>
               <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-[3/2] w-full max-w-md lg:max-w-none mx-auto">
                 {/* Left card */}
-                <div className="absolute left-[10%] top-[15%] w-[36%] -rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+                <div className="absolute left-[10%] top-[15%] w-[36%] -rotate-[10deg] drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]">
                   <Image
                     src="/hero-1.png"
                     alt="Carta graduada"
@@ -156,7 +148,7 @@ export default function Home() {
                   />
                 </div>
                 {/* Center card (prominent) */}
-                <div className="absolute left-1/2 top-0 w-[42%] -translate-x-1/2 rotate-[3deg] z-10 drop-shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
+                <div className="absolute left-1/2 top-0 w-[42%] -translate-x-1/2 rotate-[3deg] z-10 drop-shadow-[0_16px_32px_rgba(0,0,0,0.20)]">
                   <Image
                     src="/hero-2.png"
                     alt="Carta graduada"
@@ -168,7 +160,7 @@ export default function Home() {
                   />
                 </div>
                 {/* Right card */}
-                <div className="absolute right-[10%] top-[15%] w-[36%] rotate-[10deg] drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+                <div className="absolute right-[10%] top-[15%] w-[36%] rotate-[10deg] drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]">
                   <Image
                     src="/hero-3.png"
                     alt="Carta graduada"
@@ -191,7 +183,7 @@ export default function Home() {
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
                   <Link href="/marketplace">Ver cartas disponíveis <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
-                <Button variant="outline" size="lg" className="border-white/10 hover:border-accent/30 hover:bg-accent/5" asChild>
+                <Button variant="outline" size="lg" className="border-border hover:border-accent/40 hover:bg-accent/5" asChild>
                   <Link href="/como-funciona">Como funciona</Link>
                 </Button>
               </div>
@@ -290,9 +282,9 @@ export default function Home() {
               <Link
                 key={`${sale.cardBaseId}-${sale.date}-${i}`}
                 href={`/card/${sale.cardBaseId}`}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
+                className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-accent/40 hover:shadow-md transition-all duration-200"
               >
-                <div className="relative h-16 w-12 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] overflow-hidden shrink-0">
+                <div className="relative h-16 w-12 rounded-lg bg-secondary overflow-hidden shrink-0">
                   {sale.imageUrl ? (
                     <Image src={sale.imageUrl} alt={sale.cardName} fill className="object-contain p-0.5" sizes="48px" />
                   ) : (
@@ -349,7 +341,7 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section className="border-t border-white/[0.04]">
+      <section className="border-t border-border bg-secondary">
         <div className="container mx-auto px-4 py-16">
           <h2 className="text-2xl font-bold text-center mb-8">Perguntas frequentes</h2>
           <div className="mx-auto max-w-2xl">

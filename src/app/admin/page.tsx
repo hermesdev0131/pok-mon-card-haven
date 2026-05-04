@@ -174,12 +174,12 @@ export default function Admin() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input placeholder="Buscar por carta, comprador, vendedor..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} className="pl-9" />
               </div>
-              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden shrink-0">
+              <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
                 {([['all', 'Todos'], ['aguardando_pagamento', 'Aguardando'], ['pago', 'Pago'], ['enviado', 'Enviado'], ['entregue', 'Entregue'], ['concluido', 'Concluído'], ['disputa', 'Disputa'], ['cancelado', 'Cancelado']] as const).map(([val, label]) => (
                   <button
                     key={val}
                     onClick={() => setOrderStatusFilter(val)}
-                    className={`px-3 py-2 text-xs font-medium transition-colors ${orderStatusFilter === val ? 'bg-accent text-accent-foreground' : 'bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]'}`}
+                    className={`px-3 py-2 text-xs font-medium transition-colors ${orderStatusFilter === val ? 'bg-accent text-accent-foreground' : 'bg-card text-muted-foreground hover:bg-secondary'}`}
                   >
                     {label}
                   </button>
@@ -255,7 +255,7 @@ export default function Admin() {
                               </button>
                               <span className="text-muted-foreground/30">·</span>
                               <button
-                                className="text-muted-foreground/50 hover:text-muted-foreground"
+                                className="text-muted-foreground hover:text-muted-foreground"
                                 onClick={() => setConfirmReleaseId(null)}
                               >
                                 Não
@@ -289,12 +289,12 @@ export default function Admin() {
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input placeholder="Buscar vendedor..." value={sellerSearch} onChange={e => setSellerSearch(e.target.value)} className="pl-9" />
               </div>
-              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden shrink-0">
+              <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
                 {([['all', 'Todos'], ['verified', 'Verificados'], ['unverified', 'Não verificados']] as const).map(([val, label]) => (
                   <button
                     key={val}
                     onClick={() => setVerifiedFilter(val)}
-                    className={`px-3 py-2 text-xs font-medium transition-colors ${verifiedFilter === val ? 'bg-accent text-accent-foreground' : 'bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]'}`}
+                    className={`px-3 py-2 text-xs font-medium transition-colors ${verifiedFilter === val ? 'bg-accent text-accent-foreground' : 'bg-card text-muted-foreground hover:bg-secondary'}`}
                   >
                     {label}
                   </button>
@@ -336,12 +336,12 @@ export default function Admin() {
           </TabsContent>
           <TabsContent value="disputes">
             <div className="flex gap-2 mt-4 mb-3">
-              <div className="flex rounded-lg border border-white/[0.08] overflow-hidden shrink-0">
+              <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
                 {([['all', 'Todas'], ['open', 'Abertas'], ['resolved_buyer', 'Comprador'], ['resolved_seller', 'Vendedor'], ['escalated', 'Escaladas'], ['closed', 'Fechadas']] as const).map(([val, label]) => (
                   <button
                     key={val}
                     onClick={() => setDisputeStatusFilter(val)}
-                    className={`px-3 py-2 text-xs font-medium transition-colors ${disputeStatusFilter === val ? 'bg-accent text-accent-foreground' : 'bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]'}`}
+                    className={`px-3 py-2 text-xs font-medium transition-colors ${disputeStatusFilter === val ? 'bg-accent text-accent-foreground' : 'bg-card text-muted-foreground hover:bg-secondary'}`}
                   >
                     {label}
                   </button>

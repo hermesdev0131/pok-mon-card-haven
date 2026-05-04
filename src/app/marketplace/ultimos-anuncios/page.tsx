@@ -59,7 +59,7 @@ export default function UltimosAnunciosPage() {
               <Link
                 key={listing.id}
                 href={`/card/${cardBase.id}`}
-                className="flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-2 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-accent/30 hover:bg-white/[0.05] transition-all duration-200"
+                className="flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-2 p-4 rounded-xl bg-card border border-border hover:border-accent/40 hover:bg-secondary transition-all duration-200"
               >
                 <div className="relative h-14 w-10 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.02] overflow-hidden shrink-0">
                   {cardBase.imageUrl ? (
@@ -82,7 +82,7 @@ export default function UltimosAnunciosPage() {
                   {seller && (
                     <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                       <Star className="h-3 w-3 fill-gold text-gold" /> {seller.rating}
-                      <span className="text-muted-foreground/40">·</span>
+                      <span className="text-muted-foreground">·</span>
                       {seller.totalSales} vendas
                     </span>
                   )}

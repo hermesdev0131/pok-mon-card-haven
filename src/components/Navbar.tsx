@@ -27,23 +27,23 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl">
       {/* Row 1: Main header */}
-      <div className="border-b border-white/[0.06]">
+      <div className="border-b border-border">
         <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight shrink-0">
-            <span className="text-accent text-glow-accent">Graduada</span>
+            <span className="text-accent">Graduada</span>
           </Link>
 
           {/* Search */}
           <div className="hidden md:block flex-1 max-w-md mx-6">
             <div className="relative group">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-accent" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-accent" />
               <input
                 type="text"
                 placeholder="Buscar cartas, sets, vendedores..."
-                className="w-full h-9 rounded-full bg-white/[0.06] border border-white/[0.08] pl-11 pr-20 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none transition-all duration-200 focus:bg-white/[0.08] focus:border-accent/30 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.08)]"
+                className="w-full h-9 rounded-full bg-secondary border border-border pl-11 pr-20 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
               />
               <button className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-3 rounded-full bg-accent text-accent-foreground text-[11px] font-semibold transition-colors hover:bg-accent/90">
                 Buscar
@@ -83,7 +83,7 @@ export function Navbar() {
       </div>
 
       {/* Row 2: Category tabs */}
-      <div className="border-b border-white/[0.06] hidden md:block">
+      <div className="border-b border-border hidden md:block">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-1 h-10 -mb-px">
             {categories.map(({ label, href }) => {
@@ -97,7 +97,7 @@ export function Navbar() {
                   className={`px-3.5 h-full flex items-center text-[13px] font-medium border-b-2 transition-all duration-200 ${
                     isActive
                       ? 'text-accent border-accent'
-                      : 'text-muted-foreground hover:text-foreground border-transparent hover:border-accent/50'
+                      : 'text-muted-foreground hover:text-foreground border-transparent hover:border-accent/40'
                   }`}
                 >
                   {label}
@@ -117,14 +117,14 @@ export function Navbar() {
       </div>
 
       {/* Mobile menu — always in DOM, toggled via CSS */}
-      <div className={`border-b border-white/[0.06] bg-background/95 backdrop-blur-xl p-4 md:hidden ${mobileOpen ? '' : 'hidden'}`}>
+      <div className={`border-b border-border bg-background p-4 md:hidden ${mobileOpen ? '' : 'hidden'}`}>
         {/* Mobile search */}
         <div className="relative mb-4">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar cartas..."
-            className="w-full h-10 rounded-full bg-white/[0.06] border border-white/[0.08] pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-accent/30"
+            className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-accent/40"
           />
         </div>
 
@@ -142,7 +142,7 @@ export function Navbar() {
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   isActive
                     ? 'bg-accent/10 border border-accent/30 text-accent'
-                    : 'bg-white/[0.06] border border-white/[0.08] text-muted-foreground hover:text-foreground hover:border-accent/30'
+                    : 'bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-accent/40'
                 }`}
               >
                 {label}
@@ -152,7 +152,7 @@ export function Navbar() {
         </div>
 
         {/* Mobile nav links */}
-        <nav className="flex flex-col gap-3 border-t border-white/[0.06] pt-4">
+        <nav className="flex flex-col gap-3 border-t border-border pt-4">
           <Link href="/como-funciona" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
             <Sparkles className="h-3.5 w-3.5 text-accent" /> Como funciona
           </Link>

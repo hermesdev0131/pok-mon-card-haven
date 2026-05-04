@@ -178,12 +178,12 @@ export default function Sell() {
                   />
                 )}
                 {!selectedCardBase && cardSearchResults.length > 0 && (
-                  <div className="absolute z-10 w-full top-full mt-1 rounded-lg border border-white/[0.08] bg-card shadow-lg overflow-hidden">
+                  <div className="absolute z-10 w-full top-full mt-1 rounded-lg border border-border bg-card shadow-lg overflow-hidden">
                     {cardSearchResults.map(cb => (
                       <button
                         key={cb.id}
                         type="button"
-                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-white/[0.04] flex items-center justify-between gap-2 border-b border-white/[0.04] last:border-0"
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-card flex items-center justify-between gap-2 border-b border-border last:border-0"
                         onClick={() => {
                           setSelectedCardBase(cb);
                           setCardSearchQuery('');
@@ -197,7 +197,7 @@ export default function Sell() {
                   </div>
                 )}
                 {!selectedCardBase && cardSearchQuery.length >= 2 && cardSearchResults.length === 0 && (
-                  <div className="absolute z-10 w-full top-full mt-1 rounded-lg border border-white/[0.08] bg-card shadow-lg px-3 py-2.5 text-sm text-muted-foreground">
+                  <div className="absolute z-10 w-full top-full mt-1 rounded-lg border border-border bg-card shadow-lg px-3 py-2.5 text-sm text-muted-foreground">
                     Nenhuma carta encontrada
                   </div>
                 )}
@@ -287,7 +287,7 @@ export default function Sell() {
               <Label>Preço (R$)</Label>
               <Input type="number" step="0.01" placeholder="0,00" value={price} onChange={(e) => setPrice(e.target.value)} />
               {price && Number(price) > 0 && (
-                <div className="rounded-md bg-white/[0.03] border border-white/[0.06] px-3 py-2 text-sm space-y-1">
+                <div className="rounded-md bg-card border border-border px-3 py-2 text-sm space-y-1">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Comissão da plataforma (5%)</span>
                     <span>- R$ {(Number(price) * 0.05).toFixed(2)}</span>
@@ -352,19 +352,19 @@ export default function Sell() {
                   ) : (
                     <button
                       onClick={() => fileInputRefs.current[i]?.click()}
-                      className="w-full aspect-square rounded-lg border-2 border-dashed border-white/[0.08] bg-white/[0.02] flex flex-col items-center justify-center cursor-pointer hover:border-accent/40 hover:bg-accent/[0.02] transition-all"
+                      className="w-full aspect-square rounded-lg border-2 border-dashed border-border bg-white/[0.02] flex flex-col items-center justify-center cursor-pointer hover:border-accent/40 hover:bg-accent/[0.02] transition-all"
                     >
-                      <ImagePlus className="h-5 w-5 text-muted-foreground/40 mb-1" />
+                      <ImagePlus className="h-5 w-5 text-muted-foreground mb-1" />
                       <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
                       {i >= 2 && (
-                        <span className="text-[9px] text-muted-foreground/40">Opcional</span>
+                        <span className="text-[9px] text-muted-foreground">Opcional</span>
                       )}
                     </button>
                   )}
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground/60 text-center">
+            <p className="text-[11px] text-muted-foreground text-center">
               Frente e verso são obrigatórios. Label e case ajudam compradores a decidir.
             </p>
             {submitError && (
