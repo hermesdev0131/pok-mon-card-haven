@@ -42,7 +42,7 @@ export function Pagination({ page, totalPages, onPageChange, total, pageSize, on
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Por página</span>
             <Select value={String(pageSize)} onValueChange={v => onPageSizeChange(Number(v))}>
-              <SelectTrigger className="h-7 w-16 text-xs px-2 border-white/[0.08] bg-white/[0.04]">
+              <SelectTrigger className="h-7 w-16 text-xs px-2 border-border bg-card">
                 <span>{pageSize}</span>
               </SelectTrigger>
               <SelectContent>

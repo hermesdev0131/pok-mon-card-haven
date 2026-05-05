@@ -308,9 +308,9 @@ export default function Checkout() {
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
                 {order.listingImageUrl ? (
-                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-white/[0.06]" />
+                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-border" />
                 ) : (
-                  <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                  <div className="h-20 w-16 rounded bg-secondary border border-border flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
                 )}
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
@@ -322,7 +322,7 @@ export default function Checkout() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-accent">R$ {formatPrice(order.price)}</p>
+                  <p className="text-xl font-bold text-foreground">R$ {formatPrice(order.price)}</p>
                   <StatusPill status={order.status} />
                 </div>
               </CardContent>
@@ -459,7 +459,7 @@ export default function Checkout() {
                   {isSeller && (
                     <p className="text-sm text-muted-foreground">
                       <span>O valor de </span>
-                      <span className="font-semibold text-accent">R$ {formatPrice(order.price)}</span>
+                      <span className="font-semibold text-foreground">R$ {formatPrice(order.price)}</span>
                       <span> foi creditado na sua conta.</span>
                     </p>
                   )}
@@ -622,9 +622,9 @@ export default function Checkout() {
             <Card className="glass mb-6">
               <CardContent className="flex items-center gap-4 p-4">
                 {order.listingImageUrl ? (
-                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-white/[0.06]" />
+                  <img src={order.listingImageUrl} alt={order.cardName} className="h-20 w-16 rounded object-cover border border-border" />
                 ) : (
-                  <div className="h-20 w-16 rounded bg-secondary border border-white/[0.06] flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
+                  <div className="h-20 w-16 rounded bg-secondary border border-border flex items-center justify-center text-3xl opacity-30"><span>{'🃏'}</span></div>
                 )}
                 <div className="flex-1">
                   <p className="font-semibold">{order.cardName}</p>
@@ -632,7 +632,7 @@ export default function Checkout() {
                     {isBuyer ? `Vendedor: ${order.sellerName}` : `Comprador: ${order.buyerName}`}
                   </p>
                 </div>
-                <p className="text-xl font-bold text-accent">R$ {formatPrice(order.price)}</p>
+                <p className="text-xl font-bold text-foreground">R$ {formatPrice(order.price)}</p>
               </CardContent>
             </Card>
 
@@ -648,10 +648,10 @@ export default function Checkout() {
                       value={buyerCep}
                       onChange={(e) => setBuyerCep(e.target.value.replace(/\D/g, '').slice(0, 8))}
                       readOnly={cepLocked}
-                      className={`flex-1 h-9 rounded-md border px-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none ${
+                      className={`flex-1 h-9 rounded-md border px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none ${
                         cepLocked
-                          ? 'bg-muted border-white/[0.06] cursor-not-allowed'
-                          : 'bg-white/[0.06] border-white/[0.08] focus:border-accent/30'
+                          ? 'bg-muted border-border cursor-not-allowed'
+                          : 'bg-secondary border-border focus:border-accent/30'
                       }`}
                       maxLength={9}
                     />
@@ -693,7 +693,7 @@ export default function Checkout() {
                           className={`w-full flex items-center justify-between p-3 rounded-lg border text-sm transition-all ${
                             selectedShipping === i
                               ? 'border-accent/40 bg-accent/5'
-                              : 'border-white/[0.08] bg-white/[0.03] hover:border-white/[0.14]'
+                              : 'border-border bg-card hover:border-white/[0.14]'
                           }`}
                         >
                           <div className="text-left">
@@ -702,7 +702,7 @@ export default function Checkout() {
                               {opt.company}{opt.deliveryDays ? ` · ${opt.deliveryDays} dias úteis` : ''}
                             </p>
                           </div>
-                          <p className="font-semibold text-accent">R$ {formatPrice(opt.price)}</p>
+                          <p className="font-semibold text-foreground">R$ {formatPrice(opt.price)}</p>
                         </button>
                       ))}
                     </div>
@@ -725,7 +725,7 @@ export default function Checkout() {
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-accent">R$ {formatPrice(order.price + (order.shippingCost ?? 0))}</span>
+                  <span className="text-foreground">R$ {formatPrice(order.price + (order.shippingCost ?? 0))}</span>
                 </div>
               </CardContent>
             </Card>
@@ -781,7 +781,7 @@ export default function Checkout() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-xs text-muted-foreground/60 hover:text-destructive"
+                          className="text-xs text-muted-foreground hover:text-destructive"
                           onClick={() => setConfirmCancel(true)}
                         >
                           Cancelar pedido

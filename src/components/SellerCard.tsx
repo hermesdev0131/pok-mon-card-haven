@@ -11,7 +11,7 @@ export function SellerCard({ seller }: { seller: Seller }) {
     <Card className="glass">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-lg font-bold text-muted-foreground">
+          <div className="h-10 w-10 rounded-full bg-secondary border border-border flex items-center justify-center text-lg font-bold text-muted-foreground">
             {seller.name.charAt(0)}
           </div>
           <div className="flex-1 min-w-0">

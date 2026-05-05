@@ -56,7 +56,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
   if (!listings.length) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <ShoppingCart className="h-8 w-8 text-muted-foreground/40 mb-2" />
+        <ShoppingCart className="h-8 w-8 text-muted-foreground mb-2" />
         <p className="text-muted-foreground text-sm">Nenhum anúncio disponível para esta carta.</p>
       </div>
     );
@@ -91,7 +91,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                   {/* Seller */}
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-secondary border border-border flex items-center justify-center text-[10px] font-bold text-muted-foreground shrink-0">
                         {seller?.name.charAt(0) || '?'}
                       </div>
                       <div className="min-w-0">
@@ -107,11 +107,11 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                         {seller && (
                           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <Star className="h-3 w-3 fill-gold text-gold" /> {seller.rating}
-                            <span className="text-muted-foreground/40">·</span>
+                            <span className="text-muted-foreground">·</span>
                             {seller.totalSales} vendas
                             {listing.freeShipping && (
                               <>
-                                <span className="text-muted-foreground/40 ml-1">·</span>
+                                <span className="text-muted-foreground ml-1">·</span>
                                 <span className="inline-flex items-center gap-0.5 text-[10px] text-accent ml-1">
                                   <Truck className="h-2.5 w-2.5" /> Frete grátis
                                 </span>
@@ -135,7 +135,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
 
                   {/* Price */}
                   <TableCell className="text-right">
-                    <span className={`font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
+                    <span className={`font-bold ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}>
                       R$ {formatPrice(listing.price)}
                     </span>
                     {!isAvailable && (
@@ -196,11 +196,11 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
           return (
             <div
               key={listing.id}
-              className={`rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-colors hover:border-accent/30 ${!isAvailable ? 'opacity-60' : ''}`}
+              className={`rounded-xl border border-border bg-white/[0.02] p-4 transition-colors hover:border-accent/40 ${!isAvailable ? 'opacity-60' : ''}`}
             >
               {/* Seller row */}
               <div className="flex items-start gap-3 mb-4">
-                <div className="h-9 w-9 rounded-full bg-secondary border border-white/[0.06] flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                <div className="h-9 w-9 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                   {seller?.name.charAt(0) || '?'}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -223,11 +223,11 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 whitespace-nowrap">
                       <Star className="h-3 w-3 fill-gold text-gold shrink-0" />
                       <span>{seller.rating}</span>
-                      <span className="text-muted-foreground/40">·</span>
+                      <span className="text-muted-foreground">·</span>
                       <span>{seller.totalSales} vendas</span>
                       {listing.freeShipping && (
                         <>
-                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-muted-foreground">·</span>
                           <span className="inline-flex items-center gap-0.5 text-accent">
                             <Truck className="h-3 w-3" /> Frete grátis
                           </span>
@@ -240,7 +240,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
 
               {/* Price (full width, prominent) */}
               <div className="flex items-baseline justify-between gap-2 mb-4">
-                <span className={`text-xl font-bold ${isAvailable ? 'text-accent' : 'text-muted-foreground'}`}>
+                <span className={`text-xl font-bold ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}>
                   R$ {formatPrice(listing.price)}
                 </span>
                 {!isAvailable && (
@@ -255,7 +255,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 flex-1 border-white/10 hover:border-accent/30 hover:bg-accent/5"
+                  className="gap-1.5 flex-1 border-border hover:border-accent/40 hover:bg-accent/5"
                   onClick={() => setSelectedListing(listing)}
                 >
                   <ImageIcon className="h-3.5 w-3.5" /> Fotos
@@ -263,7 +263,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 flex-1 border-white/10 hover:border-accent/30 hover:bg-accent/5"
+                  className="gap-1.5 flex-1 border-border hover:border-accent/40 hover:bg-accent/5"
                   onClick={() => setQnaListing(listing)}
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> Mensagem

@@ -4,62 +4,62 @@
 
 @layer base {
   :root {
-    /* Dark neutral backgrounds */
-    --background: 220 10% 6%;
-    --foreground: 0 0% 95%;
+    /* Light backgrounds */
+    --background: 0 0% 100%;        /* white #FFFFFF */
+    --foreground: 0 0% 0%;          /* black #000000 */
 
-    /* Card surfaces — slightly elevated */
-    --card: 220 10% 10%;
-    --card-foreground: 0 0% 95%;
+    /* Card surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
 
-    /* Popover matches card */
-    --popover: 220 10% 10%;
-    --popover-foreground: 0 0% 95%;
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
 
-    /* Primary = near-white (for default buttons) */
-    --primary: 0 0% 95%;
-    --primary-foreground: 220 10% 6%;
+    /* Primary = black for default buttons (max contrast on white) */
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary = slightly lighter dark */
-    --secondary: 220 10% 13%;
-    --secondary-foreground: 0 0% 90%;
+    /* Secondary = light gray for sections #F7F7F7 */
+    --secondary: 0 0% 97%;
+    --secondary-foreground: 0 0% 0%;
 
-    /* Muted = borders, dividers, disabled */
-    --muted: 220 8% 18%;
-    --muted-foreground: 220 8% 50%;
+    /* Muted = lighter for borders, dividers, secondary text */
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 40%;
 
-    /* Accent = NEON LIME GREEN */
-    --accent: 142 70% 50%;
-    --accent-foreground: 220 10% 6%;
+    /* Accent = ORANGE #E78F45 */
+    --accent: 27 77% 59%;
+    --accent-foreground: 0 0% 100%;
 
     /* Destructive */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & inputs */
-    --border: 220 8% 16%;
-    --input: 220 8% 16%;
-    --ring: 142 70% 50%;
+    --border: 0 0% 90%;
+    --input: 0 0% 95%;
+    --ring: 27 77% 59%;
 
     --radius: 0.75rem;
 
     /* Status colors */
-    --success: 142 70% 45%;
+    --success: 142 70% 40%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
-    --gold: 43 96% 56%;
+    --gold: 43 96% 50%;
     --gold-foreground: 0 0% 0%;
 
     /* Sidebar */
-    --sidebar-background: 220 10% 8%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 142 70% 50%;
-    --sidebar-primary-foreground: 220 10% 6%;
-    --sidebar-accent: 220 8% 15%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 220 8% 16%;
-    --sidebar-ring: 142 70% 50%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 27 77% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 97%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 27 77% 59%;
   }
 
   * {
@@ -71,72 +71,94 @@
   }
 }
 
-/* === PREMIUM UTILITY CLASSES === */
+/* === LIGHT THEME UTILITY CLASSES === */
 
-/* Glass morphism card surfaces */
+/* Subtle elevated surfaces (replaces glass morphism for light theme) */
 .glass {
-  @apply bg-white/[0.04] backdrop-blur-xl;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  @apply bg-white;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .glass-strong {
-  @apply bg-white/[0.07] backdrop-blur-2xl;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  @apply bg-white;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-/* Neon glow effects */
+/* Subtle accent glow for buttons (keep but soften for light theme) */
 .glow-accent {
-  box-shadow: 0 0 20px hsl(var(--accent) / 0.15),
-              0 0 40px hsl(var(--accent) / 0.05);
+  box-shadow: 0 4px 14px hsl(var(--accent) / 0.25),
+              0 2px 4px hsl(var(--accent) / 0.10);
 }
 
 .glow-accent-strong {
-  box-shadow: 0 0 15px hsl(var(--accent) / 0.25),
-              0 0 30px hsl(var(--accent) / 0.10),
-              0 0 60px hsl(var(--accent) / 0.05);
+  box-shadow: 0 6px 20px hsl(var(--accent) / 0.30),
+              0 3px 8px hsl(var(--accent) / 0.15);
 }
 
-/* Text glow for hero headings */
+/* Text glow softened for light theme (or removed entirely for cleaner look) */
 .text-glow-accent {
-  text-shadow: 0 0 20px hsl(var(--accent) / 0.3),
-               0 0 40px hsl(var(--accent) / 0.15);
+  /* No text-shadow on light theme — orange on white needs no glow */
 }
 
-/* Gradient blob backgrounds */
+/* Blob backgrounds — disabled on light theme for cleaner look */
 .blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(120px);
-  opacity: 0.15;
-  pointer-events: none;
+  display: none;
 }
 
-.blob-accent {
-  background: hsl(var(--accent));
-}
-
-.blob-purple {
-  background: hsl(280 65% 50%);
-}
-
+.blob-accent,
+.blob-purple,
 .blob-cyan {
-  background: hsl(199 89% 50%);
+  display: none;
 }
 
-/* Scrollbar styling */
+/* Scrollbar styling — light theme */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: hsl(var(--secondary));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: hsl(var(--muted-foreground) / 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Shimmer gradient for loading states (adapted for light) */
+.bg-shimmer-gradient {
+  background-image: linear-gradient(
+    90deg,
+    hsl(0 0% 95%) 0%,
+    hsl(0 0% 92%) 50%,
+    hsl(0 0% 95%) 100%
+  );
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float 9s ease-in-out infinite;
 }

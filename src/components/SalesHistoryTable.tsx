@@ -111,14 +111,14 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
             {paged.map((sale, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+                className="rounded-xl border border-border bg-white/[0.02] p-4"
               >
                 {/* Top row: date + price */}
                 <div className="flex items-baseline justify-between gap-2 mb-3">
                   <span className="text-xs text-muted-foreground">
                     {new Date(sale.date).toLocaleDateString('pt-BR')}
                   </span>
-                  <span className="text-lg font-bold text-accent">
+                  <span className="text-lg font-bold text-foreground">
                     R$ {formatPrice(sale.price)}
                   </span>
                 </div>
@@ -136,7 +136,7 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
                 </div>
 
                 {/* Bottom row: buyer (subtle) */}
-                <div className="pt-2 border-t border-white/[0.04]">
+                <div className="pt-2 border-t border-border">
                   <p className="text-xs text-muted-foreground">
                     Comprador: <span className="text-foreground/70">{sale.buyerName}</span>
                   </p>

@@ -109,7 +109,7 @@ function CardDetailPage() {
   }
 
   const cardImage = (
-    <div className="group/img relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-white/[0.06] overflow-hidden">
+    <div className="group/img relative aspect-[3/4] rounded-xl bg-gradient-to-b from-secondary to-background flex items-center justify-center border border-border overflow-hidden">
       {cardBase.imageUrl ? (
         <Image
           src={cardBase.imageUrl}

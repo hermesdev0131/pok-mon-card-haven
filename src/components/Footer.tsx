@@ -28,13 +28,12 @@ function XIcon({ className }: { className?: string }) {
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/[0.06] bg-background mt-auto relative">
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
+    <footer className="border-t border-border bg-secondary mt-auto relative">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="font-bold text-xl">
-              <span className="text-accent text-glow-accent">Graduada</span>
+              <span className="text-accent">Graduada</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               O 1º marketplace brasileiro dedicado exclusivamente a cartas Pokémon graduadas, com segurança e transparência em cada negociação.
@@ -73,7 +72,7 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] border border-white/[0.08] text-muted-foreground transition-all duration-200 hover:text-accent hover:border-accent/30 hover:bg-accent/5"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-background border border-border text-muted-foreground transition-all duration-200 hover:text-accent hover:border-accent/40 hover:bg-accent/5"
                 >
                   <Icon className="h-4 w-4" />
                 </a>
@@ -81,9 +80,9 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="mt-10 border-t border-white/[0.06] pt-6 text-center">
+        <div className="mt-10 border-t border-border pt-6 text-center">
           <p className="text-xs text-muted-foreground">© 2026 Graduada. Todos os direitos reservados.</p>
-          <p className="text-[10px] text-muted-foreground/50 mt-2">Pokémon TCG e suas respectivas propriedades são marcas registradas e copyrights da The Pokémon Company International. Este site não é afiliado, endossado ou patrocinado pela The Pokémon Company International.</p>
+          <p className="text-[10px] text-muted-foreground mt-2">Pokémon TCG e suas respectivas propriedades são marcas registradas e copyrights da The Pokémon Company International. Este site não é afiliado, endossado ou patrocinado pela The Pokémon Company International.</p>
         </div>
       </div>
     </footer>

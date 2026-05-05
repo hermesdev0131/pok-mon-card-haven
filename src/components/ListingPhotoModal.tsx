@@ -44,7 +44,7 @@ export function ListingPhotoModal({ listing, seller, open, onClose }: ListingPho
           {hasImages ? (
             <>
               {/* Main image */}
-              <div className="max-h-[50vh] rounded-lg overflow-hidden bg-gradient-to-b from-secondary to-background border border-white/[0.06] flex items-center justify-center">
+              <div className="max-h-[50vh] rounded-lg overflow-hidden bg-gradient-to-b from-secondary to-background border border-border flex items-center justify-center">
                 <img
                   src={listing.images[selected]}
                   alt={IMAGE_LABELS[selected] || `Foto ${selected + 1}`}
@@ -62,7 +62,7 @@ export function ListingPhotoModal({ listing, seller, open, onClose }: ListingPho
                       className={`relative aspect-[3/4] rounded-lg overflow-hidden bg-secondary border-2 transition-all duration-150 ${
                         selected === i
                           ? 'border-accent shadow-[0_0_10px_hsl(var(--accent)/0.2)]'
-                          : 'border-white/[0.06] hover:border-white/[0.15]'
+                          : 'border-border hover:border-white/[0.15]'
                       }`}
                     >
                       <img src={img} alt={IMAGE_LABELS[i] || `Foto ${i + 1}`} className="w-full h-full object-contain" />
@@ -80,15 +80,15 @@ export function ListingPhotoModal({ listing, seller, open, onClose }: ListingPho
               )}
             </>
           ) : (
-            <div className="h-[40vh] rounded-lg bg-gradient-to-b from-secondary to-background flex flex-col items-center justify-center border border-white/[0.06]">
+            <div className="h-[40vh] rounded-lg bg-gradient-to-b from-secondary to-background flex flex-col items-center justify-center border border-border">
               <Camera className="h-12 w-12 text-muted-foreground/30 mb-3" />
               <p className="text-sm text-muted-foreground">Vendedor ainda não enviou fotos</p>
-              <p className="text-xs text-muted-foreground/50 mt-1">Frente · Verso · Label · Case</p>
+              <p className="text-xs text-muted-foreground mt-1">Frente · Verso · Label · Case</p>
             </div>
           )}
 
           {/* Listing details */}
-          <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+          <div className="flex items-center justify-between pt-2 border-t border-border">
             <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
             <span className="font-bold text-accent text-lg">
               R$ {formatPrice(listing.price)}
