@@ -373,6 +373,33 @@ export async function getAllSellers(): Promise<Seller[]> {
   return rows.map(r => mapSeller({ ...r, profiles: profiles[r.id] ?? {} }));
 }
 
+/** Global search across cards (with stats) and sellers */
+export async function searchAll(query: string): Promise<{
+  cards: CardBaseWithStats[];
+  sellers: Seller[];
+}> {
+  const q = query.trim();
+  if (!q) return { cards: [], sellers: [] };
+
+  // Search cards using the existing function (handles name, set_name, number)
+  const cards = await getCardBasesWithStats({ search: q });
+
+  // Search sellers by store_name
+  const { data: sellerData, error: sellerErr } = await supabase
+    .from('seller_profiles')
+    .select('*')
+    .ilike('store_name', `%${q}%`);
+  logIfError('searchAll.sellers', sellerErr);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sellerRows = (sellerData ?? []) as any[];
+  const sellerProfiles = sellerRows.length
+    ? await fetchProfilesByIds(sellerRows.map(r => r.id))
+    : {};
+  const sellers = sellerRows.map(r => mapSeller({ ...r, profiles: sellerProfiles[r.id] ?? {} }));
+
+  return { cards, sellers };
+}
+
 /** All sellers with active listing count (for vendedores page) */
 export async function getSellersWithListingCount(): Promise<(Seller & { listingCount: number })[]> {
   const [{ data: sellerRows }, { data: listingRows }] = await Promise.all([

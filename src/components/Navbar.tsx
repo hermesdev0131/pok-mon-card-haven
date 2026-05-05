@@ -17,6 +17,8 @@ const categories = [
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, isAdmin, profile, signOut } = useAuth();
@@ -24,6 +26,15 @@ export function Navbar() {
   async function handleSignOut() {
     await signOut();
     router.push('/');
+  }
+
+  function handleSearch(e: React.FormEvent, query: string) {
+    e.preventDefault();
+    const trimmed = query.trim();
+    if (trimmed) {
+      router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+      setMobileOpen(false);
+    }
   }
 
   return (
@@ -45,19 +56,21 @@ export function Navbar() {
           </Link>
 
           {/* Search */}
-          <div className="hidden md:block flex-1 max-w-md mx-6">
+          <form onSubmit={(e) => handleSearch(e, searchQuery)} className="hidden md:block flex-1 max-w-md mx-6">
             <div className="relative group">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-accent" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar cartas, sets, vendedores..."
                 className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-20 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
               />
-              <button className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-3 rounded-full bg-accent text-accent-foreground text-xs font-semibold transition-colors hover:bg-accent/90">
+              <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-3 rounded-full bg-accent text-accent-foreground text-xs font-semibold transition-colors hover:bg-accent/90">
                 Buscar
               </button>
             </div>
-          </div>
+          </form>
 
           {/* Right actions */}
           <div className="hidden items-center gap-1 md:flex shrink-0">
@@ -127,14 +140,16 @@ export function Navbar() {
       {/* Mobile menu — always in DOM, toggled via CSS */}
       <div className={`border-b border-border bg-background p-4 md:hidden ${mobileOpen ? '' : 'hidden'}`}>
         {/* Mobile search */}
-        <div className="relative mb-4">
+        <form onSubmit={(e) => handleSearch(e, mobileSearchQuery)} className="relative mb-4">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
+            value={mobileSearchQuery}
+            onChange={(e) => setMobileSearchQuery(e.target.value)}
             placeholder="Buscar cartas..."
             className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-accent/40"
           />
-        </div>
+        </form>
 
         {/* Mobile category tabs */}
         <div className="flex flex-wrap gap-2 mb-4">
