@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusPill } from '@/components/StatusPill';
 import { RequireAuth } from '@/components/RequireAuth';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -136,7 +137,8 @@ export default function Profile() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+          {/* Desktop: tab list */}
+          <TabsList className="hidden md:inline-flex">
             <TabsTrigger value="purchases">Minhas compras</TabsTrigger>
             <TabsTrigger value="sales">Minhas vendas</TabsTrigger>
             {isSeller && <TabsTrigger value="listings">Meus anúncios</TabsTrigger>}
@@ -162,6 +164,41 @@ export default function Profile() {
             )}
             <TabsTrigger value="account">Minha conta</TabsTrigger>
           </TabsList>
+
+          {/* Mobile: dropdown select */}
+          <div className="md:hidden mb-4">
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="purchases">Minhas compras</SelectItem>
+                <SelectItem value="sales">Minhas vendas</SelectItem>
+                {isSeller && <SelectItem value="listings">Meus anúncios</SelectItem>}
+                {isSeller && (
+                  <SelectItem value="reviews">
+                    Avaliações
+                    {myReviews.filter(r => !r.sellerReply).length > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                        {myReviews.filter(r => !r.sellerReply).length}
+                      </span>
+                    )}
+                  </SelectItem>
+                )}
+                {isSeller && (
+                  <SelectItem value="questions">
+                    Perguntas
+                    {myQuestions.filter(q => !q.answer).length > 0 && (
+                      <span className="ml-2 inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                        {myQuestions.filter(q => !q.answer).length}
+                      </span>
+                    )}
+                  </SelectItem>
+                )}
+                <SelectItem value="account">Minha conta</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <TabsContent value="purchases">
             <OrderList orders={purchases} onCancel={async (id) => {
               const result = await cancelOrder(id);
