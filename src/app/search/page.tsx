@@ -65,7 +65,7 @@ function SearchPageContent() {
               type="button"
               onClick={handleClear}
               aria-label="Limpar busca"
-              className="absolute right-20 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+              className="absolute right-24 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
             </button>
