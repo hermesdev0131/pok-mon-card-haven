@@ -118,14 +118,14 @@ export default function Home() {
       {/* Hero — light boutique feel, immersive on mobile, side-by-side on desktop */}
       <section className="relative overflow-hidden">
         <div className="container relative mx-auto px-4 pt-6 pb-8 lg:pt-12 lg:pb-8">
-          <div className="grid w-full grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-y-6 lg:gap-y-8 lg:gap-x-12 items-start">
+          <div className="grid w-full grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-y-4 lg:gap-y-8 lg:gap-x-12 items-start">
             {/* Pill + Headline (mobile order 1, desktop top-left) */}
-            <div className="space-y-6 lg:space-y-8 order-1 lg:col-start-1 lg:row-start-1">
-              <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-sm text-accent">
+            <div className="space-y-4 lg:space-y-8 order-1 lg:col-start-1 lg:row-start-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/5 px-4 py-1.5 text-xs sm:text-sm text-accent">
                 <Sparkles className="h-3.5 w-3.5" />
                 1º marketplace brasileiro dedicado a cartas graduadas
               </div>
-              <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl leading-[1.05]">
+              <h1 className="text-3xl font-bold tracking-tight md:text-5xl lg:text-6xl leading-[1.05]">
                 O maior marketplace de{' '}
                 <span className="text-accent">cartas graduadas</span>{' '}
                 do Brasil.
@@ -134,9 +134,9 @@ export default function Home() {
 
             {/* Slab collage (mobile order 2, desktop right spanning both rows) */}
             <div className="relative order-2 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:pt-8">
-              <div className="relative aspect-[1/1] sm:aspect-[16/9] lg:aspect-[3/2] w-full max-w-md lg:max-w-none mx-auto">
+              <div className="relative aspect-[5/3] sm:aspect-[16/9] lg:aspect-[3/2] w-full max-w-sm sm:max-w-md lg:max-w-none mx-auto">
                 {/* Left card */}
-                <div className="absolute left-[10%] top-[15%] w-[36%] -rotate-[10deg] drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]">
+                <div className="absolute left-[10%] top-[15%] w-[28%] sm:w-[36%] -rotate-[10deg] drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]">
                   <Image
                     src="/hero-1.png"
                     alt="Carta graduada"
@@ -148,7 +148,7 @@ export default function Home() {
                   />
                 </div>
                 {/* Center card (prominent) */}
-                <div className="absolute left-1/2 top-0 w-[42%] -translate-x-1/2 rotate-[3deg] z-10 drop-shadow-[0_16px_32px_rgba(0,0,0,0.20)]">
+                <div className="absolute left-1/2 top-0 w-[34%] sm:w-[42%] -translate-x-1/2 rotate-[3deg] z-10 drop-shadow-[0_16px_32px_rgba(0,0,0,0.20)]">
                   <Image
                     src="/hero-2.png"
                     alt="Carta graduada"
@@ -160,7 +160,7 @@ export default function Home() {
                   />
                 </div>
                 {/* Right card */}
-                <div className="absolute right-[10%] top-[15%] w-[36%] rotate-[10deg] drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]">
+                <div className="absolute right-[10%] top-[15%] w-[28%] sm:w-[36%] rotate-[10deg] drop-shadow-[0_12px_24px_rgba(0,0,0,0.15)]">
                   <Image
                     src="/hero-3.png"
                     alt="Carta graduada"
@@ -175,11 +175,11 @@ export default function Home() {
             </div>
 
             {/* Subtitle + Buttons (mobile order 3, desktop bottom-left) */}
-            <div className="space-y-6 lg:space-y-8 order-3 lg:col-start-1 lg:row-start-2">
-              <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg">
+            <div className="space-y-4 lg:space-y-8 order-3 lg:col-start-1 lg:row-start-2">
+              <p className="text-sm md:text-lg text-muted-foreground leading-relaxed max-w-lg">
                 Compre e venda com segurança, transparência e as melhores condições do mercado.
               </p>
-              <div className="flex flex-col gap-3 sm:flex-row pt-2">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
                   <Link href="/marketplace">Ver cartas disponíveis <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
@@ -293,7 +293,7 @@ export default function Home() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{sale.cardName}</p>
-                  <p className="text-base font-bold text-foreground mt-0.5">R$ {formatPrice(sale.price)}</p>
+                  <p className="text-base font-bold text-accent mt-0.5">R$ {formatPrice(sale.price)}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Vendido por</p>
                   <p className="text-xs font-semibold truncate">{sale.sellerName}</p>
                 </div>
