@@ -1,10 +1,10 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Search, Menu, X, User, ShoppingBag, Sparkles, LogOut, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const categories = [
@@ -16,12 +16,37 @@ const categories = [
 ];
 
 export function Navbar() {
+  return (
+    <Suspense fallback={<NavbarShell />}>
+      <NavbarInner />
+    </Suspense>
+  );
+}
+
+function NavbarShell() {
+  return <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl h-14 lg:h-16 border-b border-border" />;
+}
+
+function NavbarInner() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const pathname = usePathname();
   const router = useRouter();
+  const searchParamsHook = useSearchParams();
   const { isAuthenticated, isAdmin, profile, signOut } = useAuth();
+
+  // Sync the search inputs with the URL query when on /search, otherwise clear them
+  useEffect(() => {
+    if (pathname === '/search') {
+      const q = searchParamsHook.get('q') ?? '';
+      setSearchQuery(q);
+      setMobileSearchQuery(q);
+    } else {
+      setSearchQuery('');
+      setMobileSearchQuery('');
+    }
+  }, [pathname, searchParamsHook]);
 
   async function handleSignOut() {
     await signOut();
@@ -34,6 +59,13 @@ export function Navbar() {
     if (trimmed) {
       router.push(`/search?q=${encodeURIComponent(trimmed)}`);
       setMobileOpen(false);
+    }
+  }
+
+  function handleClearSearch(setter: (v: string) => void) {
+    setter('');
+    if (pathname === '/search') {
+      router.push('/search');
     }
   }
 
@@ -64,8 +96,18 @@ export function Navbar() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar cartas, sets, vendedores..."
-                className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-20 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
+                className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-24 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => handleClearSearch(setSearchQuery)}
+                  aria-label="Limpar busca"
+                  className="absolute right-[5.5rem] top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
               <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-3 rounded-full bg-accent text-accent-foreground text-xs font-semibold transition-colors hover:bg-accent/90">
                 Buscar
               </button>
@@ -147,8 +189,18 @@ export function Navbar() {
             value={mobileSearchQuery}
             onChange={(e) => setMobileSearchQuery(e.target.value)}
             placeholder="Buscar cartas..."
-            className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-accent/40"
+            className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-10 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-accent/40"
           />
+          {mobileSearchQuery && (
+            <button
+              type="button"
+              onClick={() => handleClearSearch(setMobileSearchQuery)}
+              aria-label="Limpar busca"
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </form>
 
         {/* Mobile category tabs */}
