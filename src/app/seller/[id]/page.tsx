@@ -109,7 +109,7 @@ function SellerProfilePage() {
                 <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />
               </div>
               <div className="text-right shrink-0">
-                <p className="font-bold text-accent">R$ {formatPrice(listing.price)}</p>
+                <p className="font-bold text-foreground">R$ {formatPrice(listing.price)}</p>
                 {listing.freeShipping && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
                     <Truck className="h-2.5 w-2.5" /> Frete grátis

@@ -293,7 +293,7 @@ export default function Home() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{sale.cardName}</p>
-                  <p className="text-base font-bold text-accent mt-0.5">R$ {formatPrice(sale.price)}</p>
+                  <p className="text-base font-bold text-foreground mt-0.5">R$ {formatPrice(sale.price)}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">Vendido por</p>
                   <p className="text-xs font-semibold truncate">{sale.sellerName}</p>
                 </div>

@@ -56,7 +56,7 @@ export function CardBaseCard({ item, gradingGroup }: CardBaseCardProps) {
           <p className="text-[11px] text-muted-foreground line-clamp-1">{cardBase.set} · #{cardBase.number}</p>
 
           <div className="pt-1">
-            <p className="text-sm font-bold text-accent">
+            <p className="text-sm font-bold text-foreground">
               a partir de R$ {formatPrice(lowestPrice)}
             </p>
           </div>

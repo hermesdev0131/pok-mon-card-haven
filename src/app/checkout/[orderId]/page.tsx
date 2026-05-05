@@ -322,7 +322,7 @@ export default function Checkout() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-accent">R$ {formatPrice(order.price)}</p>
+                  <p className="text-xl font-bold text-foreground">R$ {formatPrice(order.price)}</p>
                   <StatusPill status={order.status} />
                 </div>
               </CardContent>
@@ -459,7 +459,7 @@ export default function Checkout() {
                   {isSeller && (
                     <p className="text-sm text-muted-foreground">
                       <span>O valor de </span>
-                      <span className="font-semibold text-accent">R$ {formatPrice(order.price)}</span>
+                      <span className="font-semibold text-foreground">R$ {formatPrice(order.price)}</span>
                       <span> foi creditado na sua conta.</span>
                     </p>
                   )}
@@ -632,7 +632,7 @@ export default function Checkout() {
                     {isBuyer ? `Vendedor: ${order.sellerName}` : `Comprador: ${order.buyerName}`}
                   </p>
                 </div>
-                <p className="text-xl font-bold text-accent">R$ {formatPrice(order.price)}</p>
+                <p className="text-xl font-bold text-foreground">R$ {formatPrice(order.price)}</p>
               </CardContent>
             </Card>
 
@@ -702,7 +702,7 @@ export default function Checkout() {
                               {opt.company}{opt.deliveryDays ? ` · ${opt.deliveryDays} dias úteis` : ''}
                             </p>
                           </div>
-                          <p className="font-semibold text-accent">R$ {formatPrice(opt.price)}</p>
+                          <p className="font-semibold text-foreground">R$ {formatPrice(opt.price)}</p>
                         </button>
                       ))}
                     </div>
@@ -725,7 +725,7 @@ export default function Checkout() {
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-accent">R$ {formatPrice(order.price + (order.shippingCost ?? 0))}</span>
+                  <span className="text-foreground">R$ {formatPrice(order.price + (order.shippingCost ?? 0))}</span>
                 </div>
               </CardContent>
             </Card>

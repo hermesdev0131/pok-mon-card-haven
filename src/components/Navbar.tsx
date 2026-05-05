@@ -30,10 +30,18 @@ export function Navbar() {
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl">
       {/* Row 1: Main header */}
       <div className="border-b border-border">
-        <div className="container mx-auto flex h-14 items-center justify-between gap-4 px-4">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight shrink-0">
-            <span className="text-accent">Graduada</span>
+        <div className="container mx-auto flex h-14 lg:h-16 items-center justify-between gap-4 px-4">
+          {/* Logo — Graduada with responsive "por Graded & Friends" subtitle */}
+          <Link href="/" className="flex items-baseline gap-1.5 font-bold tracking-tight shrink-0">
+            <span className="text-xl lg:text-2xl text-accent">Graduada</span>
+            {/* Full version on md+ */}
+            <span className="hidden md:inline text-sm text-accent font-medium">
+              , por Graded <span className="text-foreground">&</span> Friends
+            </span>
+            {/* Abbreviated version on min-[360px] to md (mobile) */}
+            <span className="hidden min-[360px]:inline md:hidden text-xs text-accent font-medium">
+              , por G<span className="text-foreground">&</span>F
+            </span>
           </Link>
 
           {/* Search */}
@@ -43,9 +51,9 @@ export function Navbar() {
               <input
                 type="text"
                 placeholder="Buscar cartas, sets, vendedores..."
-                className="w-full h-9 rounded-full bg-secondary border border-border pl-11 pr-20 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
+                className="w-full h-10 rounded-full bg-secondary border border-border pl-11 pr-20 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
               />
-              <button className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-3 rounded-full bg-accent text-accent-foreground text-[11px] font-semibold transition-colors hover:bg-accent/90">
+              <button className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 px-3 rounded-full bg-accent text-accent-foreground text-xs font-semibold transition-colors hover:bg-accent/90">
                 Buscar
               </button>
             </div>
@@ -53,24 +61,24 @@ export function Navbar() {
 
           {/* Right actions */}
           <div className="hidden items-center gap-1 md:flex shrink-0">
-            <Button variant="ghost" size="sm" className="text-foreground hover:text-accent gap-1.5 text-xs" asChild>
-              <Link href="/sell"><ShoppingBag className="h-3.5 w-3.5" /> Anunciar</Link>
+            <Button variant="ghost" size="sm" className="text-foreground hover:text-accent gap-1.5 text-sm" asChild>
+              <Link href="/sell"><ShoppingBag className="h-4 w-4" /> Anunciar</Link>
             </Button>
             {/* Authenticated actions — hidden via CSS, not unmounted */}
-            <Button variant="ghost" size="sm" className={`text-foreground hover:text-accent gap-1.5 text-xs ${isAdmin ? '' : 'hidden'}`} asChild>
-              <Link href="/admin"><ShieldCheck className="h-3.5 w-3.5" /> Admin</Link>
+            <Button variant="ghost" size="sm" className={`text-foreground hover:text-accent gap-1.5 text-sm ${isAdmin ? '' : 'hidden'}`} asChild>
+              <Link href="/admin"><ShieldCheck className="h-4 w-4" /> Admin</Link>
             </Button>
-            <Button variant="ghost" size="sm" className={`text-foreground hover:text-accent gap-1.5 text-xs ${isAuthenticated ? '' : 'hidden'}`} asChild>
-              <Link href="/me"><User className="h-3.5 w-3.5" /> {profile?.nickname ?? profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
+            <Button variant="ghost" size="sm" className={`text-foreground hover:text-accent gap-1.5 text-sm ${isAuthenticated ? '' : 'hidden'}`} asChild>
+              <Link href="/me"><User className="h-4 w-4" /> {profile?.nickname ?? profile?.full_name?.split(' ')[0] ?? 'Conta'}</Link>
             </Button>
-            <Button variant="ghost" size="icon" className={`text-foreground hover:text-accent h-8 w-8 ${isAuthenticated ? '' : 'hidden'}`} onClick={handleSignOut} title="Sair">
-              <LogOut className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className={`text-foreground hover:text-accent h-9 w-9 ${isAuthenticated ? '' : 'hidden'}`} onClick={handleSignOut} title="Sair">
+              <LogOut className="h-4 w-4" />
             </Button>
             {/* Anonymous actions — hidden via CSS */}
-            <Button variant="ghost" size="icon" className={`text-foreground hover:text-accent h-8 w-8 ${isAuthenticated ? 'hidden' : ''}`} asChild>
+            <Button variant="ghost" size="icon" className={`text-foreground hover:text-accent h-9 w-9 ${isAuthenticated ? 'hidden' : ''}`} asChild>
               <Link href="/me"><User className="h-4 w-4" /></Link>
             </Button>
-            <Button size="sm" className={`ml-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 h-8 text-xs ${isAuthenticated ? 'hidden' : ''}`} asChild>
+            <Button size="sm" className={`ml-1 bg-accent text-accent-foreground hover:bg-accent/90 rounded-full px-4 h-9 text-sm ${isAuthenticated ? 'hidden' : ''}`} asChild>
               <Link href="/login">Entrar</Link>
             </Button>
           </div>
@@ -85,7 +93,7 @@ export function Navbar() {
       {/* Row 2: Category tabs */}
       <div className="border-b border-border hidden md:block">
         <div className="container mx-auto px-4">
-          <div className="flex items-center gap-1 h-10 -mb-px">
+          <div className="flex items-center gap-1 h-11 -mb-px">
             {categories.map(({ label, href }) => {
               const isActive = href === '/marketplace'
                 ? pathname === '/marketplace'
@@ -94,7 +102,7 @@ export function Navbar() {
                 <Link
                   key={label}
                   href={href}
-                  className={`px-3.5 h-full flex items-center text-[13px] font-medium border-b-2 transition-all duration-200 ${
+                  className={`px-4 h-full flex items-center text-sm font-medium border-b-2 transition-all duration-200 ${
                     isActive
                       ? 'text-accent border-accent'
                       : 'text-foreground hover:text-accent border-transparent hover:border-accent/40'
@@ -106,9 +114,9 @@ export function Navbar() {
             })}
             <Link
               href="/como-funciona"
-              className="ml-auto px-3.5 h-full flex items-center gap-1.5 text-[13px] font-medium text-accent hover:text-accent/80 transition-colors"
+              className="ml-auto px-4 h-full flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent/80 transition-colors"
             >
-              <Sparkles className="h-3 w-3" />
+              <Sparkles className="h-3.5 w-3.5" />
               Como funciona
               <span className="text-[10px] font-bold bg-accent text-accent-foreground rounded px-1.5 py-0.5 leading-none">NOVO</span>
             </Link>

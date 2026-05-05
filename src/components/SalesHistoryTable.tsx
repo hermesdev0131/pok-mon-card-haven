@@ -118,7 +118,7 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
                   <span className="text-xs text-muted-foreground">
                     {new Date(sale.date).toLocaleDateString('pt-BR')}
                   </span>
-                  <span className="text-lg font-bold text-accent">
+                  <span className="text-lg font-bold text-foreground">
                     R$ {formatPrice(sale.price)}
                   </span>
                 </div>
