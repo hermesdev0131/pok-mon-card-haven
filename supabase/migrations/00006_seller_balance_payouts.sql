@@ -3,6 +3,17 @@
 -- Seller balance, PIX details, and withdrawal flow
 -- ============================================
 
+-- ===== 0. CLEANUP (safe re-run) =====
+-- Drop existing objects so this migration can be re-applied cleanly.
+
+drop view  if exists seller_balance cascade;
+drop table if exists withdrawals cascade;
+drop table if exists seller_pix cascade;
+drop table if exists admin_settings cascade;
+drop type  if exists withdrawal_status cascade;
+drop type  if exists pix_status cascade;
+drop type  if exists pix_key_type cascade;
+
 -- ===== 1. ADMIN SETTINGS =====
 -- Single-row table for global configuration (commission rate, withdrawal fee, etc.)
 
@@ -152,7 +163,7 @@ select
   coalesce(
     (select sum(o.seller_payout) from orders o
      where o.seller_id = sp.id
-       and o.status in ('paid', 'shipped', 'delivered')),
+       and o.status in ('payment_confirmed', 'awaiting_shipment', 'shipped', 'delivered')),
     0
   ) as pending_centavos,
   -- Available: completed orders minus already-paid-out withdrawals

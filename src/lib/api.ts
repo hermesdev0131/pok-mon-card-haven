@@ -1584,7 +1584,7 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
     .from('orders')
     .select('id, status, price, platform_fee, seller_payout, paid_at, completed_at, created_at, listing_id')
     .eq('seller_id', user.id)
-    .in('status', ['paid', 'shipped', 'delivered', 'completed'] as string[])
+    .in('status', ['payment_confirmed', 'awaiting_shipment', 'shipped', 'delivered', 'completed'] as string[])
     .order('created_at', { ascending: false })
     .limit(200);
   logIfError('getMyBalanceTransactions', error);

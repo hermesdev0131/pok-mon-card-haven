@@ -23,7 +23,8 @@ import {
 } from '@/lib/api';
 
 const statusLabels: Record<string, string> = {
-  paid: 'Pago',
+  payment_confirmed: 'Pago',
+  awaiting_shipment: 'Aguardando envio',
   shipped: 'Enviado',
   delivered: 'Entregue',
   completed: 'Concluído',
