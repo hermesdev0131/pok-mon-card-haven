@@ -1509,3 +1509,410 @@ export async function getPlatformConfig(key: string): Promise<unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data as any)?.value ?? null;
 }
+
+// ════════════════════════════════════════════════
+// Seller Balance, PIX, and Withdrawals (Items 2.9 + 2.10)
+// ════════════════════════════════════════════════
+
+export interface SellerBalance {
+  availableCentavos: number;
+  pendingCentavos: number;
+}
+
+export interface BalanceTransaction {
+  orderId: string;
+  cardName: string;
+  saleDateISO: string;
+  status: string;
+  priceCentavos: number;
+  platformFeeCentavos: number;
+  sellerPayoutCentavos: number;
+}
+
+export interface SellerPix {
+  pixKey: string;
+  pixKeyType: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
+  status: 'active' | 'pending_approval';
+  pendingPixKey?: string;
+  pendingPixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
+  rejectedReason?: string;
+}
+
+export interface Withdrawal {
+  id: string;
+  amountRequestedCentavos: number;
+  feeCentavos: number;
+  amountPaidCentavos: number;
+  pixKey: string;
+  pixKeyType: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
+  status: 'pending' | 'completed' | 'rejected';
+  requestedAtISO: string;
+  processedAtISO?: string;
+  rejectedReason?: string;
+}
+
+export interface AdminSettings {
+  defaultCommissionRate: number;
+  withdrawalFeeCentavos: number;
+}
+
+/** Get the current seller's balance (available + pending) */
+export async function getMyBalance(): Promise<SellerBalance> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { availableCentavos: 0, pendingCentavos: 0 };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('seller_balance')
+    .select('available_centavos, pending_centavos')
+    .eq('seller_id', user.id)
+    .maybeSingle();
+  logIfError('getMyBalance', error);
+
+  return {
+    availableCentavos: data?.available_centavos ?? 0,
+    pendingCentavos: data?.pending_centavos ?? 0,
+  };
+}
+
+/** Get the current seller's transaction breakdown (per-order earnings) */
+export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, status, price, platform_fee, seller_payout, paid_at, completed_at, created_at, listing_id')
+    .eq('seller_id', user.id)
+    .in('status', ['paid', 'shipped', 'delivered', 'completed'] as string[])
+    .order('created_at', { ascending: false })
+    .limit(200);
+  logIfError('getMyBalanceTransactions', error);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orderRows = (data ?? []) as any[];
+  if (!orderRows.length) return [];
+
+  // Fetch listings to get card names
+  const listingIds = orderRows.map(o => o.listing_id);
+  const { data: listingRows } = await supabase
+    .from('listings')
+    .select('id, card_base_id')
+    .in('id', listingIds);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const listings = (listingRows ?? []) as any[];
+
+  const cardBaseIds = Array.from(new Set(listings.map(l => l.card_base_id)));
+  const { data: cardRows } = await supabase
+    .from('card_bases')
+    .select('id, name')
+    .in('id', cardBaseIds);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cardMap: Record<string, string> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const c of (cardRows ?? []) as any[]) cardMap[c.id] = c.name;
+
+  const listingToCard: Record<string, string> = {};
+  for (const l of listings) listingToCard[l.id] = cardMap[l.card_base_id] ?? 'Carta';
+
+  return orderRows.map(o => ({
+    orderId: o.id,
+    cardName: listingToCard[o.listing_id] ?? 'Carta',
+    saleDateISO: o.paid_at ?? o.created_at,
+    status: o.status,
+    priceCentavos: o.price,
+    platformFeeCentavos: o.platform_fee,
+    sellerPayoutCentavos: o.seller_payout,
+  }));
+}
+
+/** Get current seller's PIX details (or null if not set) */
+export async function getMyPix(): Promise<SellerPix | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('seller_pix')
+    .select('*')
+    .eq('seller_id', user.id)
+    .maybeSingle();
+  logIfError('getMyPix', error);
+  if (!data) return null;
+
+  return {
+    pixKey: data.pix_key,
+    pixKeyType: data.pix_key_type,
+    status: data.status,
+    pendingPixKey: data.pending_pix_key ?? undefined,
+    pendingPixKeyType: data.pending_pix_key_type ?? undefined,
+    rejectedReason: data.rejected_reason ?? undefined,
+  };
+}
+
+/** Save or update the current seller's PIX key.
+ *  First save: trusted immediately.
+ *  Subsequent updates: stored as pending and require admin approval. */
+export async function saveMyPix(pixKey: string, pixKeyType: SellerPix['pixKeyType']): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+  const trimmed = pixKey.trim();
+  if (!trimmed) return { success: false, error: 'Chave PIX é obrigatória' };
+
+  const existing = await getMyPix();
+
+  if (!existing) {
+    // First save: trusted immediately
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('seller_pix').insert({
+      seller_id: user.id,
+      pix_key: trimmed,
+      pix_key_type: pixKeyType,
+      status: 'active',
+    });
+    if (error) { logIfError('saveMyPix.insert', error); return { success: false, error: error.message }; }
+    return { success: true };
+  }
+
+  // Update: store as pending for admin approval
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('seller_pix').update({
+    pending_pix_key: trimmed,
+    pending_pix_key_type: pixKeyType,
+    status: 'pending_approval',
+    rejected_reason: null,
+  }).eq('seller_id', user.id);
+  if (error) { logIfError('saveMyPix.update', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+/** Get admin settings (commission rate, withdrawal fee) */
+export async function getAdminSettings(): Promise<AdminSettings> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('admin_settings')
+    .select('default_commission_rate, withdrawal_fee_centavos')
+    .eq('id', 1)
+    .maybeSingle();
+  logIfError('getAdminSettings', error);
+  return {
+    defaultCommissionRate: Number(data?.default_commission_rate ?? 0.05),
+    withdrawalFeeCentavos: data?.withdrawal_fee_centavos ?? 1000,
+  };
+}
+
+/** Request a withdrawal of the seller's available balance */
+export async function requestWithdrawal(amountCentavos: number): Promise<{ success: true; withdrawalId: string } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+  if (amountCentavos <= 0) return { success: false, error: 'Valor inválido' };
+
+  const [balance, pix, settings] = await Promise.all([
+    getMyBalance(),
+    getMyPix(),
+    getAdminSettings(),
+  ]);
+
+  if (!pix) return { success: false, error: 'Cadastre sua chave PIX antes de solicitar um saque' };
+  if (pix.status === 'pending_approval') return { success: false, error: 'Sua chave PIX está em análise. Aguarde a aprovação para solicitar saque.' };
+  if (amountCentavos > balance.availableCentavos) return { success: false, error: 'Saldo insuficiente' };
+  if (amountCentavos <= settings.withdrawalFeeCentavos) return { success: false, error: 'Valor menor ou igual à taxa de saque' };
+
+  const fee = settings.withdrawalFeeCentavos;
+  const amountPaid = amountCentavos - fee;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).from('withdrawals').insert({
+    seller_id: user.id,
+    amount_requested_centavos: amountCentavos,
+    fee_centavos: fee,
+    amount_paid_centavos: amountPaid,
+    pix_key: pix.pixKey,
+    pix_key_type: pix.pixKeyType,
+    status: 'pending',
+  }).select('id').single();
+  if (error) { logIfError('requestWithdrawal', error); return { success: false, error: error.message }; }
+
+  return { success: true, withdrawalId: (data as { id: string }).id };
+}
+
+/** Get current seller's withdrawal history */
+export async function getMyWithdrawals(): Promise<Withdrawal[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('withdrawals')
+    .select('*')
+    .eq('seller_id', user.id)
+    .order('requested_at', { ascending: false });
+  logIfError('getMyWithdrawals', error);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map(w => ({
+    id: w.id,
+    amountRequestedCentavos: w.amount_requested_centavos,
+    feeCentavos: w.fee_centavos,
+    amountPaidCentavos: w.amount_paid_centavos,
+    pixKey: w.pix_key,
+    pixKeyType: w.pix_key_type,
+    status: w.status,
+    requestedAtISO: w.requested_at,
+    processedAtISO: w.processed_at ?? undefined,
+    rejectedReason: w.rejected_reason ?? undefined,
+  }));
+}
+
+// ════════════════════════════════════════════════
+// Admin: Withdrawals, PIX approvals, Settings
+// ════════════════════════════════════════════════
+
+export interface AdminWithdrawal extends Withdrawal {
+  sellerId: string;
+  sellerName: string;
+}
+
+export interface AdminPixApproval {
+  sellerId: string;
+  sellerName: string;
+  currentPixKey: string;
+  currentPixKeyType: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
+  pendingPixKey: string;
+  pendingPixKeyType: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
+  updatedAtISO: string;
+}
+
+/** Get all pending withdrawals (admin only) */
+export async function getAdminPendingWithdrawals(): Promise<AdminWithdrawal[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('withdrawals')
+    .select('*')
+    .eq('status', 'pending')
+    .order('requested_at', { ascending: true });
+  logIfError('getAdminPendingWithdrawals', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const sellerIds = Array.from(new Set(rows.map(r => r.seller_id)));
+  const sellerMap = await fetchSellerProfilesByIds(sellerIds);
+
+  return rows.map(w => ({
+    id: w.id,
+    sellerId: w.seller_id,
+    sellerName: (sellerMap[w.seller_id]?.store_name as string) ?? 'Vendedor',
+    amountRequestedCentavos: w.amount_requested_centavos,
+    feeCentavos: w.fee_centavos,
+    amountPaidCentavos: w.amount_paid_centavos,
+    pixKey: w.pix_key,
+    pixKeyType: w.pix_key_type,
+    status: w.status,
+    requestedAtISO: w.requested_at,
+    processedAtISO: w.processed_at ?? undefined,
+    rejectedReason: w.rejected_reason ?? undefined,
+  }));
+}
+
+/** Process a withdrawal: mark as completed or reject (admin only) */
+export async function processWithdrawal(
+  withdrawalId: string,
+  action: 'complete' | 'reject',
+  rejectedReason?: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const updates: Record<string, unknown> = {
+    status: action === 'complete' ? 'completed' : 'rejected',
+    processed_at: new Date().toISOString(),
+  };
+  if (action === 'reject' && rejectedReason) updates.rejected_reason = rejectedReason;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('withdrawals')
+    .update(updates)
+    .eq('id', withdrawalId);
+  if (error) { logIfError('processWithdrawal', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+/** Get all sellers with pending PIX approval (admin only) */
+export async function getAdminPendingPixApprovals(): Promise<AdminPixApproval[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('seller_pix')
+    .select('*')
+    .eq('status', 'pending_approval')
+    .order('updated_at', { ascending: true });
+  logIfError('getAdminPendingPixApprovals', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const sellerIds = rows.map(r => r.seller_id);
+  const sellerMap = await fetchSellerProfilesByIds(sellerIds);
+
+  return rows.map(r => ({
+    sellerId: r.seller_id,
+    sellerName: (sellerMap[r.seller_id]?.store_name as string) ?? 'Vendedor',
+    currentPixKey: r.pix_key,
+    currentPixKeyType: r.pix_key_type,
+    pendingPixKey: r.pending_pix_key,
+    pendingPixKeyType: r.pending_pix_key_type,
+    updatedAtISO: r.updated_at,
+  }));
+}
+
+/** Approve or reject a PIX key change (admin only) */
+export async function processPixApproval(
+  sellerId: string,
+  action: 'approve' | 'reject',
+  rejectedReason?: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  if (action === 'approve') {
+    // Move pending values into active; clear pending
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: row } = await (supabase as any)
+      .from('seller_pix')
+      .select('pending_pix_key, pending_pix_key_type')
+      .eq('seller_id', sellerId)
+      .maybeSingle();
+    if (!row || !row.pending_pix_key) return { success: false, error: 'Sem chave pendente para aprovar' };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('seller_pix').update({
+      pix_key: row.pending_pix_key,
+      pix_key_type: row.pending_pix_key_type,
+      pending_pix_key: null,
+      pending_pix_key_type: null,
+      status: 'active',
+      rejected_reason: null,
+    }).eq('seller_id', sellerId);
+    if (error) { logIfError('processPixApproval.approve', error); return { success: false, error: error.message }; }
+  } else {
+    // Reject: clear pending, restore active status, save reason
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('seller_pix').update({
+      pending_pix_key: null,
+      pending_pix_key_type: null,
+      status: 'active',
+      rejected_reason: rejectedReason ?? 'Rejeitado pelo administrador',
+    }).eq('seller_id', sellerId);
+    if (error) { logIfError('processPixApproval.reject', error); return { success: false, error: error.message }; }
+  }
+  return { success: true };
+}
+
+/** Update admin settings (commission rate, withdrawal fee) (admin only) */
+export async function updateAdminSettings(
+  defaultCommissionRate: number,
+  withdrawalFeeCentavos: number,
+): Promise<{ success: true } | { success: false; error: string }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('admin_settings').update({
+    default_commission_rate: defaultCommissionRate,
+    withdrawal_fee_centavos: withdrawalFeeCentavos,
+  }).eq('id', 1);
+  if (error) { logIfError('updateAdminSettings', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
