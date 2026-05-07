@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Wallet, Clock, ArrowDownToLine, Loader2, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Wallet, Clock, ArrowDownToLine, Loader2, CheckCircle2, XCircle, AlertCircle, TrendingUp, Receipt } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import {
   getMyBalance,
@@ -68,6 +68,10 @@ export function SellerBalance() {
     balance.availableCentavos > settings.withdrawalFeeCentavos &&
     pix !== null &&
     pix.status === 'active';
+
+  // Lifetime aggregates from transactions (paid/shipped/delivered/completed orders)
+  const totalEarnedCentavos = transactions.reduce((sum, t) => sum + t.sellerPayoutCentavos, 0);
+  const commissionPaidCentavos = transactions.reduce((sum, t) => sum + t.platformFeeCentavos, 0);
 
   const blockReason = !pix
     ? 'Cadastre sua chave PIX antes de solicitar um saque.'
@@ -146,6 +150,39 @@ export function SellerBalance() {
             <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
               Valor referente a vendas pagas que ainda não foram concluídas. Será liberado após a confirmação de recebimento.
             </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lifetime aggregates */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary border border-border">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Ganho</p>
+                <p className="text-[10px] text-muted-foreground">Receita líquida acumulada de todas as vendas</p>
+              </div>
+            </div>
+            <p className="text-xl font-bold">R$ {formatPrice(totalEarnedCentavos)}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary border border-border">
+                <Receipt className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Comissão Paga</p>
+                <p className="text-[10px] text-muted-foreground">Total de comissão da plataforma sobre suas vendas</p>
+              </div>
+            </div>
+            <p className="text-xl font-bold">R$ {formatPrice(commissionPaidCentavos)}</p>
           </CardContent>
         </Card>
       </div>
