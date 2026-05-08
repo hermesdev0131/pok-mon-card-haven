@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState, useEffect, useMemo } from 'react';
-import { getAllOrders, getAllSellers, updateSellerVerification, getAllDisputes, resolveDispute } from '@/lib/api';
+import { getAllOrders, getAllSellers, updateSellerVerification, getAllDisputes, resolveDispute, getAdminPendingWithdrawals, getAdminPendingPixApprovals } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { DollarSign, Package, Users, TrendingUp, Loader2, Search, ExternalLink, AlertTriangle } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
+import { AdminFinancial } from '@/components/AdminFinancial';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
@@ -28,6 +29,7 @@ export default function Admin() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [pendingFinancialCount, setPendingFinancialCount] = useState(0);
   const [releasingId, setReleasingId] = useState<string | null>(null);
   const [confirmReleaseId, setConfirmReleaseId] = useState<string | null>(null);
 
@@ -76,10 +78,19 @@ export default function Admin() {
   const { page: sellersPage, setPage: setSellersPage, totalPages: sellersTotalPages, paged: pagedSellers, total: sellersTotal, pageSize: sellersPageSize, setPageSize: setSellersPageSize } = usePagination(filteredSellers, 10);
   const { page: disputesPage, setPage: setDisputesPage, totalPages: disputesTotalPages, paged: pagedDisputes, total: disputesTotal, pageSize: disputesPageSize, setPageSize: setDisputesPageSize } = usePagination(filteredDisputes, 10);
 
+  async function refreshFinancialCount() {
+    const [withdrawals, pixApprovals] = await Promise.all([
+      getAdminPendingWithdrawals(),
+      getAdminPendingPixApprovals(),
+    ]);
+    setPendingFinancialCount(withdrawals.length + pixApprovals.length);
+  }
+
   useEffect(() => {
     getAllOrders().then(setOrders);
     getAllSellers().then(setSellers);
     getAllDisputes().then(setDisputes);
+    refreshFinancialCount();
   }, [tokenRefreshCount]);
 
   const handleRelease = async (orderId: string) => {
@@ -163,6 +174,14 @@ export default function Admin() {
               {disputes.filter(d => d.status === 'open').length > 0 && (
                 <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
                   {disputes.filter(d => d.status === 'open').length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="gap-1.5">
+              Financeiro
+              {pendingFinancialCount > 0 && (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] font-bold px-1">
+                  {pendingFinancialCount}
                 </span>
               )}
             </TabsTrigger>
@@ -467,6 +486,12 @@ export default function Admin() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          <TabsContent value="financial">
+            <div className="mt-4">
+              <AdminFinancial onChange={refreshFinancialCount} />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

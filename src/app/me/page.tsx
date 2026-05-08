@@ -18,6 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle, Star, MapPin } from 'lucide-react';
 import { GradeBadge } from '@/components/GradeBadge';
 import { AccountSettings } from '@/components/AccountSettings';
+import { SellerBalance } from '@/components/SellerBalance';
+import { SellerPix } from '@/components/SellerPix';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
 import type { Order, Listing, CardBase, Question, Review } from '@/types';
@@ -141,6 +143,8 @@ export default function Profile() {
           <TabsList className="hidden md:inline-flex">
             <TabsTrigger value="purchases">Minhas compras</TabsTrigger>
             <TabsTrigger value="sales">Minhas vendas</TabsTrigger>
+            {isSeller && <TabsTrigger value="balance">Saldo</TabsTrigger>}
+            {isSeller && <TabsTrigger value="pix">Dados PIX</TabsTrigger>}
             {isSeller && <TabsTrigger value="listings">Meus anúncios</TabsTrigger>}
             {isSeller && (
               <TabsTrigger value="reviews" className="gap-1.5">
@@ -174,6 +178,8 @@ export default function Profile() {
               <SelectContent>
                 <SelectItem value="purchases">Minhas compras</SelectItem>
                 <SelectItem value="sales">Minhas vendas</SelectItem>
+                {isSeller && <SelectItem value="balance">Saldo</SelectItem>}
+                {isSeller && <SelectItem value="pix">Dados PIX</SelectItem>}
                 {isSeller && <SelectItem value="listings">Meus anúncios</SelectItem>}
                 {isSeller && (
                   <SelectItem value="reviews">
@@ -208,6 +214,16 @@ export default function Profile() {
           <TabsContent value="sales">
             <SalesOrderList orders={sales} />
           </TabsContent>
+          {isSeller && (
+            <TabsContent value="balance">
+              <SellerBalance />
+            </TabsContent>
+          )}
+          {isSeller && (
+            <TabsContent value="pix">
+              <SellerPix />
+            </TabsContent>
+          )}
           {isSeller && (
             <TabsContent value="reviews">
               <SellerReviewsList
