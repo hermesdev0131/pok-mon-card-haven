@@ -74,17 +74,13 @@ function NavbarInner() {
       {/* Row 1: Main header */}
       <div className="border-b border-border">
         <div className="container mx-auto flex h-14 lg:h-16 items-center justify-between gap-4 px-4">
-          {/* Logo — Graduada with responsive "por Graded & Friends" subtitle */}
-          <Link href="/" className="flex items-baseline gap-1.5 font-bold tracking-tight shrink-0">
-            <span className="text-xl lg:text-2xl text-accent">Graduada</span>
+          {/* Logo — Graduada + Graded & Friends with uniform sizing and Graduada/& in accent */}
+          <Link href="/" className="font-bold tracking-tight shrink-0 text-base md:text-lg lg:text-xl whitespace-nowrap">
+            <span className="text-accent">Graduada</span>
             {/* Full version on md+ */}
-            <span className="hidden md:inline text-sm text-accent font-medium">
-              , por Graded <span className="text-foreground">&</span> Friends
-            </span>
-            {/* Abbreviated version on min-[360px] to md (mobile) */}
-            <span className="hidden min-[360px]:inline md:hidden text-xs text-accent font-medium">
-              , por G<span className="text-foreground">&</span>F
-            </span>
+            <span className="hidden md:inline text-foreground">, por Graded <span className="text-accent">&amp;</span> Friends</span>
+            {/* Abbreviated version on screens below md (always shown on mobile) */}
+            <span className="md:hidden text-foreground">, por G<span className="text-accent">&amp;</span>F</span>
           </Link>
 
           {/* Search */}
