@@ -1535,6 +1535,8 @@ export interface SellerPix {
   status: 'active' | 'pending_approval';
   pendingPixKey?: string;
   pendingPixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
+  rejectedPixKey?: string;
+  rejectedPixKeyType?: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
   rejectedReason?: string;
 }
 
@@ -1549,6 +1551,7 @@ export interface Withdrawal {
   requestedAtISO: string;
   processedAtISO?: string;
   rejectedReason?: string;
+  receiptPath?: string;
 }
 
 export interface AdminSettings {
@@ -1646,6 +1649,8 @@ export async function getMyPix(): Promise<SellerPix | null> {
     status: data.status,
     pendingPixKey: data.pending_pix_key ?? undefined,
     pendingPixKeyType: data.pending_pix_key_type ?? undefined,
+    rejectedPixKey: data.rejected_pix_key ?? undefined,
+    rejectedPixKeyType: data.rejected_pix_key_type ?? undefined,
     rejectedReason: data.rejected_reason ?? undefined,
   };
 }
@@ -1674,13 +1679,15 @@ export async function saveMyPix(pixKey: string, pixKeyType: SellerPix['pixKeyTyp
     return { success: true };
   }
 
-  // Update: store as pending for admin approval
+  // Update: store as pending for admin approval; clear any previous rejection info
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('seller_pix').update({
     pending_pix_key: trimmed,
     pending_pix_key_type: pixKeyType,
     status: 'pending_approval',
     rejected_reason: null,
+    rejected_pix_key: null,
+    rejected_pix_key_type: null,
   }).eq('seller_id', user.id);
   if (error) { logIfError('saveMyPix.update', error); return { success: false, error: error.message }; }
   return { success: true };
@@ -1761,7 +1768,40 @@ export async function getMyWithdrawals(): Promise<Withdrawal[]> {
     requestedAtISO: w.requested_at,
     processedAtISO: w.processed_at ?? undefined,
     rejectedReason: w.rejected_reason ?? undefined,
+    receiptPath: w.receipt_path ?? undefined,
   }));
+}
+
+/** Generate a short-lived signed URL for a withdrawal receipt */
+export async function getWithdrawalReceiptUrl(receiptPath: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from('withdrawal-receipts')
+    .createSignedUrl(receiptPath, 3600);
+  if (error) { logIfError('getWithdrawalReceiptUrl', error); return null; }
+  return data?.signedUrl ?? null;
+}
+
+/** Upload (or replace) the receipt for a withdrawal (admin only) */
+export async function uploadWithdrawalReceipt(
+  withdrawalId: string,
+  file: File,
+): Promise<{ success: true; path: string } | { success: false; error: string }> {
+  const ext = (file.name.split('.').pop() ?? 'pdf').toLowerCase();
+  const path = `${withdrawalId}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('withdrawal-receipts')
+    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+  if (uploadError) { logIfError('uploadWithdrawalReceipt.upload', uploadError); return { success: false, error: uploadError.message }; }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: updateError } = await (supabase as any).from('withdrawals').update({
+    receipt_path: path,
+    receipt_uploaded_at: new Date().toISOString(),
+  }).eq('id', withdrawalId);
+  if (updateError) { logIfError('uploadWithdrawalReceipt.update', updateError); return { success: false, error: updateError.message }; }
+
+  return { success: true, path };
 }
 
 // ════════════════════════════════════════════════
@@ -1812,14 +1852,51 @@ export async function getAdminPendingWithdrawals(): Promise<AdminWithdrawal[]> {
     requestedAtISO: w.requested_at,
     processedAtISO: w.processed_at ?? undefined,
     rejectedReason: w.rejected_reason ?? undefined,
+    receiptPath: w.receipt_path ?? undefined,
   }));
 }
 
-/** Process a withdrawal: mark as completed or reject (admin only) */
+/** Get withdrawal history (completed + rejected) for admin */
+export async function getAdminWithdrawalHistory(limit = 50): Promise<AdminWithdrawal[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('withdrawals')
+    .select('*')
+    .in('status', ['completed', 'rejected'])
+    .order('processed_at', { ascending: false })
+    .limit(limit);
+  logIfError('getAdminWithdrawalHistory', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const sellerIds = Array.from(new Set(rows.map(r => r.seller_id)));
+  const sellerMap = await fetchSellerProfilesByIds(sellerIds);
+
+  return rows.map(w => ({
+    id: w.id,
+    sellerId: w.seller_id,
+    sellerName: (sellerMap[w.seller_id]?.store_name as string) ?? 'Vendedor',
+    amountRequestedCentavos: w.amount_requested_centavos,
+    feeCentavos: w.fee_centavos,
+    amountPaidCentavos: w.amount_paid_centavos,
+    pixKey: w.pix_key,
+    pixKeyType: w.pix_key_type,
+    status: w.status,
+    requestedAtISO: w.requested_at,
+    processedAtISO: w.processed_at ?? undefined,
+    rejectedReason: w.rejected_reason ?? undefined,
+    receiptPath: w.receipt_path ?? undefined,
+  }));
+}
+
+/** Process a withdrawal: mark as completed or reject (admin only).
+ *  When completing, optionally attach a payment receipt file. */
 export async function processWithdrawal(
   withdrawalId: string,
   action: 'complete' | 'reject',
   rejectedReason?: string,
+  receiptFile?: File | null,
 ): Promise<{ success: true } | { success: false; error: string }> {
   const updates: Record<string, unknown> = {
     status: action === 'complete' ? 'completed' : 'rejected',
@@ -1833,6 +1910,11 @@ export async function processWithdrawal(
     .update(updates)
     .eq('id', withdrawalId);
   if (error) { logIfError('processWithdrawal', error); return { success: false, error: error.message }; }
+
+  if (action === 'complete' && receiptFile) {
+    const upload = await uploadWithdrawalReceipt(withdrawalId, receiptFile);
+    if (!upload.success) return upload;
+  }
   return { success: true };
 }
 
@@ -1869,14 +1951,18 @@ export async function processPixApproval(
   action: 'approve' | 'reject',
   rejectedReason?: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const adminId = user?.id ?? null;
+
+  // Snapshot pending values up front so we can both update seller_pix and log the decision
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: row } = await (supabase as any)
+    .from('seller_pix')
+    .select('pending_pix_key, pending_pix_key_type')
+    .eq('seller_id', sellerId)
+    .maybeSingle();
+
   if (action === 'approve') {
-    // Move pending values into active; clear pending
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: row } = await (supabase as any)
-      .from('seller_pix')
-      .select('pending_pix_key, pending_pix_key_type')
-      .eq('seller_id', sellerId)
-      .maybeSingle();
     if (!row || !row.pending_pix_key) return { success: false, error: 'Sem chave pendente para aprovar' };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1889,18 +1975,79 @@ export async function processPixApproval(
       rejected_reason: null,
     }).eq('seller_id', sellerId);
     if (error) { logIfError('processPixApproval.approve', error); return { success: false, error: error.message }; }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('pix_approval_log').insert({
+      seller_id: sellerId,
+      proposed_pix_key: row.pending_pix_key,
+      proposed_pix_key_type: row.pending_pix_key_type,
+      decision: 'approved',
+      decided_by: adminId,
+    });
   } else {
-    // Reject: clear pending, restore active status, save reason
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any).from('seller_pix').update({
+      rejected_pix_key: row?.pending_pix_key ?? null,
+      rejected_pix_key_type: row?.pending_pix_key_type ?? null,
       pending_pix_key: null,
       pending_pix_key_type: null,
       status: 'active',
       rejected_reason: rejectedReason ?? 'Rejeitado pelo administrador',
     }).eq('seller_id', sellerId);
     if (error) { logIfError('processPixApproval.reject', error); return { success: false, error: error.message }; }
+
+    if (row?.pending_pix_key) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('pix_approval_log').insert({
+        seller_id: sellerId,
+        proposed_pix_key: row.pending_pix_key,
+        proposed_pix_key_type: row.pending_pix_key_type,
+        decision: 'rejected',
+        rejected_reason: rejectedReason ?? 'Rejeitado pelo administrador',
+        decided_by: adminId,
+      });
+    }
   }
   return { success: true };
+}
+
+export interface AdminPixApprovalHistoryEntry {
+  id: string;
+  sellerId: string;
+  sellerName: string;
+  proposedPixKey: string;
+  proposedPixKeyType: 'cpf' | 'cnpj' | 'email' | 'phone' | 'random';
+  decision: 'approved' | 'rejected';
+  rejectedReason?: string;
+  decidedAtISO: string;
+}
+
+/** Get PIX approval history (approved + rejected) for admin */
+export async function getAdminPixApprovalHistory(limit = 50): Promise<AdminPixApprovalHistoryEntry[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('pix_approval_log')
+    .select('*')
+    .order('decided_at', { ascending: false })
+    .limit(limit);
+  logIfError('getAdminPixApprovalHistory', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rows = (data ?? []) as any[];
+  if (!rows.length) return [];
+
+  const sellerIds = Array.from(new Set(rows.map(r => r.seller_id)));
+  const sellerMap = await fetchSellerProfilesByIds(sellerIds);
+
+  return rows.map(r => ({
+    id: r.id,
+    sellerId: r.seller_id,
+    sellerName: (sellerMap[r.seller_id]?.store_name as string) ?? 'Vendedor',
+    proposedPixKey: r.proposed_pix_key,
+    proposedPixKeyType: r.proposed_pix_key_type,
+    decision: r.decision,
+    rejectedReason: r.rejected_reason ?? undefined,
+    decidedAtISO: r.decided_at,
+  }));
 }
 
 /** Update admin settings (commission rate, withdrawal fee) (admin only) */

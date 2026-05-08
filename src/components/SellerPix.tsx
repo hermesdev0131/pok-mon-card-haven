@@ -96,9 +96,17 @@ export function SellerPix() {
                   </p>
                 )}
                 {pix.rejectedReason && (
-                  <p className="text-xs text-destructive mt-1">
-                    Motivo da rejeição anterior: {pix.rejectedReason}
-                  </p>
+                  <div className="mt-1 space-y-0.5">
+                    <p className="text-xs text-destructive">
+                      Motivo da rejeição anterior: {pix.rejectedReason}
+                    </p>
+                    {pix.rejectedPixKey && (
+                      <p className="text-xs text-muted-foreground">
+                        Chave rejeitada: <span className="text-foreground font-medium">{pix.rejectedPixKey}</span>
+                        {pix.rejectedPixKeyType ? ` (${keyTypeLabels[pix.rejectedPixKeyType]})` : ''}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
