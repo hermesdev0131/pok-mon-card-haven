@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Settings, ArrowDownToLine, KeyRound, CheckCircle2, XCircle, Loader2, History, Paperclip, FileText } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
+import { Settings, ArrowDownToLine, KeyRound, CheckCircle2, XCircle, Loader2, History, Paperclip, FileText, Award, Users } from 'lucide-react';
+import { formatPrice, cn } from '@/lib/utils';
+import { TierBadge } from '@/components/TierBadge';
 import {
   getAdminSettings,
   updateAdminSettings,
@@ -20,10 +21,16 @@ import {
   processPixApproval,
   uploadWithdrawalReceipt,
   getWithdrawalReceiptUrl,
+  getSellerTiers,
+  getAdminSellersWithTiers,
+  setSellerTier,
+  updateTierDefinition,
   type AdminSettings,
   type AdminWithdrawal,
   type AdminPixApproval,
   type AdminPixApprovalHistoryEntry,
+  type SellerTier,
+  type AdminSellerWithTier,
 } from '@/lib/api';
 
 const keyTypeLabels: Record<string, string> = {
@@ -35,7 +42,7 @@ const keyTypeLabels: Record<string, string> = {
 };
 
 export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
-  const [settings, setSettings] = useState<AdminSettings>({ defaultCommissionRate: 0.05, withdrawalFeeCentavos: 1000 });
+  const [settings, setSettings] = useState<AdminSettings>({ withdrawalFeeCentavos: 1000 });
   const [withdrawals, setWithdrawals] = useState<AdminWithdrawal[]>([]);
   const [withdrawalHistory, setWithdrawalHistory] = useState<AdminWithdrawal[]>([]);
   const [pixApprovals, setPixApprovals] = useState<AdminPixApproval[]>([]);
@@ -43,7 +50,6 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
   const [loading, setLoading] = useState(true);
 
   // Settings form state
-  const [commissionRateInput, setCommissionRateInput] = useState('5');
   const [withdrawalFeeInput, setWithdrawalFeeInput] = useState('10,00');
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
@@ -62,24 +68,65 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
   const [attachingReceiptFor, setAttachingReceiptFor] = useState<AdminWithdrawal | null>(null);
   const [attachReceiptFile, setAttachReceiptFile] = useState<File | null>(null);
 
+  // Tier system
+  const [tiers, setTiers] = useState<SellerTier[]>([]);
+  const [sellersWithTiers, setSellersWithTiers] = useState<AdminSellerWithTier[]>([]);
+  const [tierEdits, setTierEdits] = useState<Record<string, { rate: string; threshold: string }>>({});
+  const [savingTier, setSavingTier] = useState<string | null>(null);
+  const [tierSaveMessage, setTierSaveMessage] = useState<string | null>(null);
+  const [showBelowThresholdOnly, setShowBelowThresholdOnly] = useState(false);
+
   async function refresh() {
     setLoading(true);
-    const [s, w, p, wh, ph] = await Promise.all([
+    const [s, w, p, wh, ph, tl, swt] = await Promise.all([
       getAdminSettings(),
       getAdminPendingWithdrawals(),
       getAdminPendingPixApprovals(),
       getAdminWithdrawalHistory(),
       getAdminPixApprovalHistory(),
+      getSellerTiers(),
+      getAdminSellersWithTiers(),
     ]);
     setSettings(s);
-    setCommissionRateInput((s.defaultCommissionRate * 100).toString().replace('.', ','));
     setWithdrawalFeeInput((s.withdrawalFeeCentavos / 100).toFixed(2).replace('.', ','));
     setWithdrawals(w);
     setPixApprovals(p);
     setWithdrawalHistory(wh);
     setPixHistory(ph);
+    setTiers(tl);
+    setSellersWithTiers(swt);
+    setTierEdits(Object.fromEntries(tl.map(t => [t.id, {
+      rate: t.commissionRate.toFixed(2).replace('.', ','),
+      threshold: (t.minQuarterlyCentavos / 100).toFixed(2).replace('.', ','),
+    }])));
     setLoading(false);
     onChange?.();
+  }
+
+  async function handleSaveTierDefinition(tierId: string) {
+    const edit = tierEdits[tierId];
+    if (!edit) return;
+    const rate = parseFloat(edit.rate.replace(',', '.'));
+    const thresholdReais = parseFloat(edit.threshold.replace(',', '.'));
+    if (isNaN(rate) || rate < 0 || rate > 100 || isNaN(thresholdReais) || thresholdReais < 0) {
+      setTierSaveMessage('Valores inválidos');
+      return;
+    }
+    setSavingTier(tierId);
+    setTierSaveMessage(null);
+    const result = await updateTierDefinition(tierId, rate, Math.round(thresholdReais * 100));
+    setSavingTier(null);
+    if (result.success) {
+      setTierSaveMessage('Tier atualizado');
+      refresh();
+    } else {
+      setTierSaveMessage(`Erro: ${result.error}`);
+    }
+  }
+
+  async function handleAssignTier(sellerId: string, tierId: string, locked: boolean) {
+    const result = await setSellerTier(sellerId, tierId, locked);
+    if (result.success) refresh();
   }
 
   useEffect(() => {
@@ -89,14 +136,13 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
   async function handleSaveSettings() {
     setSavingSettings(true);
     setSettingsMessage(null);
-    const rate = parseFloat(commissionRateInput.replace(',', '.')) / 100;
     const fee = Math.round(parseFloat(withdrawalFeeInput.replace(',', '.')) * 100);
-    if (isNaN(rate) || isNaN(fee) || rate < 0 || rate > 1 || fee < 0) {
-      setSettingsMessage('Valores inválidos');
+    if (isNaN(fee) || fee < 0) {
+      setSettingsMessage('Valor inválido');
       setSavingSettings(false);
       return;
     }
-    const result = await updateAdminSettings(rate, fee);
+    const result = await updateAdminSettings(fee);
     setSavingSettings(false);
     if (result.success) {
       setSettingsMessage('Configurações salvas');
@@ -176,19 +222,8 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
           <Settings className="h-4 w-4" /> Configurações
         </h3>
         <Card>
-          <CardContent className="p-4 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="commission-rate">Taxa de comissão padrão (%)</Label>
-              <Input
-                id="commission-rate"
-                type="text"
-                inputMode="decimal"
-                value={commissionRateInput}
-                onChange={(e) => setCommissionRateInput(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Aplicada em novos pedidos.</p>
-            </div>
-            <div className="space-y-1.5">
+          <CardContent className="p-4 space-y-4">
+            <div className="space-y-1.5 max-w-xs">
               <Label htmlFor="withdrawal-fee">Taxa de saque (R$)</Label>
               <Input
                 id="withdrawal-fee"
@@ -199,14 +234,139 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
               />
               <p className="text-xs text-muted-foreground">Descontada do valor do saque.</p>
             </div>
-            <div className="sm:col-span-2 flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <Button onClick={handleSaveSettings} disabled={savingSettings} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 {savingSettings ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando</> : 'Salvar configurações'}
               </Button>
               {settingsMessage && <span className="text-sm text-muted-foreground">{settingsMessage}</span>}
             </div>
+            <p className="text-xs text-muted-foreground">A taxa de comissão é definida pelo tier de cada vendedor (ver seção abaixo).</p>
           </CardContent>
         </Card>
+      </section>
+
+      {/* Tier Definitions */}
+      <section>
+        <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+          <Award className="h-4 w-4" /> Definições de tiers
+        </h3>
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr_auto] gap-3 items-end">
+              <div className="hidden sm:block text-xs font-semibold text-muted-foreground">Tier</div>
+              <div className="hidden sm:block text-xs font-semibold text-muted-foreground">Comissão (%)</div>
+              <div className="hidden sm:block text-xs font-semibold text-muted-foreground">Volume mínimo trimestral (R$)</div>
+              <div></div>
+              {tiers.map(t => (
+                <div key={t.id} className="contents">
+                  <div className="flex items-center"><TierBadge name={t.name} size="md" /></div>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={tierEdits[t.id]?.rate ?? ''}
+                    onChange={(e) => setTierEdits(prev => ({ ...prev, [t.id]: { ...prev[t.id], rate: e.target.value } }))}
+                  />
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    value={tierEdits[t.id]?.threshold ?? ''}
+                    onChange={(e) => setTierEdits(prev => ({ ...prev, [t.id]: { ...prev[t.id], threshold: e.target.value } }))}
+                    disabled={t.name === 'Bronze'}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => handleSaveTierDefinition(t.id)}
+                    disabled={savingTier === t.id}
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  >
+                    {savingTier === t.id ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {tierSaveMessage && <p className="text-xs text-muted-foreground">{tierSaveMessage}</p>}
+            <p className="text-xs text-muted-foreground">
+              Promoções são imediatas: assim que o vendedor atinge o volume do próximo tier no trimestre, a nova taxa passa a valer. Rebaixamentos são avaliados ao final de cada trimestre.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Sellers and Tiers */}
+      <section>
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <Users className="h-4 w-4" /> Vendedores e tiers
+          </h3>
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showBelowThresholdOnly}
+              onChange={(e) => setShowBelowThresholdOnly(e.target.checked)}
+            />
+            Somente abaixo do mínimo do tier atual (para revisão de fim de trimestre)
+          </label>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Mudanças manuais podem ser sobrescritas por promoções automáticas no próximo pedido concluído. Para tornar permanente, marque também <span className="font-medium">Fixar tier</span>.
+        </p>
+        {sellersWithTiers.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum vendedor cadastrado.</p>
+        ) : (
+          (() => {
+            const filtered = showBelowThresholdOnly
+              ? sellersWithTiers.filter(s => s.quarterVolumeCentavos < s.tier.minQuarterlyCentavos && !s.tierLocked)
+              : sellersWithTiers;
+            if (filtered.length === 0) {
+              return <p className="text-sm text-muted-foreground">Nenhum vendedor abaixo do mínimo do tier atual.</p>;
+            }
+            return (
+              <div className="space-y-2">
+                {filtered.map(s => {
+                  const belowThreshold = s.quarterVolumeCentavos < s.tier.minQuarterlyCentavos && !s.tierLocked && s.tier.minQuarterlyCentavos > 0;
+                  return (
+                    <Card key={s.sellerId} className={cn(belowThreshold && 'border-destructive/40')}>
+                      <CardContent className="p-4 flex flex-wrap items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm font-semibold">{s.storeName}</p>
+                            <TierBadge name={s.tier.name} locked={s.tierLocked} />
+                            {belowThreshold && (
+                              <span className="text-[10px] font-semibold text-destructive">Abaixo do mínimo</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Vendido neste trimestre: <span className="text-foreground font-medium">R$ {formatPrice(s.quarterVolumeCentavos)}</span>
+                            {s.tier.minQuarterlyCentavos > 0 && <> de R$ {formatPrice(s.tier.minQuarterlyCentavos)} (mínimo {s.tier.name})</>}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <select
+                            className={cn('h-9 rounded-md border border-input bg-background px-3 text-sm')}
+                            value={s.tier.id}
+                            onChange={(e) => handleAssignTier(s.sellerId, e.target.value, s.tierLocked)}
+                          >
+                            {tiers.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                          <label className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={s.tierLocked}
+                              onChange={(e) => handleAssignTier(s.sellerId, s.tier.id, e.target.checked)}
+                            />
+                            Fixar tier
+                          </label>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })()
+        )}
       </section>
 
       {/* Pending Withdrawals */}

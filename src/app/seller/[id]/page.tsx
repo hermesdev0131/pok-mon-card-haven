@@ -2,11 +2,12 @@
 
 import { GradeBadge } from '@/components/GradeBadge';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
+import { TierBadge } from '@/components/TierBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getSeller, getSellerListings, getSellerReviews, replyToReview } from '@/lib/api';
+import { getSeller, getSellerListings, getSellerReviews, replyToReview, getSellerTier, type SellerTier } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, ShoppingBag, Calendar, Truck, Loader2 } from 'lucide-react';
@@ -33,6 +34,7 @@ function SellerProfilePage() {
   const [seller, setSeller] = useState<Seller | null>(null);
   const [sellerListings, setSellerListings] = useState<(Listing & { cardBase: CardBase })[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [tier, setTier] = useState<SellerTier | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyingId, setReplyingId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -55,10 +57,11 @@ function SellerProfilePage() {
 
   useEffect(() => {
     if (!id) return;
-    Promise.all([getSeller(id), getSellerListings(id), getSellerReviews(id)]).then(([s, l, r]) => {
+    Promise.all([getSeller(id), getSellerListings(id), getSellerReviews(id), getSellerTier(id)]).then(([s, l, r, t]) => {
       setSeller(s);
       setSellerListings(l);
       setReviews(r);
+      setTier(t);
       setLoading(false);
     });
   }, [id, tokenRefreshCount]);
@@ -74,9 +77,10 @@ function SellerProfilePage() {
           {seller.name.charAt(0)}
         </div>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold">{seller.name}</h1>
             {seller.verified && <VerifiedBadge />}
+            {tier && <TierBadge name={tier.name} />}
             {seller.isNew && <Badge variant="secondary" className="text-xs">Novo</Badge>}
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
