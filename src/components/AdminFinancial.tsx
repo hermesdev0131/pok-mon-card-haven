@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, ArrowDownToLine, KeyRound, CheckCircle2, XCircle, Loader2, History, Paperclip, FileText, Award, Users } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
@@ -215,7 +216,31 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
   if (loading) return <p className="text-sm text-muted-foreground">Carregando...</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <Tabs defaultValue="config">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="config" className="gap-2"><Settings className="h-3.5 w-3.5" /> Configurações</TabsTrigger>
+          <TabsTrigger value="tiers" className="gap-2"><Award className="h-3.5 w-3.5" /> Tiers</TabsTrigger>
+          <TabsTrigger value="saques" className="gap-2">
+            <ArrowDownToLine className="h-3.5 w-3.5" /> Saques
+            {withdrawals.length > 0 && (
+              <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                {withdrawals.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="pix" className="gap-2">
+            <KeyRound className="h-3.5 w-3.5" /> PIX
+            {pixApprovals.length > 0 && (
+              <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                {pixApprovals.length}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Configurações tab */}
+        <TabsContent value="config" className="space-y-8 mt-6">
       {/* Settings */}
       <section>
         <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
@@ -245,6 +270,10 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
         </Card>
       </section>
 
+        </TabsContent>
+
+        {/* Tiers tab */}
+        <TabsContent value="tiers" className="space-y-8 mt-6">
       {/* Tier Definitions */}
       <section>
         <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
@@ -369,6 +398,10 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
         )}
       </section>
 
+        </TabsContent>
+
+        {/* Saques tab */}
+        <TabsContent value="saques" className="space-y-8 mt-6">
       {/* Pending Withdrawals */}
       <section>
         <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
@@ -418,59 +451,6 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
                       className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1"
                     >
                       <CheckCircle2 className="h-4 w-4" /> Marcar como pago
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* PIX Approvals */}
-      <section>
-        <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
-          <KeyRound className="h-4 w-4" /> Aprovações PIX
-          {pixApprovals.length > 0 && (
-            <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
-              {pixApprovals.length}
-            </span>
-          )}
-        </h3>
-        {pixApprovals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma alteração pendente.</p>
-        ) : (
-          <div className="space-y-2">
-            {pixApprovals.map(p => (
-              <Card key={p.sellerId}>
-                <CardContent className="p-4 flex flex-wrap items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{p.sellerName}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Atual ({keyTypeLabels[p.currentPixKeyType]}): <span className="text-foreground">{p.currentPixKey}</span>
-                    </p>
-                    <p className="text-xs mt-0.5">
-                      <span className="text-muted-foreground">Nova ({keyTypeLabels[p.pendingPixKeyType]}):</span>{' '}
-                      <span className="text-accent font-medium">{p.pendingPixKey}</span>
-                    </p>
-                  </div>
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setRejectingPix(p); setRejectReason(''); }}
-                      disabled={actionLoading}
-                      className="gap-1"
-                    >
-                      <XCircle className="h-4 w-4" /> Rejeitar
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleApprovePix(p)}
-                      disabled={actionLoading}
-                      className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1"
-                    >
-                      <CheckCircle2 className="h-4 w-4" /> Aprovar
                     </Button>
                   </div>
                 </CardContent>
@@ -562,6 +542,63 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
         )}
       </section>
 
+        </TabsContent>
+
+        {/* PIX tab */}
+        <TabsContent value="pix" className="space-y-8 mt-6">
+      {/* PIX Approvals */}
+      <section>
+        <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+          <KeyRound className="h-4 w-4" /> Aprovações PIX
+          {pixApprovals.length > 0 && (
+            <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+              {pixApprovals.length}
+            </span>
+          )}
+        </h3>
+        {pixApprovals.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma alteração pendente.</p>
+        ) : (
+          <div className="space-y-2">
+            {pixApprovals.map(p => (
+              <Card key={p.sellerId}>
+                <CardContent className="p-4 flex flex-wrap items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">{p.sellerName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Atual ({keyTypeLabels[p.currentPixKeyType]}): <span className="text-foreground">{p.currentPixKey}</span>
+                    </p>
+                    <p className="text-xs mt-0.5">
+                      <span className="text-muted-foreground">Nova ({keyTypeLabels[p.pendingPixKeyType]}):</span>{' '}
+                      <span className="text-accent font-medium">{p.pendingPixKey}</span>
+                    </p>
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setRejectingPix(p); setRejectReason(''); }}
+                      disabled={actionLoading}
+                      className="gap-1"
+                    >
+                      <XCircle className="h-4 w-4" /> Rejeitar
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleApprovePix(p)}
+                      disabled={actionLoading}
+                      className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1"
+                    >
+                      <CheckCircle2 className="h-4 w-4" /> Aprovar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* PIX Approval History */}
       <section>
         <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
@@ -604,6 +641,9 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
           </div>
         )}
       </section>
+
+        </TabsContent>
+      </Tabs>
 
       {/* Mark-as-paid dialog (with optional receipt) */}
       <Dialog open={!!completingWithdrawal} onOpenChange={(open) => { if (!open) { setCompletingWithdrawal(null); setCompleteReceiptFile(null); } }}>
