@@ -49,6 +49,8 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
   const [pixApprovals, setPixApprovals] = useState<AdminPixApproval[]>([]);
   const [pixHistory, setPixHistory] = useState<AdminPixApprovalHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
+  const [activeTab, setActiveTab] = useState('config');
 
   // Settings form state
   const [withdrawalFeeInput, setWithdrawalFeeInput] = useState('10,00');
@@ -78,7 +80,7 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
   const [showBelowThresholdOnly, setShowBelowThresholdOnly] = useState(false);
 
   async function refresh() {
-    setLoading(true);
+    if (initialLoad) setLoading(true);
     const [s, w, p, wh, ph, tl, swt] = await Promise.all([
       getAdminSettings(),
       getAdminPendingWithdrawals(),
@@ -101,6 +103,7 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
       threshold: (t.minQuarterlyCentavos / 100).toFixed(2).replace('.', ','),
     }])));
     setLoading(false);
+    setInitialLoad(false);
     onChange?.();
   }
 
@@ -217,7 +220,7 @@ export function AdminFinancial({ onChange }: { onChange?: () => void } = {}) {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="config">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="config" className="gap-2"><Settings className="h-3.5 w-3.5" /> Configurações</TabsTrigger>
           <TabsTrigger value="tiers" className="gap-2"><Award className="h-3.5 w-3.5" /> Tiers</TabsTrigger>
