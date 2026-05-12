@@ -12,7 +12,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
-import { searchCardBases, createListing } from '@/lib/api';
+import { searchCardBases, createListing, getMyTierProgress, type MyTierProgress } from '@/lib/api';
 import type { CardBase, GradeCompany } from '@/types';
 
 const IMAGE_SLOTS = ['Frente', 'Verso', 'Label', 'Case'] as const;
@@ -44,6 +44,9 @@ export default function Sell() {
   // Submission state
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [tierProgress, setTierProgress] = useState<MyTierProgress | null>(null);
+  useEffect(() => { getMyTierProgress().then(setTierProgress); }, []);
 
   // Debounced card search
   useEffect(() => {
@@ -286,18 +289,24 @@ export default function Sell() {
             <div className="space-y-2">
               <Label>Preço (R$)</Label>
               <Input type="number" step="0.01" placeholder="0,00" value={price} onChange={(e) => setPrice(e.target.value)} />
-              {price && Number(price) > 0 && (
-                <div className="rounded-md bg-card border border-border px-3 py-2 text-sm space-y-1">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Comissão da plataforma (5%)</span>
-                    <span>- R$ {(Number(price) * 0.05).toFixed(2)}</span>
+              {price && Number(price) > 0 && (() => {
+                const ratePct = tierProgress?.currentTier.commissionRate ?? 11;
+                const rate = ratePct / 100;
+                const tierName = tierProgress?.currentTier.name ?? 'Bronze';
+                const formattedRate = ratePct.toFixed(2).replace('.', ',');
+                return (
+                  <div className="rounded-md bg-card border border-border px-3 py-2 text-sm space-y-1">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Comissão da plataforma — tier {tierName} ({formattedRate}%)</span>
+                      <span>- R$ {(Number(price) * rate).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-medium text-emerald-400">
+                      <span>Você recebe</span>
+                      <span>R$ {(Number(price) * (1 - rate)).toFixed(2)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between font-medium text-emerald-400">
-                    <span>Você recebe</span>
-                    <span>R$ {(Number(price) * 0.95).toFixed(2)}</span>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
             <div className="flex items-center gap-3">
               <Checkbox id="freeShipping" checked={freeShipping} onCheckedChange={(v) => setFreeShipping(!!v)} />
