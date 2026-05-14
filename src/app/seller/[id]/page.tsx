@@ -74,7 +74,7 @@ function SellerProfilePage() {
           {seller.name.charAt(0)}
         </div>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl font-bold">{seller.name}</h1>
             {seller.verified && <VerifiedBadge />}
             {seller.isNew && <Badge variant="secondary" className="text-xs">Novo</Badge>}

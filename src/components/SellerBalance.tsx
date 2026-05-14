@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Wallet, Clock, ArrowDownToLine, Loader2, CheckCircle2, XCircle, AlertCircle, TrendingUp, FileText } from 'lucide-react';
+import { Wallet, Clock, ArrowDownToLine, Loader2, CheckCircle2, XCircle, AlertCircle, TrendingUp, FileText, Award, Info } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { TierBadge } from '@/components/TierBadge';
 import {
   getMyBalance,
   getMyBalanceTransactions,
@@ -16,11 +17,15 @@ import {
   getAdminSettings,
   requestWithdrawal,
   getWithdrawalReceiptUrl,
+  getMyTierProgress,
+  getSellerTiers,
   type SellerBalance as SellerBalanceType,
   type BalanceTransaction,
   type Withdrawal,
   type SellerPix,
   type AdminSettings,
+  type MyTierProgress,
+  type SellerTier,
 } from '@/lib/api';
 
 const statusLabels: Record<string, string> = {
@@ -36,8 +41,23 @@ export function SellerBalance() {
   const [transactions, setTransactions] = useState<BalanceTransaction[]>([]);
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [pix, setPix] = useState<SellerPix | null>(null);
-  const [settings, setSettings] = useState<AdminSettings>({ defaultCommissionRate: 0.05, withdrawalFeeCentavos: 1000 });
+  const [settings, setSettings] = useState<AdminSettings>({ withdrawalFeeCentavos: 1000 });
+  const [tierProgress, setTierProgress] = useState<MyTierProgress | null>(null);
+  const [allTiers, setAllTiers] = useState<SellerTier[]>([]);
+  const [tierInfoOpen, setTierInfoOpen] = useState(false);
+  const tierInfoRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!tierInfoOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (tierInfoRef.current && !tierInfoRef.current.contains(e.target as Node)) {
+        setTierInfoOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [tierInfoOpen]);
 
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -46,18 +66,22 @@ export function SellerBalance() {
 
   async function refresh() {
     setLoading(true);
-    const [b, t, w, p, s] = await Promise.all([
+    const [b, t, w, p, s, tp, at] = await Promise.all([
       getMyBalance(),
       getMyBalanceTransactions(),
       getMyWithdrawals(),
       getMyPix(),
       getAdminSettings(),
+      getMyTierProgress(),
+      getSellerTiers(),
     ]);
     setBalance(b);
     setTransactions(t);
     setWithdrawals(w);
     setPix(p);
     setSettings(s);
+    setTierProgress(tp);
+    setAllTiers(at);
     setLoading(false);
   }
 
@@ -154,21 +178,119 @@ export function SellerBalance() {
         </Card>
       </div>
 
-      {/* Lifetime aggregate */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary border border-border">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+      {/* Lifetime aggregate + Tier progression */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary border border-border">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Ganho</p>
+                <p className="text-[10px] text-muted-foreground">Receita líquida acumulada de todas as vendas</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Total Ganho</p>
-              <p className="text-[10px] text-muted-foreground">Receita líquida acumulada de todas as vendas</p>
+            <p className="text-xl font-bold">R$ {formatPrice(totalEarnedCentavos)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="relative">
+          {/* Tier info popover trigger (top-right) */}
+          {allTiers.length > 0 && (
+            <div ref={tierInfoRef} className="absolute top-3 right-3 z-10">
+              <button
+                type="button"
+                onClick={() => setTierInfoOpen(o => !o)}
+                aria-label="Ver detalhes dos tiers"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+              {tierInfoOpen && (
+                <div className="absolute right-0 top-6 w-72 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg p-3 space-y-2">
+                  <p className="text-xs font-semibold">Como funcionam os tiers</p>
+                  <div className="space-y-1.5">
+                    {allTiers.map(t => {
+                      const isCurrent = tierProgress?.currentTier.id === t.id;
+                      return (
+                        <div
+                          key={t.id}
+                          className={`flex items-center justify-between gap-2 text-xs rounded px-2 py-1.5 ${isCurrent ? 'bg-secondary' : ''}`}
+                        >
+                          <TierBadge name={t.name} size="xs" />
+                          <span className="text-muted-foreground">
+                            {t.commissionRate.toFixed(2).replace('.', ',')}%
+                          </span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            {t.minQuarterlyCentavos > 0
+                              ? `≥ R$ ${formatPrice(t.minQuarterlyCentavos)}/trim.`
+                              : 'inicial'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground pt-1">
+                    Promoções são imediatas. Rebaixamentos ocorrem ao final do trimestre.
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-          <p className="text-xl font-bold">R$ {formatPrice(totalEarnedCentavos)}</p>
-        </CardContent>
-      </Card>
+          )}
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary border border-border">
+                <Award className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-xs text-muted-foreground">Seu tier atual</p>
+                  {tierProgress && <TierBadge name={tierProgress.currentTier.name} locked={tierProgress.locked} />}
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Trimestre {Math.floor(new Date().getMonth() / 3) + 1} de {new Date().getFullYear()}
+                </p>
+              </div>
+            </div>
+            {tierProgress ? (
+              tierProgress.locked ? (
+                <p className="text-sm text-muted-foreground">
+                  Sua taxa de comissão atual é de {tierProgress.currentTier.commissionRate.toFixed(2).replace('.', ',')}%. Tier fixado pelo administrador.
+                </p>
+              ) : tierProgress.nextTier ? (
+                <>
+                  <p className="text-sm">
+                    Você está a <span className="font-bold text-foreground">R$ {formatPrice(tierProgress.toNextTierCentavos)}</span> de atingir o tier <span className="font-semibold">{tierProgress.nextTier.name}</span> e reduzir a taxa de comissão de {tierProgress.currentTier.commissionRate.toFixed(2).replace('.', ',')}% para {tierProgress.nextTier.commissionRate.toFixed(2).replace('.', ',')}%.
+                  </p>
+                  {tierProgress.nextTier.minQuarterlyCentavos > 0 && (
+                    <div className="mt-2 h-2 rounded-full bg-secondary overflow-hidden">
+                      <div
+                        className="h-full bg-accent transition-[width]"
+                        style={{ width: `${Math.min(100, Math.round((tierProgress.quarterVolumeCentavos / tierProgress.nextTier.minQuarterlyCentavos) * 100))}%` }}
+                      />
+                    </div>
+                  )}
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Vendido neste trimestre: R$ {formatPrice(tierProgress.quarterVolumeCentavos)} de R$ {formatPrice(tierProgress.nextTier.minQuarterlyCentavos)}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm">
+                    Você atingiu o tier máximo. Sua taxa de comissão é de <span className="font-bold">{tierProgress.currentTier.commissionRate.toFixed(2).replace('.', ',')}%</span>.
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Vendido neste trimestre: R$ {formatPrice(tierProgress.quarterVolumeCentavos)} (mínimo R$ {formatPrice(tierProgress.currentTier.minQuarterlyCentavos)} para manter {tierProgress.currentTier.name})
+                  </p>
+                </>
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground">Carregando tier...</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Withdrawal history */}
       {withdrawals.length > 0 && (

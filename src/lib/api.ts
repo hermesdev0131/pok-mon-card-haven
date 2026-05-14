@@ -1555,7 +1555,6 @@ export interface Withdrawal {
 }
 
 export interface AdminSettings {
-  defaultCommissionRate: number;
   withdrawalFeeCentavos: number;
 }
 
@@ -1698,12 +1697,11 @@ export async function getAdminSettings(): Promise<AdminSettings> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('admin_settings')
-    .select('default_commission_rate, withdrawal_fee_centavos')
+    .select('withdrawal_fee_centavos')
     .eq('id', 1)
     .maybeSingle();
   logIfError('getAdminSettings', error);
   return {
-    defaultCommissionRate: Number(data?.default_commission_rate ?? 0.05),
     withdrawalFeeCentavos: data?.withdrawal_fee_centavos ?? 1000,
   };
 }
@@ -2052,14 +2050,183 @@ export async function getAdminPixApprovalHistory(limit = 50): Promise<AdminPixAp
 
 /** Update admin settings (commission rate, withdrawal fee) (admin only) */
 export async function updateAdminSettings(
-  defaultCommissionRate: number,
   withdrawalFeeCentavos: number,
 ): Promise<{ success: true } | { success: false; error: string }> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('admin_settings').update({
-    default_commission_rate: defaultCommissionRate,
     withdrawal_fee_centavos: withdrawalFeeCentavos,
   }).eq('id', 1);
   if (error) { logIfError('updateAdminSettings', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+// ════════════════════════════════════════════════
+// Seller Tiers (Bronze / Prata / Ouro)
+// ════════════════════════════════════════════════
+
+export interface SellerTier {
+  id: string;
+  name: string;                       // 'Bronze' | 'Prata' | 'Ouro'
+  displayOrder: number;
+  commissionRate: number;             // percentage, e.g. 11.00
+  minQuarterlyCentavos: number;
+}
+
+export interface MyTierProgress {
+  currentTier: SellerTier;
+  nextTier: SellerTier | null;        // null if at the top
+  quarterVolumeCentavos: number;
+  toNextTierCentavos: number;         // 0 if no next tier or already over threshold
+  locked: boolean;
+}
+
+export interface AdminSellerWithTier {
+  sellerId: string;
+  storeName: string;
+  tier: SellerTier;
+  tierLocked: boolean;
+  quarterVolumeCentavos: number;
+}
+
+/** Read all tier definitions, ordered Bronze → Ouro */
+export async function getSellerTiers(): Promise<SellerTier[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('seller_tiers')
+    .select('*')
+    .order('display_order', { ascending: true });
+  logIfError('getSellerTiers', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map(t => ({
+    id: t.id,
+    name: t.name,
+    displayOrder: t.display_order,
+    commissionRate: Number(t.commission_rate),
+    minQuarterlyCentavos: t.min_quarterly_centavos,
+  }));
+}
+
+/** Lookup a single seller's tier (for public profile badge) */
+export async function getSellerTier(sellerId: string): Promise<SellerTier | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('seller_profiles')
+    .select('tier:seller_tiers(*)')
+    .eq('id', sellerId)
+    .maybeSingle();
+  logIfError('getSellerTier', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = (data as any)?.tier;
+  if (!t) return null;
+  return {
+    id: t.id,
+    name: t.name,
+    displayOrder: t.display_order,
+    commissionRate: Number(t.commission_rate),
+    minQuarterlyCentavos: t.min_quarterly_centavos,
+  };
+}
+
+/** Current seller's tier + this quarter's progress to next tier */
+export async function getMyTierProgress(): Promise<MyTierProgress | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const [tiers, profileRes, volumeRes] = await Promise.all([
+    getSellerTiers(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('seller_profiles')
+      .select('tier_id, tier_locked')
+      .eq('id', user.id)
+      .maybeSingle(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('seller_quarterly_sales')
+      .select('quarter_volume_centavos')
+      .eq('seller_id', user.id)
+      .maybeSingle(),
+  ]);
+  logIfError('getMyTierProgress.profile', profileRes.error);
+  logIfError('getMyTierProgress.volume', volumeRes.error);
+
+  if (!tiers.length) return null;
+  const profile = profileRes.data;
+  const currentTier = tiers.find(t => t.id === profile?.tier_id) ?? tiers[0];
+  const nextTier = tiers.find(t => t.displayOrder === currentTier.displayOrder + 1) ?? null;
+  const quarterVolume = volumeRes.data?.quarter_volume_centavos ?? 0;
+  const toNext = nextTier ? Math.max(0, nextTier.minQuarterlyCentavos - quarterVolume) : 0;
+
+  return {
+    currentTier,
+    nextTier,
+    quarterVolumeCentavos: quarterVolume,
+    toNextTierCentavos: toNext,
+    locked: !!profile?.tier_locked,
+  };
+}
+
+/** Admin: list all sellers with their current tier and current quarter sales */
+export async function getAdminSellersWithTiers(): Promise<AdminSellerWithTier[]> {
+  const tiers = await getSellerTiers();
+  const tierMap = new Map(tiers.map(t => [t.id, t]));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sellers, error } = await (supabase as any)
+    .from('seller_profiles')
+    .select('id, store_name, tier_id, tier_locked')
+    .order('store_name', { ascending: true });
+  logIfError('getAdminSellersWithTiers.sellers', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sellerRows = (sellers ?? []) as any[];
+  if (!sellerRows.length) return [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: volumes } = await (supabase as any)
+    .from('seller_quarterly_sales')
+    .select('seller_id, quarter_volume_centavos')
+    .in('seller_id', sellerRows.map(s => s.id));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const volMap = new Map(((volumes ?? []) as any[]).map(v => [v.seller_id, v.quarter_volume_centavos]));
+
+  return sellerRows.map(s => ({
+    sellerId: s.id,
+    storeName: s.store_name,
+    tier: tierMap.get(s.tier_id) ?? tiers[0],
+    tierLocked: !!s.tier_locked,
+    quarterVolumeCentavos: (volMap.get(s.id) ?? 0) as number,
+  }));
+}
+
+/** Admin: assign a seller to a specific tier (with optional lock) */
+export async function setSellerTier(
+  sellerId: string,
+  tierId: string,
+  locked: boolean,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('seller_profiles').update({
+    tier_id: tierId,
+    tier_locked: locked,
+    tier_assigned_at: new Date().toISOString(),
+    tier_assigned_by: user?.id ?? null,
+  }).eq('id', sellerId);
+  if (error) { logIfError('setSellerTier', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+/** Admin: edit a tier definition (rate and/or threshold) */
+export async function updateTierDefinition(
+  tierId: string,
+  commissionRate: number,
+  minQuarterlyCentavos: number,
+): Promise<{ success: true } | { success: false; error: string }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).from('seller_tiers').update({
+    commission_rate: commissionRate,
+    min_quarterly_centavos: minQuarterlyCentavos,
+  }).eq('id', tierId);
+  if (error) { logIfError('updateTierDefinition', error); return { success: false, error: error.message }; }
   return { success: true };
 }
