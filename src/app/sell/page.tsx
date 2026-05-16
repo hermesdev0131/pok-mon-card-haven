@@ -162,17 +162,36 @@ export default function Sell() {
               <Label>Carta</Label>
               <div className="relative">
                 {selectedCardBase ? (
-                  <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <span className="flex-1 font-medium">{selectedCardBase.name}</span>
-                    <span className="text-muted-foreground text-xs">{selectedCardBase.set} · {selectedCardBase.number}</span>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedCardBase(null); setCardSearchQuery(''); }}
-                      className="ml-1 rounded-sm opacity-70 hover:opacity-100"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <span className="flex-1 font-medium">{selectedCardBase.name}</span>
+                      <span className="text-muted-foreground text-xs">{selectedCardBase.set} · {selectedCardBase.number}</span>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedCardBase(null); setCardSearchQuery(''); }}
+                        className="ml-1 rounded-sm opacity-70 hover:opacity-100"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {/* Visual preview of selected card */}
+                    <div className="mt-3 flex flex-col items-center gap-2">
+                      {selectedCardBase.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={selectedCardBase.imageUrl}
+                          alt={selectedCardBase.name}
+                          className="w-40 sm:w-48 rounded-lg border border-border shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-40 sm:w-48 aspect-[5/7] rounded-lg border border-dashed border-border bg-secondary flex flex-col items-center justify-center text-center px-3">
+                          <ImagePlus className="h-6 w-6 text-muted-foreground mb-2" />
+                          <p className="text-xs text-muted-foreground">Imagem não disponível para esta carta</p>
+                        </div>
+                      )}
+                      <p className="text-[11px] text-muted-foreground">Confirme que esta é a carta que você quer anunciar</p>
+                    </div>
+                  </>
                 ) : (
                   <Input
                     placeholder="Buscar por nome, set ou número..."
