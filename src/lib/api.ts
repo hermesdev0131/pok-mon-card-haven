@@ -984,18 +984,16 @@ export async function updateOrderShipping(
   orderId: string,
   shippingCost: number,
 ): Promise<{ success: true } | { success: false; error: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autenticado' };
-
+  // Atomic via RPC: if the listing has free_shipping, this also recalculates
+  // seller_payout = price - platform_fee - shipping_cost so the seller actually
+  // absorbs the shipping cost as intended.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('orders')
-    .update({ shipping_cost: shippingCost })
-    .eq('id', orderId)
-    .eq('buyer_id', user.id)
-    .eq('status', 'awaiting_payment');
-
+  const { data, error } = await (supabase as any).rpc('update_order_shipping', {
+    p_order_id: orderId,
+    p_shipping_cost: shippingCost,
+  });
   if (error) { logIfError('updateOrderShipping', error); return { success: false, error: error.message }; }
+  if (data && data.success === false) return { success: false, error: data.error ?? 'Erro ao atualizar frete' };
   return { success: true };
 }
 
