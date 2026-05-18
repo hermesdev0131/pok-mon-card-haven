@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
 import { searchCardBases, createListing, getMyTierProgress, type MyTierProgress } from '@/lib/api';
+import { getGradeScale, formatGrade } from '@/lib/grade-scales';
 import type { CardBase, GradeCompany } from '@/types';
 
 const IMAGE_SLOTS = ['Frente', 'Verso', 'Label', 'Case'] as const;
@@ -229,7 +230,20 @@ export default function Sell() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Empresa de grading</Label>
-                <Select value={gradeCompany} onValueChange={(v) => { setGradeCompany(v); if (grade === 'pristine-10' && !['CGC', 'TAG', 'Beckett'].includes(v)) setGrade(''); }}>
+                <Select
+                  value={gradeCompany}
+                  onValueChange={(v) => {
+                    setGradeCompany(v);
+                    // Reset grade if it's no longer valid for the new company
+                    const newScale = getGradeScale(v);
+                    if (grade === 'pristine-10' && !newScale.hasPristine) {
+                      setGrade('');
+                    } else if (grade && grade !== 'pristine-10' && grade !== 'other') {
+                      const num = Number(grade);
+                      if (!newScale.grades.includes(num)) setGrade('');
+                    }
+                  }}
+                >
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PSA">PSA</SelectItem>
@@ -248,19 +262,23 @@ export default function Sell() {
               </div>
               <div className="space-y-2">
                 <Label>Grade</Label>
-                <Select value={grade} onValueChange={(v) => { setGrade(v); setOtherGrade(''); }}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={grade} onValueChange={(v) => { setGrade(v); setOtherGrade(''); }} disabled={!gradeCompany}>
+                  <SelectTrigger><SelectValue placeholder={gradeCompany ? 'Selecione' : 'Escolha o grader primeiro'} /></SelectTrigger>
                   <SelectContent>
-                    {['CGC', 'TAG', 'Beckett'].includes(gradeCompany) && (
-                      <SelectItem value="pristine-10">Pristine 10</SelectItem>
-                    )}
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="9.5">9.5</SelectItem>
-                    <SelectItem value="9">9</SelectItem>
-                    <SelectItem value="8.5">8.5</SelectItem>
-                    <SelectItem value="8">8</SelectItem>
-                    <SelectItem value="7">7</SelectItem>
-                    <SelectItem value="other">Outro</SelectItem>
+                    {(() => {
+                      const scale = getGradeScale(gradeCompany);
+                      const items: React.ReactNode[] = [];
+                      if (scale.hasPristine) {
+                        items.push(<SelectItem key="pristine-10" value="pristine-10">Pristine 10</SelectItem>);
+                      }
+                      for (const g of scale.grades) {
+                        items.push(<SelectItem key={String(g)} value={String(g)}>{formatGrade(g)}</SelectItem>);
+                      }
+                      if (gradeCompany === 'OTHER') {
+                        items.push(<SelectItem key="other" value="other">Outro</SelectItem>);
+                      }
+                      return items;
+                    })()}
                   </SelectContent>
                 </Select>
                 {grade === 'other' && (

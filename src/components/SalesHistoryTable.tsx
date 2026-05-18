@@ -10,15 +10,20 @@ import { Pagination } from './Pagination';
 import { usePagination } from '@/hooks/usePagination';
 import { formatPrice } from '@/lib/utils';
 import { isNacionalCompany } from '@/lib/grading-groups';
+import { getGradeScale, formatGrade } from '@/lib/grade-scales';
 import type { SaleRecord } from '@/types';
 import type { GradeCompany } from '@/types/database';
 
 type GradingFilter = 'all' | 'nacional' | 'internacional';
 type LanguageFilter = 'all' | 'PT' | 'EN' | 'JP';
 
+const ALL_COMPANIES = ['PSA', 'CGC', 'Beckett', 'TAG', 'AGS', 'ARS', 'ManaFix', 'GBA', 'Capy', 'Taverna'];
+
 export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
   const [gradingFilter, setGradingFilter] = useState<GradingFilter>('all');
   const [languageFilter, setLanguageFilter] = useState<LanguageFilter>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>('all');
+  const [gradeFilter, setGradeFilter] = useState<string>('all'); // 'all' | 'pristine' | numeric string
 
   const filteredSales = useMemo(() => {
     return sales.filter((sale) => {
@@ -26,15 +31,31 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
       if (gradingFilter === 'nacional' && !isNacionalCompany(company)) return false;
       if (gradingFilter === 'internacional' && isNacionalCompany(company)) return false;
       if (languageFilter !== 'all' && sale.language !== languageFilter) return false;
+      if (companyFilter !== 'all' && sale.gradeCompany !== companyFilter) return false;
+      if (gradeFilter !== 'all') {
+        if (gradeFilter === 'pristine') {
+          if (!sale.pristine) return false;
+        } else {
+          if (sale.pristine) return false;
+          if (sale.grade !== Number(gradeFilter)) return false;
+        }
+      }
       return true;
     });
-  }, [sales, gradingFilter, languageFilter]);
+  }, [sales, gradingFilter, languageFilter, companyFilter, gradeFilter]);
 
   const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(filteredSales, 10);
 
   useEffect(() => {
     setPage(1);
-  }, [gradingFilter, languageFilter, setPage]);
+  }, [gradingFilter, languageFilter, companyFilter, gradeFilter, setPage]);
+
+  // When company filter changes, reset the grade filter so it can't carry an invalid value
+  useEffect(() => {
+    setGradeFilter('all');
+  }, [companyFilter]);
+
+  const gradeScale = companyFilter === 'all' ? null : getGradeScale(companyFilter);
 
   if (!sales.length) {
     return (
@@ -67,6 +88,33 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
               <SelectItem value="PT">Português</SelectItem>
               <SelectItem value="EN">Inglês</SelectItem>
               <SelectItem value="JP">Japonês</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Empresa de grading</Label>
+          <Select value={companyFilter} onValueChange={setCompanyFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              {ALL_COMPANIES.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Grade</Label>
+          <Select value={gradeFilter} onValueChange={setGradeFilter} disabled={!gradeScale}>
+            <SelectTrigger className="w-[140px]"><SelectValue placeholder={gradeScale ? 'Todas' : 'Escolha o grader'} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              {gradeScale?.hasPristine && (
+                <SelectItem value="pristine">Pristine</SelectItem>
+              )}
+              {gradeScale?.grades.map((g) => (
+                <SelectItem key={String(g)} value={String(g)}>{formatGrade(g)}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
