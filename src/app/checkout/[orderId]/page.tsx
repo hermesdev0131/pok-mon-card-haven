@@ -73,11 +73,13 @@ export default function Checkout() {
     }
   }, [params.orderId, tokenRefreshCount]);
 
-  // Auto-fill buyer CEP from profile and auto-calculate shipping
+  // Auto-fill buyer CEP from profile and auto-calculate shipping.
+  // For free_shipping orders we still calculate shipping (the seller absorbs the cost
+  // via reduced seller_payout) so the buyer just needs to provide their CEP.
   const autoCalcDone = useRef(false);
   useEffect(() => {
     if (!order || !profile || !isBuyer || order.status !== 'aguardando_pagamento') return;
-    if (order.shippingCost > 0 || order.freeShipping) return;
+    if (order.shippingCost > 0) return;
     if (autoCalcDone.current) return;
     if (profile.address_zip && !buyerCep) {
       const cep = profile.address_zip.replace(/\D/g, '');
@@ -636,8 +638,10 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {/* Shipping calculator — only for buyer, before payment */}
-            {isBuyer && !isPostPayment && !order.freeShipping && (
+            {/* Shipping calculator — only for buyer, before payment.
+                Shown for both regular and free_shipping orders since the system
+                still needs the buyer's CEP (carrier + seller_payout calculation). */}
+            {isBuyer && !isPostPayment && (
               <Card className="glass mb-6">
                 <CardContent className="p-4 space-y-3">
                   <p className="text-sm font-medium flex items-center gap-2"><Truck className="h-4 w-4 text-accent" /> Calcular frete</p>
@@ -720,12 +724,20 @@ export default function Checkout() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
-                  <span>{order.shippingCost > 0 ? `R$ ${formatPrice(order.shippingCost)}` : order.freeShipping ? 'Grátis' : 'Informe seu CEP'}</span>
+                  {order.shippingCost > 0 ? (
+                    order.freeShipping ? (
+                      <span className="text-emerald-400">R$ {formatPrice(order.shippingCost)} <span className="text-[11px]">(pago pelo vendedor)</span></span>
+                    ) : (
+                      <span>R$ {formatPrice(order.shippingCost)}</span>
+                    )
+                  ) : (
+                    <span>Informe seu CEP</span>
+                  )}
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-foreground">R$ {formatPrice(order.price + (order.shippingCost ?? 0))}</span>
+                  <span className="text-foreground">R$ {formatPrice(order.price + (order.freeShipping ? 0 : (order.shippingCost ?? 0)))}</span>
                 </div>
               </CardContent>
             </Card>
@@ -746,10 +758,10 @@ export default function Checkout() {
 
                 {!isPostPayment && (
                   <>
-                    {!order.freeShipping && order.shippingCost === 0 && (
+                    {order.shippingCost === 0 && (
                       <p className="text-xs text-amber-400 text-center mb-3">Calcule o frete antes de pagar</p>
                     )}
-                    <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying || (!order.freeShipping && order.shippingCost === 0)}>
+                    <Button size="lg" className="w-full mb-3" onClick={handlePay} disabled={paying || order.shippingCost === 0}>
                       {paying
                         ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> <span>Aguarde...</span></>
                         : 'Pagar com Mercado Pago'}
