@@ -1525,6 +1525,8 @@ export interface BalanceTransaction {
   priceCentavos: number;
   platformFeeCentavos: number;
   sellerPayoutCentavos: number;
+  shippingCostCentavos: number; // 0 if no shipping or buyer paid
+  sellerPaidShipping: boolean;  // true when listing.free_shipping was on (shipping deducted from payout)
 }
 
 export interface SellerPix {
@@ -1582,7 +1584,7 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
 
   const { data, error } = await supabase
     .from('orders')
-    .select('id, status, price, platform_fee, seller_payout, paid_at, completed_at, created_at, listing_id')
+    .select('id, status, price, platform_fee, seller_payout, shipping_cost, paid_at, completed_at, created_at, listing_id')
     .eq('seller_id', user.id)
     .in('status', ['payment_confirmed', 'awaiting_shipment', 'shipped', 'delivered', 'completed'] as string[])
     .order('created_at', { ascending: false })
@@ -1593,11 +1595,11 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
   const orderRows = (data ?? []) as any[];
   if (!orderRows.length) return [];
 
-  // Fetch listings to get card names
+  // Fetch listings to get card names and free_shipping flag
   const listingIds = orderRows.map(o => o.listing_id);
   const { data: listingRows } = await supabase
     .from('listings')
-    .select('id, card_base_id')
+    .select('id, card_base_id, free_shipping')
     .in('id', listingIds);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const listings = (listingRows ?? []) as any[];
@@ -1613,7 +1615,11 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
   for (const c of (cardRows ?? []) as any[]) cardMap[c.id] = c.name;
 
   const listingToCard: Record<string, string> = {};
-  for (const l of listings) listingToCard[l.id] = cardMap[l.card_base_id] ?? 'Carta';
+  const listingToFreeShipping: Record<string, boolean> = {};
+  for (const l of listings) {
+    listingToCard[l.id] = cardMap[l.card_base_id] ?? 'Carta';
+    listingToFreeShipping[l.id] = !!l.free_shipping;
+  }
 
   return orderRows.map(o => ({
     orderId: o.id,
@@ -1623,6 +1629,8 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
     priceCentavos: o.price,
     platformFeeCentavos: o.platform_fee,
     sellerPayoutCentavos: o.seller_payout,
+    shippingCostCentavos: o.shipping_cost ?? 0,
+    sellerPaidShipping: listingToFreeShipping[o.listing_id] ?? false,
   }));
 }
 
