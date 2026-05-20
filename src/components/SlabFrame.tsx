@@ -26,11 +26,14 @@ const WINDOW = {
 export function SlabFrame({ variant, children, className, slabSizes }: SlabFrameProps) {
   return (
     <div className={cn('relative aspect-[870/1419] overflow-hidden', className)}>
-      {/* Slab background PNG (cropped to visible content, fills the container) */}
+      {/* Slab background (cropped WebP, fills the container).
+          unoptimized=true bypasses Next.js image processing so the URL matches
+          the preload <link> tag exactly and the file is served directly from /public. */}
       <Image
-        src={`/slabs/${variant}.png`}
+        src={`/slabs/${variant}.webp`}
         alt=""
         fill
+        unoptimized
         priority={false}
         className="object-contain pointer-events-none select-none"
         sizes={slabSizes ?? '(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw'}
