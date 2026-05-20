@@ -62,7 +62,7 @@ function CardCarousel({ items }: { items: CardBaseWithStats[] }) {
       <div ref={scrollRef} className="flex gap-4 overflow-x-auto snap-x snap-mandatory -mx-4 px-4 pb-2 md:grid md:gap-5 md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0 md:pb-0 lg:grid-cols-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item) => (
           <div key={item.cardBase.id} className="shrink-0 w-[60%] sm:w-[48%] snap-start md:w-auto md:shrink">
-            <CardBaseCard item={item} />
+            <CardBaseCard item={item} slabVariant="misto" />
           </div>
         ))}
       </div>

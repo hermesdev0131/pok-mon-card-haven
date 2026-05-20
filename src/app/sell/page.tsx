@@ -14,6 +14,8 @@ import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
 import { searchCardBases, createListing, getMyTierProgress, type MyTierProgress } from '@/lib/api';
 import { getGradeScale, formatGrade } from '@/lib/grade-scales';
+import { SlabFrame } from '@/components/SlabFrame';
+import { isNacionalCompany } from '@/lib/grading-groups';
 import type { CardBase, GradeCompany } from '@/types';
 
 const IMAGE_SLOTS = ['Frente', 'Verso', 'Label', 'Case'] as const;
@@ -175,21 +177,30 @@ export default function Sell() {
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                    {/* Visual preview of selected card */}
+                    {/* Visual preview of selected card, wrapped in the slab matching
+                        the seller's chosen grading company (nacional vs internacional).
+                        Defaults to "misto" until they pick a company. */}
                     <div className="mt-3 flex flex-col items-center gap-2">
-                      {selectedCardBase.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={selectedCardBase.imageUrl}
-                          alt={selectedCardBase.name}
-                          className="w-40 sm:w-48 rounded-lg border border-border shadow-sm"
-                        />
-                      ) : (
-                        <div className="w-40 sm:w-48 aspect-[5/7] rounded-lg border border-dashed border-border bg-secondary flex flex-col items-center justify-center text-center px-3">
-                          <ImagePlus className="h-6 w-6 text-muted-foreground mb-2" />
-                          <p className="text-xs text-muted-foreground">Imagem não disponível para esta carta</p>
-                        </div>
-                      )}
+                      <div className="w-40 sm:w-48">
+                        <SlabFrame
+                          variant={gradeCompany ? (isNacionalCompany(gradeCompany as 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'ManaFix' | 'GBA' | 'Capy' | 'Taverna') ? 'nacional' : 'internacional') : 'misto'}
+                          slabSizes="192px"
+                        >
+                          {selectedCardBase.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={selectedCardBase.imageUrl}
+                              alt={selectedCardBase.name}
+                              className="absolute inset-0 w-full h-full object-contain"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
+                              <ImagePlus className="h-5 w-5 text-muted-foreground mb-1" />
+                              <p className="text-[10px] text-muted-foreground">Imagem não disponível</p>
+                            </div>
+                          )}
+                        </SlabFrame>
+                      </div>
                       <p className="text-[11px] text-muted-foreground">Confirme que esta é a carta que você quer anunciar</p>
                     </div>
                   </>

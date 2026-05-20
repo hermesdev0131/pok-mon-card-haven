@@ -124,7 +124,7 @@ function SearchPageContent() {
                   </h2>
                   <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                     {cards.map((item) => (
-                      <CardBaseCard key={item.cardBase.id} item={item} />
+                      <CardBaseCard key={item.cardBase.id} item={item} slabVariant="misto" />
                     ))}
                   </div>
                 </section>

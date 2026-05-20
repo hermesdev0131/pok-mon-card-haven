@@ -131,7 +131,14 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
         <>
           <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {paged.map((item) => (
-              <CardBaseCard key={item.cardBase.id} item={item} gradingGroup={activeGroup} />
+              <CardBaseCard
+                key={item.cardBase.id}
+                item={item}
+                gradingGroup={activeGroup}
+                // Slab is determined by the PAGE (where the user is browsing), not by the active filter.
+                // Combined /marketplace page uses the "misto" slab regardless of filter selection.
+                slabVariant={gradingGroup ?? 'misto'}
+              />
             ))}
           </div>
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
