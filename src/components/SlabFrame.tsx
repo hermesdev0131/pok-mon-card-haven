@@ -12,20 +12,21 @@ interface SlabFrameProps {
   slabSizes?: string;
 }
 
-// Per-slab inner window position as percentages of the 1200×1680 PNG.
-// The slab has a logo strip at the top (~0-21%) and an inner empty area below
-// where the actual card image sits.
+// Per-slab inner window position as percentages of the 870×1419 cropped PNG.
+// The slab has a logo strip at the top (~0-27%) and an inner empty area below
+// where the actual card image sits. Inner window aspect (~0.72) closely matches
+// standard Pokémon card aspect (5/7 ≈ 0.714).
 const WINDOW = {
-  top: '22%',
-  left: '10%',
-  right: '10%',
-  bottom: '5%',
+  top: '27%',
+  left: '12%',
+  right: '12%',
+  bottom: '8%',
 };
 
 export function SlabFrame({ variant, children, className, slabSizes }: SlabFrameProps) {
   return (
-    <div className={cn('relative aspect-[5/7] overflow-hidden', className)}>
-      {/* Slab background PNG */}
+    <div className={cn('relative aspect-[870/1419] overflow-hidden', className)}>
+      {/* Slab background PNG (cropped to visible content, fills the container) */}
       <Image
         src={`/slabs/${variant}.png`}
         alt=""

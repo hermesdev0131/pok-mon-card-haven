@@ -26,11 +26,11 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
                 alt={cardBase.name}
                 fill
                 quality={95}
-                className="object-contain group-hover:scale-[1.03] transition-transform duration-500"
+                className="object-contain"
                 sizes="(max-width: 768px) 40vw, (max-width: 1024px) 26vw, 16vw"
               />
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-30 group-hover:scale-[1.03] transition-transform duration-500">
+              <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-30">
                 🃏
               </div>
             )}

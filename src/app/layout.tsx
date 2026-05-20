@@ -30,6 +30,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        {/* Preload slab background images so they paint together with the card
+            images on the marketplace grid, instead of appearing a moment later. */}
+        <link rel="preload" as="image" href="/slabs/nacional.png" />
+        <link rel="preload" as="image" href="/slabs/internacional.png" />
+        <link rel="preload" as="image" href="/slabs/misto.png" />
+      </head>
       <body className={`${spaceGrotesk.variable} font-sans`} suppressHydrationWarning>
         <Providers>
           <div className="flex min-h-screen flex-col relative">

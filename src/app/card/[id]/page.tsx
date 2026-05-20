@@ -125,7 +125,7 @@ function CardDetailPage() {
             alt={cardBase.name}
             fill
             unoptimized
-            className="object-contain group-hover/img:scale-[1.03] transition-transform duration-500"
+            className="object-contain"
             sizes="(max-width: 1024px) 90px, 320px"
             priority
           />
