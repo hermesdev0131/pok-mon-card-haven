@@ -705,12 +705,27 @@ export async function getSellersForListings(sellerIds: string[]): Promise<Record
 
 export async function searchCardBases(query: string): Promise<CardBase[]> {
   if (!query.trim()) return [];
-  const { data, error } = await supabase
-    .from('card_bases')
-    .select('*')
-    .or(`name.ilike.%${query}%,set_name.ilike.%${query}%,number.ilike.%${query}%`)
-    .order('name', { ascending: true })
-    .limit(20);
+
+  // Split the query into words and require every word to match somewhere
+  // (name OR set_name OR number). Chained .or() calls are AND-ed together by
+  // PostgREST, so "Umbreon VMAX 215" matches name "Umbreon VMAX" + number 215,
+  // and "Umbreon Evolving Skies" matches name + set_name.
+  const words = query
+    .trim()
+    .split(/\s+/)
+    // strip characters that would break PostgREST's or() filter grammar
+    .map((w) => w.replace(/[,()*]/g, '').trim())
+    .filter(Boolean)
+    .slice(0, 6); // cap to keep the query bounded
+
+  if (words.length === 0) return [];
+
+  let q = supabase.from('card_bases').select('*');
+  for (const word of words) {
+    q = q.or(`name.ilike.%${word}%,set_name.ilike.%${word}%,number.ilike.%${word}%`);
+  }
+
+  const { data, error } = await q.order('name', { ascending: true }).limit(20);
   logIfError('searchCardBases', error);
   return ((data ?? []) as CardBaseRow[]).map(mapCardBase);
 }
