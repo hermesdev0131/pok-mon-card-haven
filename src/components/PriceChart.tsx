@@ -28,6 +28,7 @@ const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   PT: 'Português',
   EN: 'Inglês',
   JP: '日本語',
+  ZH: '中文',
 };
 
 // 'BL' is the sentinel value for the Black Label / Pristine grade pill.

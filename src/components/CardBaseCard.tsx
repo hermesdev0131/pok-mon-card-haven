@@ -59,7 +59,7 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
         {/* Card info */}
         <div className="p-4 space-y-1.5">
           <h3 className="font-semibold text-sm leading-tight line-clamp-1">{cardBase.name}</h3>
-          <p className="text-[11px] text-muted-foreground line-clamp-1">{cardBase.set} · #{cardBase.number}</p>
+          <p className="text-[11px] text-muted-foreground line-clamp-1">{cardBase.set}{cardBase.number && cardBase.number !== '0' ? ` · #${cardBase.number}` : ''}</p>
 
           <div className="pt-1">
             <p className="text-sm font-bold text-accent">

@@ -19,6 +19,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
 import { getCardBase, getListingsForCard, getSalesHistory, getPriceHistory, getSellersForListings } from '@/lib/api';
 import { isNacionalCompany, NACIONAL_COMPANIES, INTERNACIONAL_COMPANIES } from '@/lib/grading-groups';
+import { languageGroupLabel } from '@/lib/card-languages';
 import type { GradingGroup } from '@/lib/grading-groups';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
@@ -139,10 +140,15 @@ function CardDetailPage() {
   const cardHeader = (
     <div>
       <h1 className="text-xl font-bold lg:text-3xl">
-        {cardBase.name} ({cardBase.number})
+        {cardBase.name}{cardBase.number && cardBase.number !== '0' ? ` (${cardBase.number})` : ''}
       </h1>
       <div className="flex flex-wrap items-center gap-2 mt-1">
         <p className="text-sm text-muted-foreground">{cardBase.set}</p>
+        <span className="text-muted-foreground/30">·</span>
+        {/* Card language (catalog print language: Internacional / Japonês / Chinês). */}
+        <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 text-[11px] font-medium text-foreground/80">
+          {languageGroupLabel(cardBase.languageGroup)}
+        </span>
         <span className="text-muted-foreground/30">·</span>
         <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/20 px-2.5 py-0.5 text-[11px] font-medium text-accent">
           {cardListings.length} {cardListings.length === 1 ? 'anúncio' : 'anúncios'}

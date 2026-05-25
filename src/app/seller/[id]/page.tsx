@@ -103,7 +103,7 @@ function SellerProfilePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{cardBase.name}</p>
-                <p className="text-xs text-muted-foreground">{cardBase.set} · #{cardBase.number}</p>
+                <p className="text-xs text-muted-foreground">{cardBase.set}{cardBase.number && cardBase.number !== '0' ? ` · #${cardBase.number}` : ''}</p>
               </div>
               <div className="shrink-0">
                 <GradeBadge grade={listing.grade} company={listing.gradeCompany} pristine={listing.pristine} />

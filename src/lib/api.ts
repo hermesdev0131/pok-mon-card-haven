@@ -14,6 +14,8 @@ import type {
   Message,
   Dispute,
   DisputeStatus,
+  CardLanguageGroup,
+  CardLanguage,
 } from '@/types';
 import type { Database } from '@/types/database';
 
@@ -194,23 +196,15 @@ export async function getCardBasesWithStats(filters?: {
   sort?: string;
   gradingGroup?: 'nacional' | 'internacional';
   company?: string;
+  language?: CardLanguageGroup;
 }): Promise<CardBaseWithStats[]> {
-  let cbQuery = supabase.from('card_bases').select('*');
-  if (filters?.search) {
-    const s = filters.search;
-    cbQuery = cbQuery.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
-  }
-  if (filters?.type) {
-    cbQuery = cbQuery.eq('type', filters.type as string);
-  }
-  const { data: cardRows, error: cbErr } = await cbQuery;
-  logIfError('getCardBasesWithStats.card_bases', cbErr);
-  const cardBaseRows = (cardRows ?? []) as CardBaseRow[];
-  if (!cardBaseRows.length) return [];
-
+  // Start from active listings, then fetch only the card_bases they reference.
+  // The opposite direction (fetch every card_base, then filter by listings)
+  // silently breaks at >1000 catalog rows because of Supabase's default row
+  // cap — listings on cards outside that slice would disappear from the grid.
   let listingsQuery = supabase
     .from('listings')
-    .select('*')
+    .select('card_base_id, price, grade_company')
     .eq('status', 'active' as string);
 
   if (filters?.company) {
@@ -223,26 +217,48 @@ export async function getCardBasesWithStats(filters?: {
 
   const { data: listingRows, error: lErr } = await listingsQuery;
   logIfError('getCardBasesWithStats.listings', lErr);
+  const listingsArr = (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price' | 'grade_company'>[];
+  if (!listingsArr.length) return [];
 
-  const listingsArr = (listingRows ?? []) as ListingRow[];
-
+  // Aggregate prices per card_base_id from the matched listings.
   const listingsByCard: Record<string, number[]> = {};
   for (const l of listingsArr) {
     if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
     listingsByCard[l.card_base_id].push(l.price);
   }
+  const cardBaseIds = Object.keys(listingsByCard);
 
-  const stats: CardBaseWithStats[] = cardBaseRows
-    .map(row => {
-      const prices = listingsByCard[row.id] ?? [];
-      return {
-        cardBase: mapCardBase(row),
-        listingCount: prices.length,
-        lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
-        highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
-      };
-    })
-    .filter(s => s.listingCount > 0);
+  // Fetch the referenced card_bases, applying catalog-level filters here.
+  // Chunk the .in() lookup to stay well clear of any URL/length limits.
+  const cardBaseRows: CardBaseRow[] = [];
+  const CHUNK = 200;
+  for (let i = 0; i < cardBaseIds.length; i += CHUNK) {
+    const slice = cardBaseIds.slice(i, i + CHUNK);
+    let cbQuery = supabase.from('card_bases').select('*').in('id', slice);
+    if (filters?.search) {
+      const s = filters.search;
+      cbQuery = cbQuery.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+    }
+    if (filters?.type) {
+      cbQuery = cbQuery.eq('type', filters.type as string);
+    }
+    if (filters?.language) {
+      cbQuery = cbQuery.eq('language_group', filters.language as string);
+    }
+    const { data, error } = await cbQuery;
+    logIfError('getCardBasesWithStats.card_bases', error);
+    if (data) cardBaseRows.push(...(data as CardBaseRow[]));
+  }
+
+  const stats: CardBaseWithStats[] = cardBaseRows.map(row => {
+    const prices = listingsByCard[row.id] ?? [];
+    return {
+      cardBase: mapCardBase(row),
+      listingCount: prices.length,
+      lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
+      highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
+    };
+  });
 
   if (filters?.sort === 'price_asc') stats.sort((a, b) => a.lowestPrice - b.lowestPrice);
   else if (filters?.sort === 'price_desc') stats.sort((a, b) => b.lowestPrice - a.lowestPrice);
@@ -739,7 +755,7 @@ export type CreateListingInput = {
   grade: number;
   gradeCompany: GradeCompany;
   pristine: boolean;
-  language: 'PT' | 'EN' | 'JP';
+  language: CardLanguage;
   price: number; // in centavos
   freeShipping: boolean;
   conditionNotes?: string;

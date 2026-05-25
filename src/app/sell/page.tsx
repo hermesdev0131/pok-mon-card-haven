@@ -32,7 +32,7 @@ export default function Sell() {
   const [gradeCompany, setGradeCompany] = useState('');
   const [grade, setGrade] = useState('');
   const [otherGrade, setOtherGrade] = useState('');
-  const [language, setLanguage] = useState<'PT' | 'EN' | 'JP'>('PT');
+  const [language, setLanguage] = useState<'PT' | 'EN' | 'JP' | 'ZH'>('PT');
 
   // Step 2 — Price & shipping
   const [price, setPrice] = useState('');
@@ -168,7 +168,7 @@ export default function Sell() {
                   <>
                     <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
                       <span className="flex-1 font-medium">{selectedCardBase.name}</span>
-                      <span className="text-muted-foreground text-xs">{selectedCardBase.set} · {selectedCardBase.number}</span>
+                      <span className="text-muted-foreground text-xs">{selectedCardBase.set}{selectedCardBase.number && selectedCardBase.number !== '0' ? ` · ${selectedCardBase.number}` : ''}</span>
                       <button
                         type="button"
                         onClick={() => { setSelectedCardBase(null); setCardSearchQuery(''); }}
@@ -225,7 +225,7 @@ export default function Sell() {
                         }}
                       >
                         <span className="font-medium truncate">{cb.name}</span>
-                        <span className="text-muted-foreground text-xs shrink-0">{cb.set} · {cb.number}</span>
+                        <span className="text-muted-foreground text-xs shrink-0">{cb.set}{cb.number && cb.number !== '0' ? ` · ${cb.number}` : ''}</span>
                       </button>
                     ))}
                   </div>
@@ -309,12 +309,13 @@ export default function Sell() {
 
             <div className="space-y-2">
               <Label>Idioma da carta</Label>
-              <Select value={language} onValueChange={(v) => setLanguage(v as 'PT' | 'EN' | 'JP')}>
+              <Select value={language} onValueChange={(v) => setLanguage(v as 'PT' | 'EN' | 'JP' | 'ZH')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PT">Português (BR)</SelectItem>
                   <SelectItem value="EN">Inglês (EN)</SelectItem>
                   <SelectItem value="JP">Japonês (JP)</SelectItem>
+                  <SelectItem value="ZH">Chinês (ZH)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

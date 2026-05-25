@@ -21,8 +21,9 @@ export interface GradeCompanyRow {
   sortOrder: number;
 }
 
-// Language group for card bases: INT = international (EN/PT share sets), JP = Japanese (own sets)
-export type CardLanguageGroup = 'INT' | 'JP';
+// Language group for card bases: INT = international (EN/PT share sets),
+// JP = Japanese (own sets), ZH = Chinese (own sets), KR = Korean (deferred, no data yet)
+export type CardLanguageGroup = 'INT' | 'JP' | 'ZH' | 'KR';
 
 // The Pokemon card itself — generic, not a specific graded copy
 export interface CardBase {
@@ -166,8 +167,8 @@ export interface Dispute {
   createdAt: string;
 }
 
-// MVP languages
-export type CardLanguage = 'PT' | 'EN' | 'JP';
+// Listing languages — the language of the seller's specific copy
+export type CardLanguage = 'PT' | 'EN' | 'JP' | 'ZH';
 
 // Normalized price point — one record per month/language/company/grade combination
 export interface PricePoint {
