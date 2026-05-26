@@ -28,6 +28,7 @@ const LANGUAGE_LABELS: Record<CardLanguage, string> = {
   PT: 'Português',
   EN: 'Inglês',
   JP: '日本語',
+  ZH: '中文',
 };
 
 // 'BL' is the sentinel value for the Black Label / Pristine grade pill.
@@ -70,11 +71,13 @@ export function PriceChart({ data }: PriceChartProps) {
   // Pristine / Black Label entries are represented by the 'BL' sentinel.
   // This means grade 10 pill controls PSA 10 / CGC 10, while BL pill
   // controls CGC Pristine 10 / BGS Black Label, etc.
+  // Only whole-integer grades are shown as filter pills (half-grades like 9.5
+  // are filtered out of the visualization to keep the chart readable).
   const availableGrades = useMemo(() => {
     const numSet = new Set<number>();
     let hasPristine = false;
     filteredData.forEach(d => {
-      if (d.grade > 0 && !d.pristine) numSet.add(d.grade);
+      if (d.grade > 0 && !d.pristine && Number.isInteger(d.grade)) numSet.add(d.grade);
       if (d.pristine) hasPristine = true;
     });
     const grades: GradeKey[] = Array.from(numSet).sort((a, b) => a - b);
@@ -84,12 +87,27 @@ export function PriceChart({ data }: PriceChartProps) {
 
   const allSeries = useMemo(() => {
     const set = new Set<string>();
-    filteredData.forEach(d => set.add(getSeriesKey(d.company, d.grade, d.pristine)));
+    filteredData.forEach(d => {
+      // Exclude half-grade series from the chart entirely
+      if (d.grade > 0 && !d.pristine && !Number.isInteger(d.grade)) return;
+      set.add(getSeriesKey(d.company, d.grade, d.pristine));
+    });
     return Array.from(set);
   }, [filteredData]);
 
+  // Default state: only grade 10 selected (or the highest available grade if 10
+  // isn't present), all companies enabled so users see all graders with sales
+  // for that grade. Users can then add/remove grades to refine.
+  const defaultGrades = useMemo<Set<GradeKey>>(() => {
+    const numericGrades = availableGrades.filter((g): g is number => typeof g === 'number');
+    if (numericGrades.includes(10)) return new Set<GradeKey>([10]);
+    if (numericGrades.length > 0) return new Set<GradeKey>([Math.max(...numericGrades)]);
+    if (availableGrades.includes('BL')) return new Set<GradeKey>(['BL']);
+    return new Set<GradeKey>();
+  }, [availableGrades]);
+
   const [enabledCompanies, setEnabledCompanies] = useState<Set<string>>(new Set(availableCompanies));
-  const [enabledGrades, setEnabledGrades] = useState<Set<GradeKey>>(new Set<GradeKey>([0, ...availableGrades]));
+  const [enabledGrades, setEnabledGrades] = useState<Set<GradeKey>>(defaultGrades);
 
   const toggleCompany = (company: string) => {
     setEnabledCompanies(prev => {
@@ -113,12 +131,20 @@ export function PriceChart({ data }: PriceChartProps) {
     setSelectedLanguage(lang);
     const langData = data.filter(d => d.language === lang);
     const companies = new Set<string>();
-    const grades = new Set<GradeKey>([0]);
+    const wholeGrades: number[] = [];
+    let hasPristine = false;
     langData.forEach(d => {
       companies.add(d.company);
-      if (d.grade > 0 && !d.pristine) grades.add(d.grade);
-      if (d.pristine) grades.add('BL');
+      if (d.grade > 0 && !d.pristine && Number.isInteger(d.grade) && !wholeGrades.includes(d.grade)) {
+        wholeGrades.push(d.grade);
+      }
+      if (d.pristine) hasPristine = true;
     });
+    // Default to grade 10 only (or highest available whole grade if 10 is absent)
+    const grades = new Set<GradeKey>();
+    if (wholeGrades.includes(10)) grades.add(10);
+    else if (wholeGrades.length > 0) grades.add(Math.max(...wholeGrades));
+    else if (hasPristine) grades.add('BL');
     setEnabledCompanies(companies);
     setEnabledGrades(grades);
   };

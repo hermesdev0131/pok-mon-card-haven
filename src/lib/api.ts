@@ -14,6 +14,8 @@ import type {
   Message,
   Dispute,
   DisputeStatus,
+  CardLanguageGroup,
+  CardLanguage,
 } from '@/types';
 import type { Database } from '@/types/database';
 
@@ -194,23 +196,15 @@ export async function getCardBasesWithStats(filters?: {
   sort?: string;
   gradingGroup?: 'nacional' | 'internacional';
   company?: string;
+  language?: CardLanguageGroup;
 }): Promise<CardBaseWithStats[]> {
-  let cbQuery = supabase.from('card_bases').select('*');
-  if (filters?.search) {
-    const s = filters.search;
-    cbQuery = cbQuery.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
-  }
-  if (filters?.type) {
-    cbQuery = cbQuery.eq('type', filters.type as string);
-  }
-  const { data: cardRows, error: cbErr } = await cbQuery;
-  logIfError('getCardBasesWithStats.card_bases', cbErr);
-  const cardBaseRows = (cardRows ?? []) as CardBaseRow[];
-  if (!cardBaseRows.length) return [];
-
+  // Start from active listings, then fetch only the card_bases they reference.
+  // The opposite direction (fetch every card_base, then filter by listings)
+  // silently breaks at >1000 catalog rows because of Supabase's default row
+  // cap — listings on cards outside that slice would disappear from the grid.
   let listingsQuery = supabase
     .from('listings')
-    .select('*')
+    .select('card_base_id, price, grade_company')
     .eq('status', 'active' as string);
 
   if (filters?.company) {
@@ -223,26 +217,48 @@ export async function getCardBasesWithStats(filters?: {
 
   const { data: listingRows, error: lErr } = await listingsQuery;
   logIfError('getCardBasesWithStats.listings', lErr);
+  const listingsArr = (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price' | 'grade_company'>[];
+  if (!listingsArr.length) return [];
 
-  const listingsArr = (listingRows ?? []) as ListingRow[];
-
+  // Aggregate prices per card_base_id from the matched listings.
   const listingsByCard: Record<string, number[]> = {};
   for (const l of listingsArr) {
     if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
     listingsByCard[l.card_base_id].push(l.price);
   }
+  const cardBaseIds = Object.keys(listingsByCard);
 
-  const stats: CardBaseWithStats[] = cardBaseRows
-    .map(row => {
-      const prices = listingsByCard[row.id] ?? [];
-      return {
-        cardBase: mapCardBase(row),
-        listingCount: prices.length,
-        lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
-        highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
-      };
-    })
-    .filter(s => s.listingCount > 0);
+  // Fetch the referenced card_bases, applying catalog-level filters here.
+  // Chunk the .in() lookup to stay well clear of any URL/length limits.
+  const cardBaseRows: CardBaseRow[] = [];
+  const CHUNK = 200;
+  for (let i = 0; i < cardBaseIds.length; i += CHUNK) {
+    const slice = cardBaseIds.slice(i, i + CHUNK);
+    let cbQuery = supabase.from('card_bases').select('*').in('id', slice);
+    if (filters?.search) {
+      const s = filters.search;
+      cbQuery = cbQuery.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+    }
+    if (filters?.type) {
+      cbQuery = cbQuery.eq('type', filters.type as string);
+    }
+    if (filters?.language) {
+      cbQuery = cbQuery.eq('language_group', filters.language as string);
+    }
+    const { data, error } = await cbQuery;
+    logIfError('getCardBasesWithStats.card_bases', error);
+    if (data) cardBaseRows.push(...(data as CardBaseRow[]));
+  }
+
+  const stats: CardBaseWithStats[] = cardBaseRows.map(row => {
+    const prices = listingsByCard[row.id] ?? [];
+    return {
+      cardBase: mapCardBase(row),
+      listingCount: prices.length,
+      lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
+      highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
+    };
+  });
 
   if (filters?.sort === 'price_asc') stats.sort((a, b) => a.lowestPrice - b.lowestPrice);
   else if (filters?.sort === 'price_desc') stats.sort((a, b) => b.lowestPrice - a.lowestPrice);
@@ -705,12 +721,27 @@ export async function getSellersForListings(sellerIds: string[]): Promise<Record
 
 export async function searchCardBases(query: string): Promise<CardBase[]> {
   if (!query.trim()) return [];
-  const { data, error } = await supabase
-    .from('card_bases')
-    .select('*')
-    .or(`name.ilike.%${query}%,set_name.ilike.%${query}%,number.ilike.%${query}%`)
-    .order('name', { ascending: true })
-    .limit(20);
+
+  // Split the query into words and require every word to match somewhere
+  // (name OR set_name OR number). Chained .or() calls are AND-ed together by
+  // PostgREST, so "Umbreon VMAX 215" matches name "Umbreon VMAX" + number 215,
+  // and "Umbreon Evolving Skies" matches name + set_name.
+  const words = query
+    .trim()
+    .split(/\s+/)
+    // strip characters that would break PostgREST's or() filter grammar
+    .map((w) => w.replace(/[,()*]/g, '').trim())
+    .filter(Boolean)
+    .slice(0, 6); // cap to keep the query bounded
+
+  if (words.length === 0) return [];
+
+  let q = supabase.from('card_bases').select('*');
+  for (const word of words) {
+    q = q.or(`name.ilike.%${word}%,set_name.ilike.%${word}%,number.ilike.%${word}%`);
+  }
+
+  const { data, error } = await q.order('name', { ascending: true }).limit(20);
   logIfError('searchCardBases', error);
   return ((data ?? []) as CardBaseRow[]).map(mapCardBase);
 }
@@ -724,7 +755,7 @@ export type CreateListingInput = {
   grade: number;
   gradeCompany: GradeCompany;
   pristine: boolean;
-  language: 'PT' | 'EN' | 'JP';
+  language: CardLanguage;
   price: number; // in centavos
   freeShipping: boolean;
   conditionNotes?: string;
@@ -984,18 +1015,16 @@ export async function updateOrderShipping(
   orderId: string,
   shippingCost: number,
 ): Promise<{ success: true } | { success: false; error: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: 'Não autenticado' };
-
+  // Atomic via RPC: if the listing has free_shipping, this also recalculates
+  // seller_payout = price - platform_fee - shipping_cost so the seller actually
+  // absorbs the shipping cost as intended.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
-    .from('orders')
-    .update({ shipping_cost: shippingCost })
-    .eq('id', orderId)
-    .eq('buyer_id', user.id)
-    .eq('status', 'awaiting_payment');
-
+  const { data, error } = await (supabase as any).rpc('update_order_shipping', {
+    p_order_id: orderId,
+    p_shipping_cost: shippingCost,
+  });
   if (error) { logIfError('updateOrderShipping', error); return { success: false, error: error.message }; }
+  if (data && data.success === false) return { success: false, error: data.error ?? 'Erro ao atualizar frete' };
   return { success: true };
 }
 
@@ -1527,6 +1556,8 @@ export interface BalanceTransaction {
   priceCentavos: number;
   platformFeeCentavos: number;
   sellerPayoutCentavos: number;
+  shippingCostCentavos: number; // 0 if no shipping or buyer paid
+  sellerPaidShipping: boolean;  // true when listing.free_shipping was on (shipping deducted from payout)
 }
 
 export interface SellerPix {
@@ -1584,7 +1615,7 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
 
   const { data, error } = await supabase
     .from('orders')
-    .select('id, status, price, platform_fee, seller_payout, paid_at, completed_at, created_at, listing_id')
+    .select('id, status, price, platform_fee, seller_payout, shipping_cost, paid_at, completed_at, created_at, listing_id')
     .eq('seller_id', user.id)
     .in('status', ['payment_confirmed', 'awaiting_shipment', 'shipped', 'delivered', 'completed'] as string[])
     .order('created_at', { ascending: false })
@@ -1595,11 +1626,11 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
   const orderRows = (data ?? []) as any[];
   if (!orderRows.length) return [];
 
-  // Fetch listings to get card names
+  // Fetch listings to get card names and free_shipping flag
   const listingIds = orderRows.map(o => o.listing_id);
   const { data: listingRows } = await supabase
     .from('listings')
-    .select('id, card_base_id')
+    .select('id, card_base_id, free_shipping')
     .in('id', listingIds);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const listings = (listingRows ?? []) as any[];
@@ -1615,7 +1646,11 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
   for (const c of (cardRows ?? []) as any[]) cardMap[c.id] = c.name;
 
   const listingToCard: Record<string, string> = {};
-  for (const l of listings) listingToCard[l.id] = cardMap[l.card_base_id] ?? 'Carta';
+  const listingToFreeShipping: Record<string, boolean> = {};
+  for (const l of listings) {
+    listingToCard[l.id] = cardMap[l.card_base_id] ?? 'Carta';
+    listingToFreeShipping[l.id] = !!l.free_shipping;
+  }
 
   return orderRows.map(o => ({
     orderId: o.id,
@@ -1625,6 +1660,8 @@ export async function getMyBalanceTransactions(): Promise<BalanceTransaction[]> 
     priceCentavos: o.price,
     platformFeeCentavos: o.platform_fee,
     sellerPayoutCentavos: o.seller_payout,
+    shippingCostCentavos: o.shipping_cost ?? 0,
+    sellerPaidShipping: listingToFreeShipping[o.listing_id] ?? false,
   }));
 }
 

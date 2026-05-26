@@ -13,6 +13,9 @@ import { useRouter } from 'next/navigation';
 import { RequireAuth } from '@/components/RequireAuth';
 import { useAuth } from '@/contexts/AuthContext';
 import { searchCardBases, createListing, getMyTierProgress, type MyTierProgress } from '@/lib/api';
+import { getGradeScale, formatGrade } from '@/lib/grade-scales';
+import { SlabFrame } from '@/components/SlabFrame';
+import { isNacionalCompany } from '@/lib/grading-groups';
 import type { CardBase, GradeCompany } from '@/types';
 
 const IMAGE_SLOTS = ['Frente', 'Verso', 'Label', 'Case'] as const;
@@ -29,7 +32,7 @@ export default function Sell() {
   const [gradeCompany, setGradeCompany] = useState('');
   const [grade, setGrade] = useState('');
   const [otherGrade, setOtherGrade] = useState('');
-  const [language, setLanguage] = useState<'PT' | 'EN' | 'JP'>('PT');
+  const [language, setLanguage] = useState<'PT' | 'EN' | 'JP' | 'ZH'>('PT');
 
   // Step 2 — Price & shipping
   const [price, setPrice] = useState('');
@@ -162,17 +165,45 @@ export default function Sell() {
               <Label>Carta</Label>
               <div className="relative">
                 {selectedCardBase ? (
-                  <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <span className="flex-1 font-medium">{selectedCardBase.name}</span>
-                    <span className="text-muted-foreground text-xs">{selectedCardBase.set} · {selectedCardBase.number}</span>
-                    <button
-                      type="button"
-                      onClick={() => { setSelectedCardBase(null); setCardSearchQuery(''); }}
-                      className="ml-1 rounded-sm opacity-70 hover:opacity-100"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
+                      <span className="flex-1 font-medium">{selectedCardBase.name}</span>
+                      <span className="text-muted-foreground text-xs">{selectedCardBase.set}{selectedCardBase.number && selectedCardBase.number !== '0' ? ` · ${selectedCardBase.number}` : ''}</span>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedCardBase(null); setCardSearchQuery(''); }}
+                        className="ml-1 rounded-sm opacity-70 hover:opacity-100"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {/* Visual preview of selected card, wrapped in the slab matching
+                        the seller's chosen grading company (nacional vs internacional).
+                        Defaults to "misto" until they pick a company. */}
+                    <div className="mt-3 flex flex-col items-center gap-2">
+                      <div className="w-40 sm:w-48">
+                        <SlabFrame
+                          variant={gradeCompany ? (isNacionalCompany(gradeCompany as 'PSA' | 'CGC' | 'Beckett' | 'TAG' | 'ARS' | 'ManaFix' | 'GBA' | 'Capy' | 'Taverna') ? 'nacional' : 'internacional') : 'misto'}
+                          slabSizes="192px"
+                        >
+                          {selectedCardBase.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={selectedCardBase.imageUrl}
+                              alt={selectedCardBase.name}
+                              className="absolute inset-0 w-full h-full object-contain"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
+                              <ImagePlus className="h-5 w-5 text-muted-foreground mb-1" />
+                              <p className="text-[10px] text-muted-foreground">Imagem não disponível</p>
+                            </div>
+                          )}
+                        </SlabFrame>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">Confirme que esta é a carta que você quer anunciar</p>
+                    </div>
+                  </>
                 ) : (
                   <Input
                     placeholder="Buscar por nome, set ou número..."
@@ -194,7 +225,7 @@ export default function Sell() {
                         }}
                       >
                         <span className="font-medium truncate">{cb.name}</span>
-                        <span className="text-muted-foreground text-xs shrink-0">{cb.set} · {cb.number}</span>
+                        <span className="text-muted-foreground text-xs shrink-0">{cb.set}{cb.number && cb.number !== '0' ? ` · ${cb.number}` : ''}</span>
                       </button>
                     ))}
                   </div>
@@ -210,7 +241,20 @@ export default function Sell() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Empresa de grading</Label>
-                <Select value={gradeCompany} onValueChange={(v) => { setGradeCompany(v); if (grade === 'pristine-10' && !['CGC', 'TAG', 'Beckett'].includes(v)) setGrade(''); }}>
+                <Select
+                  value={gradeCompany}
+                  onValueChange={(v) => {
+                    setGradeCompany(v);
+                    // Reset grade if it's no longer valid for the new company
+                    const newScale = getGradeScale(v);
+                    if (grade === 'pristine-10' && !newScale.hasPristine) {
+                      setGrade('');
+                    } else if (grade && grade !== 'pristine-10' && grade !== 'other') {
+                      const num = Number(grade);
+                      if (!newScale.grades.includes(num)) setGrade('');
+                    }
+                  }}
+                >
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PSA">PSA</SelectItem>
@@ -229,19 +273,23 @@ export default function Sell() {
               </div>
               <div className="space-y-2">
                 <Label>Grade</Label>
-                <Select value={grade} onValueChange={(v) => { setGrade(v); setOtherGrade(''); }}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={grade} onValueChange={(v) => { setGrade(v); setOtherGrade(''); }} disabled={!gradeCompany}>
+                  <SelectTrigger><SelectValue placeholder={gradeCompany ? 'Selecione' : 'Escolha o grader primeiro'} /></SelectTrigger>
                   <SelectContent>
-                    {['CGC', 'TAG', 'Beckett'].includes(gradeCompany) && (
-                      <SelectItem value="pristine-10">Pristine 10</SelectItem>
-                    )}
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="9.5">9.5</SelectItem>
-                    <SelectItem value="9">9</SelectItem>
-                    <SelectItem value="8.5">8.5</SelectItem>
-                    <SelectItem value="8">8</SelectItem>
-                    <SelectItem value="7">7</SelectItem>
-                    <SelectItem value="other">Outro</SelectItem>
+                    {(() => {
+                      const scale = getGradeScale(gradeCompany);
+                      const items: React.ReactNode[] = [];
+                      if (scale.hasPristine) {
+                        items.push(<SelectItem key="pristine-10" value="pristine-10">Pristine 10</SelectItem>);
+                      }
+                      for (const g of scale.grades) {
+                        items.push(<SelectItem key={String(g)} value={String(g)}>{formatGrade(g)}</SelectItem>);
+                      }
+                      if (gradeCompany === 'OTHER') {
+                        items.push(<SelectItem key="other" value="other">Outro</SelectItem>);
+                      }
+                      return items;
+                    })()}
                   </SelectContent>
                 </Select>
                 {grade === 'other' && (
@@ -261,12 +309,13 @@ export default function Sell() {
 
             <div className="space-y-2">
               <Label>Idioma da carta</Label>
-              <Select value={language} onValueChange={(v) => setLanguage(v as 'PT' | 'EN' | 'JP')}>
+              <Select value={language} onValueChange={(v) => setLanguage(v as 'PT' | 'EN' | 'JP' | 'ZH')}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PT">Português (BR)</SelectItem>
                   <SelectItem value="EN">Inglês (EN)</SelectItem>
                   <SelectItem value="JP">Japonês (JP)</SelectItem>
+                  <SelectItem value="ZH">Chinês (ZH)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

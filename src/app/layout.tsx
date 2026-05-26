@@ -30,6 +30,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        {/* Preload slab background images (cropped WebP, ~30 KB each) so they
+            paint together with the card images. Combined with unoptimized=true
+            in SlabFrame, this preload URL is the same URL the Image component
+            requests, so the browser cache hits immediately. */}
+        <link rel="preload" as="image" href="/slabs/nacional.webp" type="image/webp" />
+        <link rel="preload" as="image" href="/slabs/internacional.webp" type="image/webp" />
+        <link rel="preload" as="image" href="/slabs/misto.webp" type="image/webp" />
+      </head>
       <body className={`${spaceGrotesk.variable} font-sans`} suppressHydrationWarning>
         <Providers>
           <div className="flex min-h-screen flex-col relative">

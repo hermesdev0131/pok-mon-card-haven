@@ -83,4 +83,31 @@ const FLAGS: Record<string, { label: string; paths: React.ReactNode }> = {
       </>
     ),
   },
+  ZH: {
+    label: '中文',
+    paths: (
+      <>
+        {/* Red field */}
+        <path fill="#de2910" d="M0 0h640v480H0z" />
+        {/* Five gold stars (1 large + 4 small around it). At 24x16 display
+            size, exact rotation of the small stars isn't perceptible, so they
+            all point up — keeps the recognizable cluster shape readable. */}
+        {[
+          { cx: 160, cy: 120, r: 56 },  // large star, canton center-left
+          { cx: 288, cy: 56, r: 18 },   // small stars curved around the large one
+          { cx: 336, cy: 104, r: 18 },
+          { cx: 336, cy: 168, r: 18 },
+          { cx: 288, cy: 216, r: 18 },
+        ].map((s, i) => {
+          const pts: string[] = [];
+          for (let j = 0; j < 10; j++) {
+            const a = -Math.PI / 2 + (j * Math.PI) / 5;
+            const rr = j % 2 === 0 ? s.r : s.r * 0.382;
+            pts.push(`${(s.cx + rr * Math.cos(a)).toFixed(1)},${(s.cy + rr * Math.sin(a)).toFixed(1)}`);
+          }
+          return <polygon key={i} points={pts.join(' ')} fill="#ffde00" />;
+        })}
+      </>
+    ),
+  },
 };

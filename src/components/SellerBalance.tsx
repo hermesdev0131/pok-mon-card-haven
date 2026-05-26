@@ -358,6 +358,9 @@ export function SellerBalance() {
                     <p className="text-sm font-bold">R$ {formatPrice(t.sellerPayoutCentavos)}</p>
                     <p className="text-[11px] text-muted-foreground">
                       Venda R$ {formatPrice(t.priceCentavos)} − comissão R$ {formatPrice(t.platformFeeCentavos)}
+                      {t.sellerPaidShipping && t.shippingCostCentavos > 0 && (
+                        <> − frete R$ {formatPrice(t.shippingCostCentavos)}</>
+                      )}
                     </p>
                   </div>
                 </div>

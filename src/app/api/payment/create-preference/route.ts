@@ -36,7 +36,12 @@ export async function POST(req: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
     const cardName = (order.listings as any)?.card_bases?.name ?? 'Carta Pokémon Graduada';
 
-    // Build MP items: card + shipping (if applicable)
+    // Build MP items: card + shipping (only when the buyer is paying for shipping).
+    // For listings with free_shipping=true the seller absorbs the cost (already
+    // deducted from seller_payout by update_order_shipping), so the buyer should
+    // only be charged the listing price.
+    const listingFreeShipping = (order.listings as any)?.free_shipping === true;
+
     const items: { id: string; title: string; quantity: number; unit_price: number; currency_id: string }[] = [
       {
         id: order.listing_id,
@@ -47,7 +52,7 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    if (order.shipping_cost > 0) {
+    if (order.shipping_cost > 0 && !listingFreeShipping) {
       items.push({
         id: `${order.listing_id}-shipping`,
         title: 'Frete',

@@ -38,3 +38,7 @@ next-env.d.ts
 
 .claude/
 quote-gradedbr.html
+# Client-facing ZH card upload materials (not source)
+docs/zh-cards-template.csv
+docs/zh-cards-upload-README.md
+docs/zh-cards-upload-guide.html

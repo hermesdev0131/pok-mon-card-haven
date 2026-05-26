@@ -58,6 +58,9 @@ async function fetchMelhorEnvio(
     const options: ShippingOpt[] = services
       .filter(s => !s.error && parseFloat(s.price) > 0)
       .filter(s => s.company?.name?.toLowerCase() === 'correios')
+      // Mini Envios only works for items under R$ 100, which doesn't fit a graded
+      // card marketplace where items are typically much more expensive. Hide it.
+      .filter(s => s.name?.toLowerCase() !== 'mini envios')
       .map(s => ({
         id: s.id,
         name: s.name,

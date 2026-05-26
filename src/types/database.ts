@@ -127,7 +127,7 @@ export type Database = {
           type: CardType;
           rarity: string | null;
           image_url: string | null;
-          language_group: 'INT' | 'JP';
+          language_group: 'INT' | 'JP' | 'ZH' | 'KR';
           created_at: string;
         };
         Insert: {
@@ -139,7 +139,7 @@ export type Database = {
           type?: CardType;
           rarity?: string | null;
           image_url?: string | null;
-          language_group?: 'INT' | 'JP';
+          language_group?: 'INT' | 'JP' | 'ZH' | 'KR';
           created_at?: string;
         };
         Update: {
@@ -150,7 +150,7 @@ export type Database = {
           type?: CardType;
           rarity?: string | null;
           image_url?: string | null;
-          language_group?: 'INT' | 'JP';
+          language_group?: 'INT' | 'JP' | 'ZH' | 'KR';
         };
       };
       listings: {
@@ -162,7 +162,7 @@ export type Database = {
           grade_company: GradeCompany;
           pristine: boolean;
           cert_number: string | null;
-          language: 'PT' | 'EN' | 'JP';
+          language: 'PT' | 'EN' | 'JP' | 'ZH';
           price: number;
           status: ListingStatus;
           free_shipping: boolean;
@@ -180,7 +180,7 @@ export type Database = {
           grade_company: GradeCompany;
           pristine?: boolean;
           cert_number?: string | null;
-          language?: 'PT' | 'EN' | 'JP';
+          language?: 'PT' | 'EN' | 'JP' | 'ZH';
           price: number;
           status?: ListingStatus;
           free_shipping?: boolean;
@@ -195,7 +195,7 @@ export type Database = {
           grade_company?: GradeCompany;
           pristine?: boolean;
           cert_number?: string | null;
-          language?: 'PT' | 'EN' | 'JP';
+          language?: 'PT' | 'EN' | 'JP' | 'ZH';
           price?: number;
           status?: ListingStatus;
           free_shipping?: boolean;
@@ -275,7 +275,7 @@ export type Database = {
           grade: number;
           grade_company: GradeCompany;
           pristine: boolean;
-          language: 'PT' | 'EN' | 'JP';
+          language: 'PT' | 'EN' | 'JP' | 'ZH';
           sale_price: number;
           sold_at: string;
           created_at: string;
@@ -289,7 +289,7 @@ export type Database = {
           grade: number;
           grade_company: GradeCompany;
           pristine?: boolean;
-          language?: 'PT' | 'EN' | 'JP';
+          language?: 'PT' | 'EN' | 'JP' | 'ZH';
           sale_price: number;
           sold_at: string;
           created_at?: string;
