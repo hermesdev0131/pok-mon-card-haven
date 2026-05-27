@@ -871,7 +871,7 @@ export default function Checkout() {
                       <span className="text-muted-foreground">Frete</span>
                       {order.shippingCost > 0 ? (
                         sellerPaysShipping ? (
-                          <span className="text-emerald-400">R$ {formatPrice(order.shippingCost)} <span className="text-[11px]">(pago pelo vendedor)</span></span>
+                          <span className="text-emerald-400">Grátis</span>
                         ) : (
                           <span>R$ {formatPrice(order.shippingCost)}</span>
                         )

@@ -211,7 +211,7 @@ export async function getCardBasesWithStats(filters?: {
   // cap — listings on cards outside that slice would disappear from the grid.
   let listingsQuery = supabase
     .from('listings')
-    .select('card_base_id, price, grade_company')
+    .select('card_base_id, price, grade_company, created_at')
     .eq('status', 'active' as string);
 
   if (filters?.company) {
@@ -224,14 +224,21 @@ export async function getCardBasesWithStats(filters?: {
 
   const { data: listingRows, error: lErr } = await listingsQuery;
   logIfError('getCardBasesWithStats.listings', lErr);
-  const listingsArr = (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price' | 'grade_company'>[];
+  const listingsArr = (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price' | 'grade_company' | 'created_at'>[];
   if (!listingsArr.length) return [];
 
-  // Aggregate prices per card_base_id from the matched listings.
+  // Aggregate prices and track the freshest listing timestamp per card.
+  // "Mais recentes" sorts by this — that way a new listing on an existing
+  // card bumps the card to the top, instead of being hidden in the group.
   const listingsByCard: Record<string, number[]> = {};
+  const newestListingAt: Record<string, number> = {};
   for (const l of listingsArr) {
     if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
     listingsByCard[l.card_base_id].push(l.price);
+    const ts = new Date(l.created_at).getTime();
+    if (!newestListingAt[l.card_base_id] || ts > newestListingAt[l.card_base_id]) {
+      newestListingAt[l.card_base_id] = ts;
+    }
   }
   const cardBaseIds = Object.keys(listingsByCard);
 
@@ -267,8 +274,14 @@ export async function getCardBasesWithStats(filters?: {
     };
   });
 
-  if (filters?.sort === 'price_asc') stats.sort((a, b) => a.lowestPrice - b.lowestPrice);
-  else if (filters?.sort === 'price_desc') stats.sort((a, b) => b.lowestPrice - a.lowestPrice);
+  if (filters?.sort === 'price_asc') {
+    stats.sort((a, b) => a.lowestPrice - b.lowestPrice);
+  } else if (filters?.sort === 'price_desc') {
+    stats.sort((a, b) => b.lowestPrice - a.lowestPrice);
+  } else {
+    // Default / "newest": freshest listing per card wins.
+    stats.sort((a, b) => (newestListingAt[b.cardBase.id] ?? 0) - (newestListingAt[a.cardBase.id] ?? 0));
+  }
 
   return stats;
 }
