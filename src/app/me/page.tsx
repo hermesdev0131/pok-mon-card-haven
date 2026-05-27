@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getMyOrders, getMyListings, getMyQuestions, getSellerReviews, answerQuestion, replyToReview, cancelListing, updateListing, becomeSeller, cancelOrder } from '@/lib/api';
+import { freeShippingLabel } from '@/lib/free-shipping';
 import { formatPrice } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, User, BadgeCheck, Loader2, Store, MessageCircle, Star, MapPin } from 'lucide-react';
@@ -473,7 +474,10 @@ function MyListingsList({
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   R$ {formatPrice(listing.price)}
-                  {listing.freeShipping && ' · Frete grátis'}
+                  {(() => {
+                    const label = freeShippingLabel(listing.freeShippingPac, listing.freeShippingSedex);
+                    return label ? ` · ${label}` : '';
+                  })()}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

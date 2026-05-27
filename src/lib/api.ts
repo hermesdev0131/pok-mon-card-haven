@@ -102,6 +102,8 @@ function mapListing(row: any): Listing {
     price: row.price,
     images: row.images ?? [],
     freeShipping: row.free_shipping || undefined,
+    freeShippingPac: row.free_shipping_pac || undefined,
+    freeShippingSedex: row.free_shipping_sedex || undefined,
     language: row.language,
     tags: row.tags ?? [],
     status: row.status,
@@ -162,7 +164,12 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
     sellerName,
     price: row.price,
     shippingCost: row.shipping_cost ?? 0,
+    shippingMethod: row.shipping_method ?? undefined,
+    insuranceOptedIn: row.insurance_opted_in ?? false,
+    insuranceCost: row.insurance_cost ?? 0,
     freeShipping: listing?.free_shipping ?? false,
+    freeShippingPac: listing?.free_shipping_pac ?? false,
+    freeShippingSedex: listing?.free_shipping_sedex ?? false,
     listingImageUrl,
     createdAt: row.created_at,
     trackingCode: row.tracking_code ?? undefined,
@@ -638,7 +645,7 @@ export async function getQuestionsForListing(listingId: string): Promise<Questio
 // Only join listings→card_bases (direct FKs in public schema)
 const ORDER_SELECT = `
   *,
-  listing:listings(card_base_id, grade, grade_company, images, free_shipping, card_base:card_bases(name, image_url))
+  listing:listings(card_base_id, grade, grade_company, images, free_shipping, free_shipping_pac, free_shipping_sedex, card_base:card_bases(name, image_url))
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -757,7 +764,8 @@ export type CreateListingInput = {
   pristine: boolean;
   language: CardLanguage;
   price: number; // in centavos
-  freeShipping: boolean;
+  freeShippingPac: boolean;
+  freeShippingSedex: boolean;
   conditionNotes?: string;
   imageFiles: (File | null)[];
 };
@@ -830,7 +838,11 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
     pristine: input.pristine,
     language: input.language,
     price: input.price,
-    free_shipping: input.freeShipping,
+    // Legacy column mirrors the per-method flags (true when ANY method is free)
+    // so existing read paths (badges, sales breakdown) keep working unchanged.
+    free_shipping: input.freeShippingPac || input.freeShippingSedex,
+    free_shipping_pac: input.freeShippingPac,
+    free_shipping_sedex: input.freeShippingSedex,
     condition_notes: input.conditionNotes ?? null,
     images: imageUrls,
     status: 'active',
@@ -846,7 +858,8 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
 
 export type UpdateListingInput = {
   price?: number;
-  freeShipping?: boolean;
+  freeShippingPac?: boolean;
+  freeShippingSedex?: boolean;
   conditionNotes?: string;
   status?: 'active' | 'cancelled';
 };
@@ -861,7 +874,27 @@ export async function updateListing(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updates: Record<string, any> = {};
   if (input.price !== undefined) updates.price = input.price;
-  if (input.freeShipping !== undefined) updates.free_shipping = input.freeShipping;
+  if (input.freeShippingPac !== undefined) updates.free_shipping_pac = input.freeShippingPac;
+  if (input.freeShippingSedex !== undefined) updates.free_shipping_sedex = input.freeShippingSedex;
+  // Keep the legacy column in sync whenever either per-method flag changes.
+  if (input.freeShippingPac !== undefined || input.freeShippingSedex !== undefined) {
+    const pacNext = input.freeShippingPac ?? undefined;
+    const sedexNext = input.freeShippingSedex ?? undefined;
+    if (pacNext !== undefined && sedexNext !== undefined) {
+      updates.free_shipping = pacNext || sedexNext;
+    } else {
+      // Only one flag is changing; recompute from the current row's other flag.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: current } = await (supabase as any)
+        .from('listings')
+        .select('free_shipping_pac, free_shipping_sedex')
+        .eq('id', listingId)
+        .maybeSingle() as { data: { free_shipping_pac: boolean; free_shipping_sedex: boolean } | null };
+      const pac = pacNext ?? current?.free_shipping_pac ?? false;
+      const sedex = sedexNext ?? current?.free_shipping_sedex ?? false;
+      updates.free_shipping = pac || sedex;
+    }
+  }
   if (input.conditionNotes !== undefined) updates.condition_notes = input.conditionNotes;
   if (input.status !== undefined) updates.status = input.status;
 
@@ -1014,14 +1047,21 @@ export async function createOrder(listingId: string): Promise<CreateOrderResult>
 export async function updateOrderShipping(
   orderId: string,
   shippingCost: number,
+  shippingMethod?: string | null,
+  insuranceCost: number = 0,
+  insuranceOptedIn: boolean = false,
 ): Promise<{ success: true } | { success: false; error: string }> {
-  // Atomic via RPC: if the listing has free_shipping, this also recalculates
-  // seller_payout = price - platform_fee - shipping_cost so the seller actually
-  // absorbs the shipping cost as intended.
+  // Atomic via RPC: writes the base shipping cost, chosen method, and the
+  // insurance choice in one transaction. Seller payout only ever deducts the
+  // base shipping cost when the chosen method is one the seller marked free;
+  // insurance is always the buyer's expense.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any).rpc('update_order_shipping', {
     p_order_id: orderId,
     p_shipping_cost: shippingCost,
+    p_shipping_method: shippingMethod ?? null,
+    p_insurance_cost: insuranceCost,
+    p_insurance_opted_in: insuranceOptedIn,
   });
   if (error) { logIfError('updateOrderShipping', error); return { success: false, error: error.message }; }
   if (data && data.success === false) return { success: false, error: data.error ?? 'Erro ao atualizar frete' };

@@ -28,11 +28,23 @@ interface MeService {
 async function fetchMelhorEnvio(
   originZip: string,
   destinationZip: string,
+  insuranceValue?: number,
 ): Promise<{ options: ShippingOpt[]; fallback: false } | null> {
   const token = process.env.MELHOR_ENVIO_TOKEN;
   if (!token) return null;
 
   try {
+    // When insuranceValue (BRL) is provided, Melhor Envio rolls Correios's
+    // actual insurance fee into the returned price for each carrier, computed
+    // from the declared value. Omit the field to get the no-insurance rate.
+    const body: Record<string, unknown> = {
+      from: { postal_code: originZip },
+      to: { postal_code: destinationZip },
+      package: PACKAGE,
+    };
+    if (insuranceValue && insuranceValue > 0) {
+      body.options = { insurance_value: insuranceValue };
+    }
     const res = await fetch(ME_API, {
       method: 'POST',
       headers: {
@@ -41,11 +53,7 @@ async function fetchMelhorEnvio(
         'Authorization': `Bearer ${token}`,
         'User-Agent': 'Graduada contato@graduada.com.br',
       },
-      body: JSON.stringify({
-        from: { postal_code: originZip },
-        to: { postal_code: destinationZip },
-        package: PACKAGE,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -136,25 +144,44 @@ function flatRateFallback(originZip: string, destinationZip: string): ShippingOp
 // ── Route handler ─────────────────────────────────────────────────
 export async function POST(request: Request) {
   try {
-    const { originZip, destinationZip } = await request.json();
+    const { originZip, destinationZip, insuranceValue } = await request.json();
 
     if (!originZip || !destinationZip) {
       return NextResponse.json({ error: 'CEPs de origem e destino são obrigatórios' }, { status: 400 });
     }
 
-    // Try Melhor Envio first
-    const meResult = await fetchMelhorEnvio(
+    // When the caller passes insuranceValue (BRL declared value, usually the
+    // listing price), we fetch both rate sets — without and with insurance —
+    // so the checkout UI can show the buyer the exact insurance delta and
+    // toggle between them without a round trip.
+    const insuranceBrl = typeof insuranceValue === 'number' && insuranceValue > 0 ? insuranceValue : undefined;
+
+    const meNoIns = await fetchMelhorEnvio(
       originZip.replace(/\D/g, ''),
       destinationZip.replace(/\D/g, ''),
     );
+    const meWithIns = insuranceBrl
+      ? await fetchMelhorEnvio(
+          originZip.replace(/\D/g, ''),
+          destinationZip.replace(/\D/g, ''),
+          insuranceBrl,
+        )
+      : null;
 
-    if (meResult) {
-      return NextResponse.json(meResult);
+    if (meNoIns) {
+      return NextResponse.json({
+        options: meNoIns.options,
+        // Each insured option here is the SAME shipping cost the carrier
+        // already includes its insurance fee on. UI compares insuredOptions[i]
+        // vs options[i] by id/name to compute the insurance delta.
+        insuredOptions: meWithIns?.options ?? null,
+        fallback: false,
+      });
     }
 
-    // Fallback to flat-rate
+    // Fallback to flat-rate (no real insurance computation in fallback mode)
     const options = flatRateFallback(originZip, destinationZip);
-    return NextResponse.json({ options, fallback: true });
+    return NextResponse.json({ options, insuredOptions: null, fallback: true });
   } catch {
     return NextResponse.json({ error: 'Erro ao calcular frete' }, { status: 500 });
   }

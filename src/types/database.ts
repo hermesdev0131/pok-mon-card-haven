@@ -166,6 +166,8 @@ export type Database = {
           price: number;
           status: ListingStatus;
           free_shipping: boolean;
+          free_shipping_pac: boolean;
+          free_shipping_sedex: boolean;
           condition_notes: string | null;
           tags: string[];
           images: string[];
@@ -184,6 +186,8 @@ export type Database = {
           price: number;
           status?: ListingStatus;
           free_shipping?: boolean;
+          free_shipping_pac?: boolean;
+          free_shipping_sedex?: boolean;
           condition_notes?: string | null;
           tags?: string[];
           images?: string[];
@@ -199,6 +203,8 @@ export type Database = {
           price?: number;
           status?: ListingStatus;
           free_shipping?: boolean;
+          free_shipping_pac?: boolean;
+          free_shipping_sedex?: boolean;
           condition_notes?: string | null;
           tags?: string[];
           images?: string[];
@@ -214,6 +220,9 @@ export type Database = {
           status: OrderStatus;
           price: number;
           shipping_cost: number;
+          shipping_method: string | null;
+          insurance_opted_in: boolean;
+          insurance_cost: number;
           platform_fee: number;
           seller_payout: number;
           mp_payment_id: string | null;
@@ -239,6 +248,9 @@ export type Database = {
           status?: OrderStatus;
           price: number;
           shipping_cost?: number;
+          shipping_method?: string | null;
+          insurance_opted_in?: boolean;
+          insurance_cost?: number;
           platform_fee?: number;
           seller_payout?: number;
           mp_payment_id?: string | null;
@@ -250,6 +262,10 @@ export type Database = {
         };
         Update: {
           status?: OrderStatus;
+          shipping_cost?: number;
+          shipping_method?: string | null;
+          insurance_opted_in?: boolean;
+          insurance_cost?: number;
           mp_payment_id?: string | null;
           mp_preference_id?: string | null;
           tracking_code?: string | null;

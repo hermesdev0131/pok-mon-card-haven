@@ -8,6 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getRecentListings } from '@/lib/api';
+import { freeShippingLabel } from '@/lib/free-shipping';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
@@ -95,11 +96,14 @@ export default function UltimosAnunciosPage() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="font-bold text-foreground">R$ {formatPrice(listing.price)}</p>
-                    {listing.freeShipping && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
-                        <Truck className="h-2.5 w-2.5" /> Frete grátis
-                      </span>
-                    )}
+                    {(() => {
+                      const label = freeShippingLabel(listing.freeShippingPac, listing.freeShippingSedex);
+                      return label && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                          <Truck className="h-2.5 w-2.5" /> {label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </Link>

@@ -36,7 +36,9 @@ export default function Sell() {
 
   // Step 2 — Price & shipping
   const [price, setPrice] = useState('');
-  const [freeShipping, setFreeShipping] = useState(false);
+  // Per-method free shipping: seller can offer free PAC, free SEDEX, both, or neither.
+  const [freeShippingPac, setFreeShippingPac] = useState(false);
+  const [freeShippingSedex, setFreeShippingSedex] = useState(false);
   const [shippingNotes, setShippingNotes] = useState('');
 
   // Step 3 — Images
@@ -112,7 +114,8 @@ export default function Sell() {
       pristine: grade === 'pristine-10',
       language,
       price: Math.round(Number(price) * 100),
-      freeShipping,
+      freeShippingPac,
+      freeShippingSedex,
       conditionNotes: shippingNotes || undefined,
       imageFiles,
     });
@@ -357,9 +360,21 @@ export default function Sell() {
                 );
               })()}
             </div>
-            <div className="flex items-center gap-3">
-              <Checkbox id="freeShipping" checked={freeShipping} onCheckedChange={(v) => setFreeShipping(!!v)} />
-              <Label htmlFor="freeShipping">Frete por conta do vendedor</Label>
+            <div className="space-y-2">
+              <Label>Frete por conta do vendedor</Label>
+              <div className="flex flex-col gap-2 rounded-md border border-border bg-card/40 p-3">
+                <div className="flex items-center gap-3">
+                  <Checkbox id="freeShippingPac" checked={freeShippingPac} onCheckedChange={(v) => setFreeShippingPac(!!v)} />
+                  <Label htmlFor="freeShippingPac" className="font-normal">PAC (frete grátis)</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Checkbox id="freeShippingSedex" checked={freeShippingSedex} onCheckedChange={(v) => setFreeShippingSedex(!!v)} />
+                  <Label htmlFor="freeShippingSedex" className="font-normal">SEDEX (frete grátis)</Label>
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                O comprador escolhe o método no checkout. O valor do método marcado como grátis será descontado do seu repasse.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Observações sobre envio</Label>

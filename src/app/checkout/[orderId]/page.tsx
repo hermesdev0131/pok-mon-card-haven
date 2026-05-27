@@ -20,6 +20,22 @@ import { formatPrice } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import type { Order, ShippingOption, Dispute } from '@/types';
 
+// Identify Melhor Envio's option name (e.g. "PAC", "SEDEX", "PAC Mini")
+// as one of our canonical methods. Anything not matching is null and is
+// treated as ineligible for per-method free shipping.
+function methodFromName(name: string | undefined | null): 'PAC' | 'SEDEX' | null {
+  if (!name) return null;
+  const upper = name.trim().toUpperCase();
+  if (upper.includes('SEDEX')) return 'SEDEX';
+  if (upper.includes('PAC')) return 'PAC';
+  return null;
+}
+
+function isMethodFreeForOrder(order: Order | null, method: 'PAC' | 'SEDEX' | null): boolean {
+  if (!order || !method) return false;
+  return method === 'PAC' ? !!order.freeShippingPac : !!order.freeShippingSedex;
+}
+
 export default function Checkout() {
   const params = useParams<{ orderId: string }>();
   const searchParams = useSearchParams();
@@ -38,6 +54,14 @@ export default function Checkout() {
   const [shipError, setShipError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmDeliveryOpen, setConfirmDeliveryOpen] = useState(false);
+  // Insurance opt-in (off by default — buyer must explicitly add it). When on,
+  // shipping is recalculated using the listing price as the declared value and
+  // the carrier price returned by Melhor Envio already includes Correios's fee.
+  const [insuranceOptedIn, setInsuranceOptedIn] = useState(false);
+  // Parallel array of carrier prices WITH insurance, indexed the same as
+  // shippingOptions. Falsy/null entries mean insurance wasn't quotable for
+  // that carrier (fallback flat-rate, or ME didn't return it).
+  const [insuredOptions, setInsuredOptions] = useState<ShippingOption[] | null>(null);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [buyerCep, setBuyerCep] = useState('');
   const [cepLocked, setCepLocked] = useState(false);
@@ -94,18 +118,26 @@ export default function Checkout() {
           const res = await fetch('/api/shipping/calculate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ originZip: sellerCep || '01001000', destinationZip: cep }),
+            body: JSON.stringify({
+              originZip: sellerCep || '01001000',
+              destinationZip: cep,
+              // Pass the listing price (BRL) so Melhor Envio also returns the
+              // insured rate set, letting the UI show the insurance delta.
+              insuranceValue: order.price / 100,
+            }),
           });
           const data = await res.json();
           setCalculatingShipping(false);
           if (res.ok && data.options?.length) {
             setShippingOptions(data.options);
+            setInsuredOptions(data.insuredOptions ?? null);
             setIsFallback(data.fallback ?? false);
             if (data.options.length === 1) {
               const opt = data.options[0];
+              const method = methodFromName(opt.name);
               setSelectedShipping(0);
-              const result = await updateOrderShipping(order.id, opt.price);
-              if (result.success) setOrder(prev => prev ? { ...prev, shippingCost: opt.price } : prev);
+              const result = await updateOrderShipping(order.id, opt.price, method);
+              if (result.success) setOrder(prev => prev ? { ...prev, shippingCost: opt.price, shippingMethod: method ?? undefined, insuranceOptedIn: false, insuranceCost: 0 } : prev);
             }
           }
         } catch {
@@ -201,6 +233,7 @@ export default function Checkout() {
     setCalculatingShipping(true);
     setShippingError(null);
     setShippingOptions([]);
+    setInsuredOptions(null);
     setSelectedShipping(null);
     try {
       // Fetch seller's CEP from their profile
@@ -210,13 +243,18 @@ export default function Checkout() {
       const res = await fetch('/api/shipping/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ originZip, destinationZip: buyerCep.replace(/\D/g, '') }),
+        body: JSON.stringify({
+          originZip,
+          destinationZip: buyerCep.replace(/\D/g, ''),
+          insuranceValue: order.price / 100,
+        }),
       });
       const data = await res.json();
       setCalculatingShipping(false);
       if (!res.ok) { setShippingError(data.error ?? 'Erro ao calcular frete'); return; }
 
       setShippingOptions(data.options ?? []);
+      setInsuredOptions(data.insuredOptions ?? null);
       setIsFallback(data.fallback ?? false);
 
       // Auto-select if only one option
@@ -229,12 +267,70 @@ export default function Checkout() {
     }
   }, [order, buyerCep]);
 
+  // Look up the insured-price counterpart of a base shipping option (matched
+  // by carrier id, falling back to name). Returns null when ME didn't quote
+  // the insured variant for that carrier.
+  const insuredFor = useCallback((option: ShippingOption): ShippingOption | null => {
+    if (!insuredOptions) return null;
+    return (
+      insuredOptions.find(o => o.id === option.id) ??
+      insuredOptions.find(o => o.name === option.name) ??
+      null
+    );
+  }, [insuredOptions]);
+
   const handleSelectShipping = async (option: ShippingOption, index: number) => {
     if (!order) return;
     setSelectedShipping(index);
-    const result = await updateOrderShipping(order.id, option.price);
+    const method = methodFromName(option.name);
+    // Apply the current insurance toggle when persisting the selection.
+    const insured = insuredFor(option);
+    const baseCost = option.price;
+    const insuranceCost = insuranceOptedIn && insured ? Math.max(0, insured.price - baseCost) : 0;
+    const result = await updateOrderShipping(
+      order.id,
+      baseCost,
+      method,
+      insuranceCost,
+      insuranceOptedIn && insuranceCost > 0,
+    );
     if (result.success) {
-      setOrder(prev => prev ? { ...prev, shippingCost: option.price } : prev);
+      setOrder(prev => prev ? {
+        ...prev,
+        shippingCost: baseCost,
+        shippingMethod: method ?? undefined,
+        insuranceCost,
+        insuranceOptedIn: insuranceOptedIn && insuranceCost > 0,
+      } : prev);
+    }
+  };
+
+  // Toggle insurance after a method has been chosen; recomputes insurance_cost
+  // for the currently selected option and persists it on the order.
+  const handleToggleInsurance = async (next: boolean) => {
+    setInsuranceOptedIn(next);
+    if (!order || selectedShipping === null) return;
+    const option = shippingOptions[selectedShipping];
+    if (!option) return;
+    const method = methodFromName(option.name);
+    const insured = insuredFor(option);
+    const baseCost = option.price;
+    const insuranceCost = next && insured ? Math.max(0, insured.price - baseCost) : 0;
+    const result = await updateOrderShipping(
+      order.id,
+      baseCost,
+      method,
+      insuranceCost,
+      next && insuranceCost > 0,
+    );
+    if (result.success) {
+      setOrder(prev => prev ? {
+        ...prev,
+        shippingCost: baseCost,
+        shippingMethod: method ?? undefined,
+        insuranceCost,
+        insuranceOptedIn: next && insuranceCost > 0,
+      } : prev);
     }
   };
 
@@ -683,32 +779,71 @@ export default function Checkout() {
                   </div>
                   {shippingError && <p className="text-xs text-destructive">{shippingError}</p>}
 
+                  {/* Insurance toggle (only meaningful when ME returned insured rates) */}
+                  {shippingOptions.length > 0 && insuredOptions && (
+                    <div className="rounded-lg border border-border bg-card/40 p-3 space-y-2">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={insuranceOptedIn}
+                          onChange={(e) => handleToggleInsurance(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 rounded border-border"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Adicionar seguro contra perdas e danos</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            Cobertura calculada pelos Correios sobre o valor declarado da carta.
+                          </p>
+                        </div>
+                      </label>
+                      {!insuranceOptedIn && (
+                        <p className="text-[11px] text-amber-400 pl-7">
+                          Sem o seguro, perdas ou danos durante o transporte não serão cobertos pela plataforma nem pelo vendedor.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Shipping options */}
                   {shippingOptions.length > 0 && (
                     <div className="space-y-2 pt-1">
                       {isFallback && (
                         <p className="text-[11px] text-amber-400">Frete estimado (valor aproximado)</p>
                       )}
-                      {shippingOptions.map((opt, i) => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => handleSelectShipping(opt, i)}
-                          className={`w-full flex items-center justify-between p-3 rounded-lg border text-sm transition-all ${
-                            selectedShipping === i
-                              ? 'border-accent/40 bg-accent/5'
-                              : 'border-border bg-card hover:border-white/[0.14]'
-                          }`}
-                        >
-                          <div className="text-left">
-                            <p className="font-medium">{opt.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {opt.company}{opt.deliveryDays ? ` · ${opt.deliveryDays} dias úteis` : ''}
-                            </p>
-                          </div>
-                          <p className="font-semibold text-foreground">R$ {formatPrice(opt.price)}</p>
-                        </button>
-                      ))}
+                      {shippingOptions.map((opt, i) => {
+                        // Method-specific free shipping: render the option's price as
+                        // "Grátis" (with the original crossed out) when the seller marked
+                        // this method as free. The buyer pays R$ 0 — the seller absorbs it.
+                        const optMethod = methodFromName(opt.name);
+                        const sellerFree = isMethodFreeForOrder(order, optMethod);
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => handleSelectShipping(opt, i)}
+                            className={`w-full flex items-center justify-between p-3 rounded-lg border text-sm transition-all ${
+                              selectedShipping === i
+                                ? 'border-accent/40 bg-accent/5'
+                                : 'border-border bg-card hover:border-white/[0.14]'
+                            }`}
+                          >
+                            <div className="text-left">
+                              <p className="font-medium">{opt.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {opt.company}{opt.deliveryDays ? ` · ${opt.deliveryDays} dias úteis` : ''}
+                              </p>
+                            </div>
+                            {sellerFree ? (
+                              <div className="text-right">
+                                <p className="text-[11px] text-muted-foreground line-through">R$ {formatPrice(opt.price)}</p>
+                                <p className="font-semibold text-emerald-400">Grátis</p>
+                              </div>
+                            ) : (
+                              <p className="font-semibold text-foreground">R$ {formatPrice(opt.price)}</p>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -716,31 +851,49 @@ export default function Checkout() {
             )}
 
             {/* Price summary */}
-            <Card className="glass mb-6">
-              <CardContent className="p-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>R$ {formatPrice(order.price)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Frete</span>
-                  {order.shippingCost > 0 ? (
-                    order.freeShipping ? (
-                      <span className="text-emerald-400">R$ {formatPrice(order.shippingCost)} <span className="text-[11px]">(pago pelo vendedor)</span></span>
-                    ) : (
-                      <span>R$ {formatPrice(order.shippingCost)}</span>
-                    )
-                  ) : (
-                    <span>Informe seu CEP</span>
-                  )}
-                </div>
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span className="text-foreground">R$ {formatPrice(order.price + (order.freeShipping ? 0 : (order.shippingCost ?? 0)))}</span>
-                </div>
-              </CardContent>
-            </Card>
+            {(() => {
+              // Whether the buyer's currently chosen shipping method is one the
+              // seller marked free. Drives both the per-method green label and
+              // the final total (free methods cost the buyer R$ 0). Insurance
+              // is always paid by the buyer, regardless of seller's free-shipping policy.
+              const chosenMethod = methodFromName(order.shippingMethod);
+              const sellerPaysShipping = isMethodFreeForOrder(order, chosenMethod);
+              const buyerShippingCost = sellerPaysShipping ? 0 : (order.shippingCost ?? 0);
+              const insurance = order.insuranceCost ?? 0;
+              return (
+                <Card className="glass mb-6">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>R$ {formatPrice(order.price)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Frete</span>
+                      {order.shippingCost > 0 ? (
+                        sellerPaysShipping ? (
+                          <span className="text-emerald-400">R$ {formatPrice(order.shippingCost)} <span className="text-[11px]">(pago pelo vendedor)</span></span>
+                        ) : (
+                          <span>R$ {formatPrice(order.shippingCost)}</span>
+                        )
+                      ) : (
+                        <span>Informe seu CEP</span>
+                      )}
+                    </div>
+                    {insurance > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Seguro</span>
+                        <span>R$ {formatPrice(insurance)}</span>
+                      </div>
+                    )}
+                    <Separator />
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>Total</span>
+                      <span className="text-foreground">R$ {formatPrice(order.price + buyerShippingCost + insurance)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Expiry countdown */}
             {timeLeft && !isPostPayment && (
