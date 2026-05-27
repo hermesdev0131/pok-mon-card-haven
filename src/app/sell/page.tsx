@@ -364,19 +364,12 @@ export default function Sell() {
             <div className="space-y-2">
               <Label>Frete grátis por conta do vendedor</Label>
               <div className="flex flex-col gap-3 rounded-md border border-border bg-card/40 p-3">
-                {/* Yes / No — does the seller absorb shipping at all? */}
+                {/* Yes / No — does the seller absorb shipping at all?
+                    Order: Sim first, Não second (per client request); Não stays
+                    the default selected state so behavior is unchanged. The
+                    radio accent uses the muted-foreground gray so it doesn't
+                    compete with the orange used for primary actions. */}
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="sellerPaysShipping"
-                      value="no"
-                      checked={sellerPaysShipping === 'no'}
-                      onChange={() => { setSellerPaysShipping('no'); setFreeMethod(''); }}
-                      className="h-4 w-4 accent-accent"
-                    />
-                    <span className="text-sm">Não</span>
-                  </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
@@ -384,9 +377,20 @@ export default function Sell() {
                       value="yes"
                       checked={sellerPaysShipping === 'yes'}
                       onChange={() => setSellerPaysShipping('yes')}
-                      className="h-4 w-4 accent-accent"
+                      className="h-4 w-4 accent-[hsl(var(--muted-foreground))]"
                     />
                     <span className="text-sm">Sim</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sellerPaysShipping"
+                      value="no"
+                      checked={sellerPaysShipping === 'no'}
+                      onChange={() => { setSellerPaysShipping('no'); setFreeMethod(''); }}
+                      className="h-4 w-4 accent-[hsl(var(--muted-foreground))]"
+                    />
+                    <span className="text-sm">Não</span>
                   </label>
                 </div>
 
@@ -405,7 +409,7 @@ export default function Sell() {
                           value={opt.value}
                           checked={freeMethod === opt.value}
                           onChange={() => setFreeMethod(opt.value)}
-                          className="h-4 w-4 accent-accent"
+                          className="h-4 w-4 accent-[hsl(var(--muted-foreground))]"
                         />
                         <span className="text-sm">{opt.label}</span>
                       </label>
