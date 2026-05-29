@@ -37,10 +37,16 @@ export async function POST(req: NextRequest) {
     const cardName = (order.listings as any)?.card_bases?.name ?? 'Carta Pokémon Graduada';
 
     // Build MP items: card + shipping (only when the buyer is paying for shipping).
-    // For listings with free_shipping=true the seller absorbs the cost (already
-    // deducted from seller_payout by update_order_shipping), so the buyer should
-    // only be charged the listing price.
-    const listingFreeShipping = (order.listings as any)?.free_shipping === true;
+    // Per-method free shipping: skip the shipping line only when the method the
+    // buyer chose at checkout is the one the seller marked free; otherwise the
+    // buyer is paying for shipping like normal.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const listingRow = (order.listings as any) ?? {};
+    const chosenMethodRaw: string | null = order.shipping_method ?? null;
+    const chosenMethod = chosenMethodRaw ? chosenMethodRaw.toUpperCase() : null;
+    let sellerPaysShipping = false;
+    if (chosenMethod === 'PAC') sellerPaysShipping = listingRow.free_shipping_pac === true;
+    else if (chosenMethod === 'SEDEX') sellerPaysShipping = listingRow.free_shipping_sedex === true;
 
     const items: { id: string; title: string; quantity: number; unit_price: number; currency_id: string }[] = [
       {
@@ -52,12 +58,24 @@ export async function POST(req: NextRequest) {
       },
     ];
 
-    if (order.shipping_cost > 0 && !listingFreeShipping) {
+    if (order.shipping_cost > 0 && !sellerPaysShipping) {
       items.push({
         id: `${order.listing_id}-shipping`,
         title: 'Frete',
         quantity: 1,
         unit_price: order.shipping_cost / 100,
+        currency_id: 'BRL',
+      });
+    }
+
+    // Insurance is always the buyer's expense when opted in, regardless of
+    // whether the seller is paying for shipping.
+    if (order.insurance_opted_in && order.insurance_cost > 0) {
+      items.push({
+        id: `${order.listing_id}-insurance`,
+        title: 'Seguro Correios',
+        quantity: 1,
+        unit_price: order.insurance_cost / 100,
         currency_id: 'BRL',
       });
     }

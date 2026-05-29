@@ -48,7 +48,11 @@ export interface Listing {
   pristine?: boolean; // Pristine 10 (CGC, TAG, Beckett)
   price: number;
   images: string[];
+  // Legacy "any method is free" flag — kept for display surfaces that still
+  // show a generic "Frete grátis" badge. Per-method flags are authoritative.
   freeShipping?: boolean;
+  freeShippingPac?: boolean;
+  freeShippingSedex?: boolean;
   language: CardLanguage;
   tags?: string[];
   status: 'active' | 'sold' | 'reserved' | 'cancelled';
@@ -98,7 +102,16 @@ export interface Order {
   sellerName: string;
   price: number;
   shippingCost: number;
+  // Method chosen by the buyer at checkout (e.g. 'PAC' or 'SEDEX'). Null until
+  // the buyer selects a shipping option.
+  shippingMethod?: string;
+  // Legacy "any method free" flag — true when either per-method flag is set.
   freeShipping?: boolean;
+  freeShippingPac?: boolean;
+  freeShippingSedex?: boolean;
+  // Buyer opted into Correios package insurance at checkout (paid by buyer).
+  insuranceOptedIn?: boolean;
+  insuranceCost?: number;
   createdAt: string;
   listingImageUrl?: string;
   trackingCode?: string;

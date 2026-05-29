@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { getSeller, getSellerListings, getSellerReviews, replyToReview } from '@/lib/api';
+import { freeShippingLabel } from '@/lib/free-shipping';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, ShoppingBag, Calendar, Truck, Loader2 } from 'lucide-react';
@@ -110,11 +111,14 @@ function SellerProfilePage() {
               </div>
               <div className="text-right shrink-0">
                 <p className="font-bold text-foreground">R$ {formatPrice(listing.price)}</p>
-                {listing.freeShipping && (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
-                    <Truck className="h-2.5 w-2.5" /> Frete grátis
-                  </span>
-                )}
+                {(() => {
+                  const label = freeShippingLabel(listing.freeShippingPac, listing.freeShippingSedex);
+                  return label && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-accent">
+                      <Truck className="h-2.5 w-2.5" /> {label}
+                    </span>
+                  );
+                })()}
               </div>
             </Link>
           );

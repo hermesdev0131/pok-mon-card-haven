@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -36,8 +34,13 @@ export default function Sell() {
 
   // Step 2 — Price & shipping
   const [price, setPrice] = useState('');
-  const [freeShipping, setFreeShipping] = useState(false);
-  const [shippingNotes, setShippingNotes] = useState('');
+  // Two-step shipping policy:
+  //   sellerPaysShipping = 'no'  -> both per-method flags false
+  //   sellerPaysShipping = 'yes' -> seller must then pick a freeMethod
+  //                                 ('pac' | 'sedex' | 'both') which maps
+  //                                 to the per-method DB flags at submit.
+  const [sellerPaysShipping, setSellerPaysShipping] = useState<'no' | 'yes'>('no');
+  const [freeMethod, setFreeMethod] = useState<'' | 'pac' | 'sedex' | 'both'>('');
 
   // Step 3 — Images
   const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null, null]);
@@ -112,8 +115,9 @@ export default function Sell() {
       pristine: grade === 'pristine-10',
       language,
       price: Math.round(Number(price) * 100),
-      freeShipping,
-      conditionNotes: shippingNotes || undefined,
+      // Map the UI's yes/no + method radio into the two DB flags.
+      freeShippingPac: sellerPaysShipping === 'yes' && (freeMethod === 'pac' || freeMethod === 'both'),
+      freeShippingSedex: sellerPaysShipping === 'yes' && (freeMethod === 'sedex' || freeMethod === 'both'),
       imageFiles,
     });
 
@@ -357,17 +361,75 @@ export default function Sell() {
                 );
               })()}
             </div>
-            <div className="flex items-center gap-3">
-              <Checkbox id="freeShipping" checked={freeShipping} onCheckedChange={(v) => setFreeShipping(!!v)} />
-              <Label htmlFor="freeShipping">Frete por conta do vendedor</Label>
-            </div>
             <div className="space-y-2">
-              <Label>Observações sobre envio</Label>
-              <Textarea placeholder="Ex: Envio via Sedex com rastreio" className="resize-none" value={shippingNotes} onChange={(e) => setShippingNotes(e.target.value)} />
+              <Label>Frete grátis por conta do vendedor</Label>
+              <div className="flex flex-col gap-3 rounded-md border border-border bg-card/40 p-3">
+                {/* Yes / No — does the seller absorb shipping at all?
+                    Order: Sim first, Não second (per client request); Não stays
+                    the default selected state so behavior is unchanged. The
+                    radio accent uses the muted-foreground gray so it doesn't
+                    compete with the orange used for primary actions. */}
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sellerPaysShipping"
+                      value="yes"
+                      checked={sellerPaysShipping === 'yes'}
+                      onChange={() => setSellerPaysShipping('yes')}
+                      className="h-4 w-4 accent-[hsl(var(--muted-foreground))]"
+                    />
+                    <span className="text-sm">Sim</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sellerPaysShipping"
+                      value="no"
+                      checked={sellerPaysShipping === 'no'}
+                      onChange={() => { setSellerPaysShipping('no'); setFreeMethod(''); }}
+                      className="h-4 w-4 accent-[hsl(var(--muted-foreground))]"
+                    />
+                    <span className="text-sm">Não</span>
+                  </label>
+                </div>
+
+                {/* Method selector — only when seller picks Sim */}
+                {sellerPaysShipping === 'yes' && (
+                  <div className="flex flex-col gap-2 pl-1 border-l-2 border-border ml-1.5 pl-3">
+                    {([
+                      { value: 'pac', label: 'PAC grátis' },
+                      { value: 'sedex', label: 'SEDEX grátis' },
+                      { value: 'both', label: 'PAC + SEDEX grátis' },
+                    ] as const).map((opt) => (
+                      <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="freeMethod"
+                          value={opt.value}
+                          checked={freeMethod === opt.value}
+                          onChange={() => setFreeMethod(opt.value)}
+                          className="h-4 w-4 accent-[hsl(var(--muted-foreground))]"
+                        />
+                        <span className="text-sm">{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                O comprador escolhe o método no checkout. O valor do método marcado como grátis será descontado do seu repasse.
+              </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setStep(1)} className="flex-1">Voltar</Button>
-              <Button onClick={() => setStep(3)} className="flex-1" disabled={!price || Number(price) <= 0}>Próximo</Button>
+              <Button
+                onClick={() => setStep(3)}
+                className="flex-1"
+                disabled={!price || Number(price) <= 0 || (sellerPaysShipping === 'yes' && !freeMethod)}
+              >
+                Próximo
+              </Button>
             </div>
           </CardContent>
         </Card>

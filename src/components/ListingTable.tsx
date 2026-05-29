@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { getQuestionsForListing, createOrder } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+import { freeShippingLabel } from '@/lib/free-shipping';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from './Pagination';
@@ -109,14 +110,17 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                             <Star className="h-3 w-3 fill-gold text-gold" /> {seller.rating}
                             <span className="text-muted-foreground">·</span>
                             {seller.totalSales} vendas
-                            {listing.freeShipping && (
-                              <>
-                                <span className="text-muted-foreground ml-1">·</span>
-                                <span className="inline-flex items-center gap-0.5 text-[10px] text-accent ml-1">
-                                  <Truck className="h-2.5 w-2.5" /> Frete grátis
-                                </span>
-                              </>
-                            )}
+                            {(() => {
+                              const label = freeShippingLabel(listing.freeShippingPac, listing.freeShippingSedex);
+                              return label && (
+                                <>
+                                  <span className="text-muted-foreground ml-1">·</span>
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] text-accent ml-1">
+                                    <Truck className="h-2.5 w-2.5" /> {label}
+                                  </span>
+                                </>
+                              );
+                            })()}
                           </span>
                         )}
                       </div>
@@ -225,14 +229,17 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                       <span>{seller.rating}</span>
                       <span className="text-muted-foreground">·</span>
                       <span>{seller.totalSales} vendas</span>
-                      {listing.freeShipping && (
-                        <>
-                          <span className="text-muted-foreground">·</span>
-                          <span className="inline-flex items-center gap-0.5 text-accent">
-                            <Truck className="h-3 w-3" /> Frete grátis
-                          </span>
-                        </>
-                      )}
+                      {(() => {
+                        const label = freeShippingLabel(listing.freeShippingPac, listing.freeShippingSedex);
+                        return label && (
+                          <>
+                            <span className="text-muted-foreground">·</span>
+                            <span className="inline-flex items-center gap-0.5 text-accent">
+                              <Truck className="h-3 w-3" /> {label}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
