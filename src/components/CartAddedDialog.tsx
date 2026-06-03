@@ -32,7 +32,7 @@ export function CartAddedDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <CheckCircle2 className="h-5 w-5 text-emerald-500" />

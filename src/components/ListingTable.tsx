@@ -36,7 +36,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);
   const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(listings, 10);
-  const { addToCart } = useCart();
+  const { addToCart, isInCart } = useCart();
 
   // Adds the listing to the cart. The global CartAddedDialog (rendered at the
   // app root) opens automatically after a successful add, asking the buyer
@@ -175,19 +175,34 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                       >
                         <MessageCircle className="h-4 w-4" />
                       </Button>
-                      <Button
-                        size="icon"
-                        className={`h-8 w-8 ${isAvailable ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
-                        title={isAvailable ? 'Adicionar ao carrinho' : 'Indisponível'}
-                        disabled={!isAvailable || buyingId === listing.id}
-                        onClick={() => isAvailable && handleBuy(listing)}
-                      >
-                        {buyingId === listing.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : isAvailable
-                            ? <ShoppingCart className="h-4 w-4" />
-                            : <Lock className="h-3.5 w-3.5" />}
-                      </Button>
+                      {/* When the listing is already in this buyer's cart, the
+                          icon button switches to a "Go to cart" link instead of
+                          re-adding (which would silently no-op via the unique
+                          constraint and show a misleading modal). */}
+                      {isAvailable && isInCart(listing.id) ? (
+                        <Button
+                          size="icon"
+                          className="h-8 w-8 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                          title="Já no carrinho — ir para o carrinho"
+                          onClick={() => router.push('/cart')}
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="icon"
+                          className={`h-8 w-8 ${isAvailable ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                          title={isAvailable ? 'Adicionar ao carrinho' : 'Indisponível'}
+                          disabled={!isAvailable || buyingId === listing.id}
+                          onClick={() => isAvailable && handleBuy(listing)}
+                        >
+                          {buyingId === listing.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : isAvailable
+                              ? <ShoppingCart className="h-4 w-4" />
+                              : <Lock className="h-3.5 w-3.5" />}
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -280,20 +295,30 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                 >
                   <MessageCircle className="h-3.5 w-3.5" /> Mensagem
                 </Button>
-                <Button
-                  size="sm"
-                  className={`gap-1.5 flex-1 ${isAvailable ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
-                  disabled={!isAvailable || buyingId === listing.id}
-                  onClick={() => isAvailable && handleBuy(listing)}
-                >
-                  {buyingId === listing.id ? (
-                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Adicionando</>
-                  ) : isAvailable ? (
-                    <><ShoppingCart className="h-3.5 w-3.5" /> Adicionar</>
-                  ) : (
-                    <><Lock className="h-3.5 w-3.5" /> Indisponível</>
-                  )}
-                </Button>
+                {isAvailable && isInCart(listing.id) ? (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 flex-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20"
+                    onClick={() => router.push('/cart')}
+                  >
+                    <ShoppingCart className="h-3.5 w-3.5" /> No carrinho
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className={`gap-1.5 flex-1 ${isAvailable ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                    disabled={!isAvailable || buyingId === listing.id}
+                    onClick={() => isAvailable && handleBuy(listing)}
+                  >
+                    {buyingId === listing.id ? (
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Adicionando</>
+                    ) : isAvailable ? (
+                      <><ShoppingCart className="h-3.5 w-3.5" /> Adicionar</>
+                    ) : (
+                      <><Lock className="h-3.5 w-3.5" /> Indisponível</>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           );

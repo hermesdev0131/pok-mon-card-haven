@@ -2636,6 +2636,21 @@ export async function getMyCartCount(): Promise<number> {
   return count ?? 0;
 }
 
+// Lightweight fetch of just the listing IDs in the buyer's cart. Used by the
+// CartContext to drive the "Já no carrinho" button state on listing rows
+// without pulling the full cart payload.
+export async function getMyCartListingIds(): Promise<string[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('cart_items')
+    .select('listing_id')
+    .eq('buyer_id', user.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as { listing_id: string }[]).map((r) => r.listing_id);
+}
+
 export async function addToCart(
   listingId: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
@@ -2653,13 +2668,17 @@ export async function addToCart(
   if (listing.seller_id === user.id) return { success: false, error: 'Você não pode comprar seu próprio anúncio' };
   if (listing.status !== 'active') return { success: false, error: 'Anúncio indisponível' };
 
+  // Upsert with ignoreDuplicates → INSERT ... ON CONFLICT DO NOTHING. Re-adding
+  // the same listing is idempotent and silent (no 409 in the console) since
+  // graded cards are unique, "quantity" never applies.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('cart_items')
-    .insert({ buyer_id: user.id, listing_id: listingId });
+    .upsert(
+      { buyer_id: user.id, listing_id: listingId },
+      { onConflict: 'buyer_id,listing_id', ignoreDuplicates: true },
+    );
   if (error) {
-    // 23505 = unique violation: already in cart. Treat as success (idempotent).
-    if (error.code === '23505') return { success: true };
     logIfError('addToCart', error);
     return { success: false, error: error.message };
   }

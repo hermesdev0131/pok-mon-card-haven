@@ -8,12 +8,16 @@ import {
   useState,
   useMemo,
 } from 'react';
-import { addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart, getMyCartCount } from '@/lib/api';
+import { addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart, getMyCartListingIds } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface CartState {
   count: number;
   loading: boolean;
+  // True when this listing is already in the current buyer's cart. Drives
+  // the "Já no carrinho" button state on listing surfaces so we don't show
+  // a misleading "added" modal when re-clicking.
+  isInCart: (listingId: string) => boolean;
   refresh: () => Promise<void>;
   addToCart: (listingId: string) => Promise<{ success: true } | { success: false; error: string }>;
   removeFromCart: (cartItemId: string) => Promise<{ success: true } | { success: false; error: string }>;
@@ -29,15 +33,15 @@ const CartContext = createContext<CartState | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated } = useAuth();
-  const [count, setCount] = useState(0);
+  const [listingIds, setListingIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(false);
   const [recentlyAddedAt, setRecentlyAddedAt] = useState(0);
 
   const refresh = useCallback(async () => {
-    if (!isAuthenticated) { setCount(0); return; }
+    if (!isAuthenticated) { setListingIds(new Set()); return; }
     setLoading(true);
-    const c = await getMyCartCount();
-    setCount(c);
+    const ids = await getMyCartListingIds();
+    setListingIds(new Set(ids));
     setLoading(false);
   }, [isAuthenticated]);
 
@@ -62,9 +66,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return result;
   }, [refresh]);
 
+  const isInCart = useCallback((listingId: string) => listingIds.has(listingId), [listingIds]);
+  const count = listingIds.size;
+
   const value = useMemo(
-    () => ({ count, loading, refresh, addToCart, removeFromCart, recentlyAddedAt, dismissRecentlyAdded }),
-    [count, loading, refresh, addToCart, removeFromCart, recentlyAddedAt, dismissRecentlyAdded],
+    () => ({ count, loading, isInCart, refresh, addToCart, removeFromCart, recentlyAddedAt, dismissRecentlyAdded }),
+    [count, loading, isInCart, refresh, addToCart, removeFromCart, recentlyAddedAt, dismissRecentlyAdded],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
