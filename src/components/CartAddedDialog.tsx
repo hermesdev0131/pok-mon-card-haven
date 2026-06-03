@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart, CheckCircle2 } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
@@ -42,14 +42,17 @@ export function CartAddedDialog() {
         <p className="text-sm text-muted-foreground">
           Você tem {count} {count === 1 ? 'item' : 'itens'} no carrinho. Quer continuar comprando ou ir para o checkout?
         </p>
-        <DialogFooter className="flex-row gap-2 sm:gap-2">
+        {/* Plain flex row so each button gets equal width via flex-1.
+            Shadcn's DialogFooter has `sm:justify-end` baked in, which makes
+            buttons keep their natural width and overflow when labels are long. */}
+        <div className="flex gap-2 mt-2">
           <Button variant="outline" className="flex-1" onClick={handleClose}>
             Continuar comprando
           </Button>
           <Button className="flex-1" onClick={goToCart}>
             <ShoppingCart className="h-4 w-4 mr-2" /> Ir para o carrinho
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
