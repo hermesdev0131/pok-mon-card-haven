@@ -16,6 +16,8 @@ import type {
   DisputeStatus,
   CardLanguageGroup,
   CardLanguage,
+  Address,
+  CartItem,
 } from '@/types';
 import type { Database } from '@/types/database';
 
@@ -167,6 +169,17 @@ function mapOrder(row: any, buyerName: string, sellerName: string): Order {
     shippingMethod: row.shipping_method ?? undefined,
     insuranceOptedIn: row.insurance_opted_in ?? false,
     insuranceCost: row.insurance_cost ?? 0,
+    purchaseGroupId: row.purchase_group_id ?? undefined,
+    deliveryAddress: row.purchase_group ? {
+      recipientName: row.purchase_group.delivery_recipient_name,
+      addressLine: row.purchase_group.delivery_address_line,
+      addressNumber: row.purchase_group.delivery_address_number ?? undefined,
+      complement: row.purchase_group.delivery_complement ?? undefined,
+      neighborhood: row.purchase_group.delivery_neighborhood ?? undefined,
+      city: row.purchase_group.delivery_city,
+      state: row.purchase_group.delivery_state,
+      zip: row.purchase_group.delivery_zip,
+    } : undefined,
     freeShipping: listing?.free_shipping ?? false,
     freeShippingPac: listing?.free_shipping_pac ?? false,
     freeShippingSedex: listing?.free_shipping_sedex ?? false,
@@ -658,7 +671,8 @@ export async function getQuestionsForListing(listingId: string): Promise<Questio
 // Only join listings→card_bases (direct FKs in public schema)
 const ORDER_SELECT = `
   *,
-  listing:listings(card_base_id, grade, grade_company, images, free_shipping, free_shipping_pac, free_shipping_sedex, card_base:card_bases(name, image_url))
+  listing:listings(card_base_id, grade, grade_company, images, free_shipping, free_shipping_pac, free_shipping_sedex, card_base:card_bases(name, image_url)),
+  purchase_group:purchase_groups(delivery_recipient_name, delivery_address_line, delivery_address_number, delivery_complement, delivery_neighborhood, delivery_city, delivery_state, delivery_zip)
 `;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2319,4 +2333,409 @@ export async function updateTierDefinition(
   }).eq('id', tierId);
   if (error) { logIfError('updateTierDefinition', error); return { success: false, error: error.message }; }
   return { success: true };
+}
+
+// ════════════════════════════════════════════════
+// Address book (delivery addresses)
+// ════════════════════════════════════════════════
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapAddress(row: any): Address {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    label: row.label,
+    recipientName: row.recipient_name,
+    addressLine: row.address_line,
+    addressNumber: row.address_number ?? undefined,
+    complement: row.complement ?? undefined,
+    neighborhood: row.neighborhood ?? undefined,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+    isDefault: !!row.is_default,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getMyAddresses(): Promise<Address[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('addresses')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('is_default', { ascending: false })
+    .order('created_at', { ascending: true });
+  logIfError('getMyAddresses', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map(mapAddress);
+}
+
+export async function getMyDefaultAddress(): Promise<Address | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('addresses')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('is_default', true)
+    .maybeSingle();
+  logIfError('getMyDefaultAddress', error);
+  return data ? mapAddress(data) : null;
+}
+
+export type AddressInput = {
+  label: string;
+  recipientName: string;
+  addressLine: string;
+  addressNumber?: string;
+  complement?: string;
+  neighborhood?: string;
+  city: string;
+  state: string;
+  zip: string;
+  isDefault?: boolean;
+};
+
+// Demote any prior default for this user. Run before inserting/updating an
+// address with is_default = true to keep the partial unique index happy.
+async function clearOtherDefaults(userId: string, exceptId?: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let q = (supabase as any)
+    .from('addresses')
+    .update({ is_default: false })
+    .eq('user_id', userId)
+    .eq('is_default', true);
+  if (exceptId) q = q.neq('id', exceptId);
+  await q;
+}
+
+export async function createAddress(
+  input: AddressInput,
+): Promise<{ success: true; address: Address } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // First-ever address for the user is always the default, regardless of input.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count } = await (supabase as any)
+    .from('addresses')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+  const shouldDefault = input.isDefault || count === 0;
+
+  if (shouldDefault) await clearOtherDefaults(user.id);
+
+  const row = {
+    user_id: user.id,
+    label: input.label,
+    recipient_name: input.recipientName,
+    address_line: input.addressLine,
+    address_number: input.addressNumber ?? null,
+    complement: input.complement ?? null,
+    neighborhood: input.neighborhood ?? null,
+    city: input.city,
+    state: input.state,
+    zip: input.zip.replace(/\D/g, ''),
+    is_default: shouldDefault,
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('addresses')
+    .insert(row)
+    .select('*')
+    .single();
+  if (error) { logIfError('createAddress', error); return { success: false, error: error.message }; }
+  return { success: true, address: mapAddress(data) };
+}
+
+export async function updateAddress(
+  addressId: string,
+  input: Partial<AddressInput>,
+): Promise<{ success: true; address: Address } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  if (input.isDefault) await clearOtherDefaults(user.id, addressId);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updates: Record<string, any> = {};
+  if (input.label !== undefined) updates.label = input.label;
+  if (input.recipientName !== undefined) updates.recipient_name = input.recipientName;
+  if (input.addressLine !== undefined) updates.address_line = input.addressLine;
+  if (input.addressNumber !== undefined) updates.address_number = input.addressNumber || null;
+  if (input.complement !== undefined) updates.complement = input.complement || null;
+  if (input.neighborhood !== undefined) updates.neighborhood = input.neighborhood || null;
+  if (input.city !== undefined) updates.city = input.city;
+  if (input.state !== undefined) updates.state = input.state;
+  if (input.zip !== undefined) updates.zip = input.zip.replace(/\D/g, '');
+  if (input.isDefault !== undefined) updates.is_default = input.isDefault;
+  updates.updated_at = new Date().toISOString();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('addresses')
+    .update(updates)
+    .eq('id', addressId)
+    .eq('user_id', user.id)
+    .select('*')
+    .single();
+  if (error) { logIfError('updateAddress', error); return { success: false, error: error.message }; }
+  return { success: true, address: mapAddress(data) };
+}
+
+export async function deleteAddress(
+  addressId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // Look up the address to know whether to promote a new default.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase as any)
+    .from('addresses')
+    .select('is_default')
+    .eq('id', addressId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('addresses')
+    .delete()
+    .eq('id', addressId)
+    .eq('user_id', user.id);
+  if (error) { logIfError('deleteAddress', error); return { success: false, error: error.message }; }
+
+  // If we just removed the default, promote the oldest remaining address.
+  if (existing?.is_default) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: next } = await (supabase as any)
+      .from('addresses')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (next?.id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('addresses')
+        .update({ is_default: true })
+        .eq('id', next.id);
+    }
+  }
+
+  return { success: true };
+}
+
+export async function setDefaultAddress(
+  addressId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+  await clearOtherDefaults(user.id, addressId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('addresses')
+    .update({ is_default: true, updated_at: new Date().toISOString() })
+    .eq('id', addressId)
+    .eq('user_id', user.id);
+  if (error) { logIfError('setDefaultAddress', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+// ════════════════════════════════════════════════
+// Shopping cart
+// ════════════════════════════════════════════════
+
+// Fetch the buyer's cart, joining listing + card_base + seller in one call so
+// the cart page has everything it needs to render (photo, price, free-shipping
+// flags, seller display name) without N+1 fetches.
+export async function getMyCart(): Promise<CartItem[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('cart_items')
+    .select(`
+      id, added_at,
+      listing:listings(
+        id, seller_id, card_base_id, grade, grade_company, pristine,
+        price, images, free_shipping, free_shipping_pac, free_shipping_sedex,
+        language, tags, status, created_at,
+        card_base:card_bases(id, name, set_name, number, language_group),
+        seller:profiles!seller_id(id, nickname, full_name)
+      )
+    `)
+    .eq('buyer_id', user.id)
+    .order('added_at', { ascending: false });
+  logIfError('getMyCart', error);
+
+  // Fetch verified flags in a single pass to avoid N+1.
+  const rows = (data ?? []) as unknown[];
+  const sellerIds = Array.from(new Set(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rows.map(r => (r as any).listing?.seller_id).filter(Boolean)
+  )) as string[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sellerRows } = await (supabase as any)
+    .from('seller_profiles')
+    .select('id, verified, rating, total_sales')
+    .in('id', sellerIds);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sellerInfoMap = new Map<string, { verified: boolean; rating: number; totalSales: number }>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (sellerRows ?? []).map((r: any) => [r.id, {
+      verified: !!r.verified,
+      rating: Number(r.rating ?? 0),
+      totalSales: Number(r.total_sales ?? 0),
+    }])
+  );
+
+  const items: CartItem[] = [];
+  for (const r of rows) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const row = r as any;
+    const listingRow = row.listing;
+    if (!listingRow) continue;            // listing deleted — skip
+    const cardBaseRow = listingRow.card_base;
+    const sellerRow = listingRow.seller;
+    items.push({
+      id: row.id,
+      addedAt: row.added_at,
+      listing: mapListing(listingRow),
+      cardBase: {
+        id: cardBaseRow?.id ?? '',
+        name: cardBaseRow?.name ?? '',
+        set: cardBaseRow?.set_name ?? '',
+        number: cardBaseRow?.number ?? '',
+        languageGroup: cardBaseRow?.language_group ?? 'INT',
+      },
+      sellerId: listingRow.seller_id,
+      sellerName: sellerRow?.nickname ?? sellerRow?.full_name ?? 'Vendedor',
+      sellerVerified: sellerInfoMap.get(listingRow.seller_id)?.verified ?? false,
+      sellerRating: sellerInfoMap.get(listingRow.seller_id)?.rating ?? 0,
+      sellerTotalSales: sellerInfoMap.get(listingRow.seller_id)?.totalSales ?? 0,
+    });
+  }
+  return items;
+}
+
+export async function getMyCartCount(): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count } = await (supabase as any)
+    .from('cart_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('buyer_id', user.id);
+  return count ?? 0;
+}
+
+// Lightweight fetch of just the listing IDs in the buyer's cart. Used by the
+// CartContext to drive the "Já no carrinho" button state on listing rows
+// without pulling the full cart payload.
+export async function getMyCartListingIds(): Promise<string[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('cart_items')
+    .select('listing_id')
+    .eq('buyer_id', user.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as { listing_id: string }[]).map((r) => r.listing_id);
+}
+
+export async function addToCart(
+  listingId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+
+  // Don't allow adding sold/cancelled/reserved listings or one's own listing.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listing } = await (supabase as any)
+    .from('listings')
+    .select('status, seller_id')
+    .eq('id', listingId)
+    .maybeSingle();
+  if (!listing) return { success: false, error: 'Anúncio não encontrado' };
+  if (listing.seller_id === user.id) return { success: false, error: 'Você não pode comprar seu próprio anúncio' };
+  if (listing.status !== 'active') return { success: false, error: 'Anúncio indisponível' };
+
+  // Upsert with ignoreDuplicates → INSERT ... ON CONFLICT DO NOTHING. Re-adding
+  // the same listing is idempotent and silent (no 409 in the console) since
+  // graded cards are unique, "quantity" never applies.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('cart_items')
+    .upsert(
+      { buyer_id: user.id, listing_id: listingId },
+      { onConflict: 'buyer_id,listing_id', ignoreDuplicates: true },
+    );
+  if (error) {
+    logIfError('addToCart', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
+export async function removeFromCart(
+  cartItemId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('cart_items')
+    .delete()
+    .eq('id', cartItemId)
+    .eq('buyer_id', user.id);
+  if (error) { logIfError('removeFromCart', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+export async function clearMyCart(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('cart_items').delete().eq('buyer_id', user.id);
+}
+
+// Per-seller shipping/insurance summary fed into the cart-checkout RPC.
+// Costs are in centavos; shipping_method is 'PAC' or 'SEDEX'.
+export interface SellerShipmentInput {
+  seller_id: string;
+  shipping_cost: number;
+  shipping_method: 'PAC' | 'SEDEX' | null;
+  insurance_opted_in: boolean;
+  insurance_cost: number;
+}
+
+export type CheckoutCartResult =
+  | { success: true; purchaseGroupId: string }
+  | { success: false; error: string; unavailable?: string[] };
+
+// Calls the atomic checkout_cart RPC: reserves all listings, snapshots the
+// chosen address into a new purchase_group, creates N orders (one per cart
+// item), and empties the cart. The buyer's cart context should refresh
+// afterwards so the navbar count drops to 0.
+export async function checkoutCart(
+  addressId: string,
+  shipments: SellerShipmentInput[],
+): Promise<CheckoutCartResult> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('checkout_cart', {
+    p_address_id: addressId,
+    p_seller_shipments: shipments,
+  });
+  if (error) { logIfError('checkoutCart', error); return { success: false, error: error.message }; }
+  const result = data as { success: boolean; purchase_group_id?: string; error?: string; unavailable?: string[] };
+  if (!result.success) return { success: false, error: result.error ?? 'Erro ao iniciar checkout', unavailable: result.unavailable };
+  return { success: true, purchaseGroupId: result.purchase_group_id! };
 }

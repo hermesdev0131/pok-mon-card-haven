@@ -207,7 +207,7 @@ export default function Profile() {
             </Select>
           </div>
           <TabsContent value="purchases">
-            <OrderList orders={purchases} onCancel={async (id) => {
+            <PurchasesView orders={purchases} onCancel={async (id) => {
               const result = await cancelOrder(id);
               if (result.success) setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'cancelado' as const } : o));
             }} />
@@ -257,6 +257,15 @@ export default function Profile() {
             </TabsContent>
           )}
           <TabsContent value="account">
+            <div className="mb-4 rounded-lg border border-border bg-card/40 p-4 flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="font-semibold text-sm">Endereços de entrega</p>
+                <p className="text-xs text-muted-foreground">Gerencie seus endereços salvos para receber as cartas.</p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/me/enderecos">Gerenciar endereços</Link>
+              </Button>
+            </div>
             <AccountSettings />
           </TabsContent>
         </Tabs>
@@ -300,6 +309,58 @@ export default function Profile() {
         </DialogContent>
       </Dialog>
     </RequireAuth>
+  );
+}
+
+// Renders the buyer's order list, visually grouping orders that came from the
+// same cart purchase under a "Compra" header. Legacy single-listing orders
+// (no purchaseGroupId) fall back to the flat list below the grouped section.
+function PurchasesView({ orders, onCancel }: { orders: Order[]; onCancel?: (id: string) => Promise<void> }) {
+  // Build group ordering by the most recent order in each group, so newer
+  // purchases bubble to the top alongside legacy single orders.
+  const groups = new Map<string, { orders: Order[]; latest: number }>();
+  const legacy: Order[] = [];
+  for (const o of orders) {
+    if (o.purchaseGroupId) {
+      const existing = groups.get(o.purchaseGroupId) ?? { orders: [], latest: 0 };
+      existing.orders.push(o);
+      const ts = new Date(o.createdAt).getTime();
+      if (ts > existing.latest) existing.latest = ts;
+      groups.set(o.purchaseGroupId, existing);
+    } else {
+      legacy.push(o);
+    }
+  }
+  const groupEntries = Array.from(groups.entries()).sort((a, b) => b[1].latest - a[1].latest);
+
+  if (!orders.length) {
+    return <p className="py-12 text-center text-sm text-muted-foreground">Nenhum pedido encontrado.</p>;
+  }
+
+  return (
+    <div className="space-y-5 mt-4">
+      {groupEntries.map(([groupId, info]) => {
+        const groupOrders = info.orders;
+        const sellerCount = new Set(groupOrders.map(o => o.sellerId)).size;
+        const groupTotal = groupOrders.reduce((s, o) => s + o.price + (o.shippingCost ?? 0) + (o.insuranceCost ?? 0), 0);
+        const groupDate = new Date(info.latest).toLocaleDateString('pt-BR');
+        return (
+          <div key={groupId} className="rounded-lg border border-border bg-card/30 p-3">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <div className="text-sm">
+                <p className="font-semibold">Compra · {groupOrders.length} {groupOrders.length === 1 ? 'pedido' : 'pedidos'} de {sellerCount} {sellerCount === 1 ? 'vendedor' : 'vendedores'}</p>
+                <p className="text-xs text-muted-foreground">{groupDate}</p>
+              </div>
+              <p className="text-sm font-bold">R$ {formatPrice(groupTotal)}</p>
+            </div>
+            <OrderList orders={groupOrders} onCancel={onCancel} />
+          </div>
+        );
+      })}
+      {legacy.length > 0 && (
+        <OrderList orders={legacy} onCancel={onCancel} />
+      )}
+    </div>
   );
 }
 

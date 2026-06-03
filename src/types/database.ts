@@ -223,6 +223,7 @@ export type Database = {
           shipping_method: string | null;
           insurance_opted_in: boolean;
           insurance_cost: number;
+          purchase_group_id: string | null;
           platform_fee: number;
           seller_payout: number;
           mp_payment_id: string | null;
@@ -251,6 +252,7 @@ export type Database = {
           shipping_method?: string | null;
           insurance_opted_in?: boolean;
           insurance_cost?: number;
+          purchase_group_id?: string | null;
           platform_fee?: number;
           seller_payout?: number;
           mp_payment_id?: string | null;
@@ -448,6 +450,129 @@ export type Database = {
         };
         Update: {
           value?: Json;
+          updated_at?: string;
+        };
+      };
+      addresses: {
+        Row: {
+          id: string;
+          user_id: string;
+          label: string;
+          recipient_name: string;
+          address_line: string;
+          address_number: string | null;
+          complement: string | null;
+          neighborhood: string | null;
+          city: string;
+          state: string;
+          zip: string;
+          is_default: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          label: string;
+          recipient_name: string;
+          address_line: string;
+          address_number?: string | null;
+          complement?: string | null;
+          neighborhood?: string | null;
+          city: string;
+          state: string;
+          zip: string;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          label?: string;
+          recipient_name?: string;
+          address_line?: string;
+          address_number?: string | null;
+          complement?: string | null;
+          neighborhood?: string | null;
+          city?: string;
+          state?: string;
+          zip?: string;
+          is_default?: boolean;
+          updated_at?: string;
+        };
+      };
+      cart_items: {
+        Row: {
+          id: string;
+          buyer_id: string;
+          listing_id: string;
+          added_at: string;
+        };
+        Insert: {
+          id?: string;
+          buyer_id: string;
+          listing_id: string;
+          added_at?: string;
+        };
+        Update: {
+          added_at?: string;
+        };
+      };
+      purchase_groups: {
+        Row: {
+          id: string;
+          buyer_id: string;
+          delivery_recipient_name: string;
+          delivery_address_line: string;
+          delivery_address_number: string | null;
+          delivery_complement: string | null;
+          delivery_neighborhood: string | null;
+          delivery_city: string;
+          delivery_state: string;
+          delivery_zip: string;
+          items_total: number;
+          shipping_total: number;
+          insurance_total: number;
+          total_amount: number;
+          mp_preference_id: string | null;
+          mp_payment_id: string | null;
+          status: 'awaiting_payment' | 'paid' | 'cancelled' | 'expired';
+          paid_at: string | null;
+          cancelled_at: string | null;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          buyer_id: string;
+          delivery_recipient_name: string;
+          delivery_address_line: string;
+          delivery_address_number?: string | null;
+          delivery_complement?: string | null;
+          delivery_neighborhood?: string | null;
+          delivery_city: string;
+          delivery_state: string;
+          delivery_zip: string;
+          items_total: number;
+          shipping_total?: number;
+          insurance_total?: number;
+          total_amount: number;
+          mp_preference_id?: string | null;
+          mp_payment_id?: string | null;
+          status?: 'awaiting_payment' | 'paid' | 'cancelled' | 'expired';
+          paid_at?: string | null;
+          cancelled_at?: string | null;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: 'awaiting_payment' | 'paid' | 'cancelled' | 'expired';
+          mp_preference_id?: string | null;
+          mp_payment_id?: string | null;
+          paid_at?: string | null;
+          cancelled_at?: string | null;
+          expires_at?: string | null;
           updated_at?: string;
         };
       };
