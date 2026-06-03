@@ -114,16 +114,17 @@ function AddressesPage() {
                       {a.neighborhood ? `${a.neighborhood} · ` : ''}{a.city} / {a.state} · CEP {formatCep(a.zip)}
                     </p>
                   </div>
-                  <div className="flex flex-col gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     {!a.isDefault && (
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 text-xs"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => handleSetDefault(a)}
                         disabled={busyId === a.id}
+                        title="Tornar padrão"
                       >
-                        Tornar padrão
+                        <Star className="h-3.5 w-3.5" />
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditing(a)} title="Editar">

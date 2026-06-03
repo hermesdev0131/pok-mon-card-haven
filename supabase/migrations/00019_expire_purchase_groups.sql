@@ -60,6 +60,10 @@ end;
 $$;
 
 -- Schedule it every 5 minutes, matching the cadence of expire_stale_orders.
+-- Defensive: ensure pg_cron is enabled in case this migration runs against
+-- an environment where the existing schedule (00005) wasn't applied yet.
+create extension if not exists pg_cron;
+
 select cron.schedule(
   'expire-stale-purchase-groups',
   '*/5 * * * *',
