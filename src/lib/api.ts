@@ -2582,13 +2582,18 @@ export async function getMyCart(): Promise<CartItem[]> {
     rows.map(r => (r as any).listing?.seller_id).filter(Boolean)
   )) as string[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: verifiedRows } = await (supabase as any)
+  const { data: sellerRows } = await (supabase as any)
     .from('seller_profiles')
-    .select('id, verified')
+    .select('id, verified, rating, total_sales')
     .in('id', sellerIds);
-  const verifiedMap = new Map<string, boolean>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sellerInfoMap = new Map<string, { verified: boolean; rating: number; totalSales: number }>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (verifiedRows ?? []).map((r: any) => [r.id, !!r.verified])
+    (sellerRows ?? []).map((r: any) => [r.id, {
+      verified: !!r.verified,
+      rating: Number(r.rating ?? 0),
+      totalSales: Number(r.total_sales ?? 0),
+    }])
   );
 
   const items: CartItem[] = [];
@@ -2612,7 +2617,9 @@ export async function getMyCart(): Promise<CartItem[]> {
       },
       sellerId: listingRow.seller_id,
       sellerName: sellerRow?.nickname ?? sellerRow?.full_name ?? 'Vendedor',
-      sellerVerified: verifiedMap.get(listingRow.seller_id) ?? false,
+      sellerVerified: sellerInfoMap.get(listingRow.seller_id)?.verified ?? false,
+      sellerRating: sellerInfoMap.get(listingRow.seller_id)?.rating ?? 0,
+      sellerTotalSales: sellerInfoMap.get(listingRow.seller_id)?.totalSales ?? 0,
     });
   }
   return items;

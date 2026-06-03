@@ -167,6 +167,8 @@ export interface CartItem {
   sellerId: string;
   sellerName: string;
   sellerVerified: boolean;
+  sellerRating: number;
+  sellerTotalSales: number;
 }
 
 export interface ShippingOption {

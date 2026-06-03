@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Loader2, Trash2, ShoppingCart, MapPin, Plus, AlertTriangle } from 'lucide-react';
+import { Loader2, Trash2, ShoppingCart, MapPin, Plus, AlertTriangle, Star } from 'lucide-react';
 import { RequireAuth } from '@/components/RequireAuth';
 import { FlagIcon } from '@/components/FlagIcon';
 import { GradeBadge } from '@/components/GradeBadge';
@@ -334,12 +334,22 @@ function CartPage() {
             return (
               <Card key={sellerId}>
                 <CardContent className="p-4 space-y-4">
-                  {/* Seller header */}
-                  <div className="flex items-center gap-2 border-b border-border pb-3">
+                  {/* Seller header: name + verified badge + star rating + sales count.
+                      Same trust signals as the listing rows on card detail / seller pages. */}
+                  <div className="flex items-center gap-2 border-b border-border pb-3 flex-wrap">
                     <Link href={`/seller/${sellerId}`} className="text-sm font-semibold hover:text-accent">
                       {seller.sellerName}
                     </Link>
                     {seller.sellerVerified && <VerifiedBadge />}
+                    {(seller.sellerRating > 0 || seller.sellerTotalSales > 0) && (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="text-muted-foreground">·</span>
+                        <Star className="h-3 w-3 fill-gold text-gold" />
+                        {seller.sellerRating.toFixed(1)}
+                        <span className="text-muted-foreground">·</span>
+                        {seller.sellerTotalSales} {seller.sellerTotalSales === 1 ? 'venda' : 'vendas'}
+                      </span>
+                    )}
                   </div>
 
                   {/* Items */}
