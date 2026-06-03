@@ -38,9 +38,10 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
   const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(listings, 10);
   const { addToCart } = useCart();
 
-  // Adds the listing to the cart and routes the buyer to the cart page.
-  // This replaces the previous direct-buy flow (one click → /checkout/[orderId])
-  // per client requirement that all purchases route through the cart.
+  // Adds the listing to the cart. The global CartAddedDialog (rendered at the
+  // app root) opens automatically after a successful add, asking the buyer
+  // whether to continue shopping or go to checkout. We no longer force-redirect
+  // here so multi-item shopping flows feel smoother.
   const handleBuy = async (listing: Listing) => {
     if (!user) { router.push('/login'); return; }
     setBuyingId(listing.id);
@@ -48,7 +49,6 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
     const result = await addToCart(listing.id);
     setBuyingId(null);
     if (!result.success) { setBuyError(result.error); return; }
-    router.push('/cart');
   };
 
   useEffect(() => {

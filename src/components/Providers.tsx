@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { CartAddedDialog } from "@/components/CartAddedDialog";
 import { useState } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <CartProvider>
           <TooltipProvider>
             {children}
+            <CartAddedDialog />
             <Toaster />
             <Sonner />
           </TooltipProvider>
