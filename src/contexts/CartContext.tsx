@@ -1,0 +1,64 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
+import { addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart, getMyCartCount } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface CartState {
+  count: number;
+  loading: boolean;
+  refresh: () => Promise<void>;
+  addToCart: (listingId: string) => Promise<{ success: true } | { success: false; error: string }>;
+  removeFromCart: (cartItemId: string) => Promise<{ success: true } | { success: false; error: string }>;
+}
+
+const CartContext = createContext<CartState | undefined>(undefined);
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated } = useAuth();
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const refresh = useCallback(async () => {
+    if (!isAuthenticated) { setCount(0); return; }
+    setLoading(true);
+    const c = await getMyCartCount();
+    setCount(c);
+    setLoading(false);
+  }, [isAuthenticated]);
+
+  // Refresh when auth state changes (login, logout, user switch).
+  useEffect(() => { refresh(); }, [user?.id, refresh]);
+
+  const addToCart = useCallback(async (listingId: string) => {
+    const result = await apiAddToCart(listingId);
+    if (result.success) await refresh();
+    return result;
+  }, [refresh]);
+
+  const removeFromCart = useCallback(async (cartItemId: string) => {
+    const result = await apiRemoveFromCart(cartItemId);
+    if (result.success) await refresh();
+    return result;
+  }, [refresh]);
+
+  const value = useMemo(
+    () => ({ count, loading, refresh, addToCart, removeFromCart }),
+    [count, loading, refresh, addToCart, removeFromCart],
+  );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
+
+export function useCart(): CartState {
+  const ctx = useContext(CartContext);
+  if (!ctx) throw new Error('useCart must be used inside CartProvider');
+  return ctx;
+}

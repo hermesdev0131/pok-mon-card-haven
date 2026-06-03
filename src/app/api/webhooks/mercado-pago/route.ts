@@ -59,10 +59,58 @@ export async function POST(req: NextRequest) {
     const paymentClient = new Payment(mp);
     const payment = await paymentClient.get({ id: paymentId });
 
-    const orderId = payment.external_reference;
-    if (!orderId) return NextResponse.json({ ok: true });
+    const extRef = payment.external_reference;
+    if (!extRef) return NextResponse.json({ ok: true });
 
-    // Fetch the order to check current status (idempotency)
+    // Cart-checkout payments use `group:<uuid>`; single-listing legacy
+    // payments use the bare order UUID. Fork accordingly.
+    if (extRef.startsWith('group:')) {
+      const groupId = extRef.slice('group:'.length);
+      const { data: group } = await admin
+        .from('purchase_groups')
+        .select('id, status')
+        .eq('id', groupId)
+        .single();
+      if (!group) return NextResponse.json({ ok: true });
+
+      const { data: groupOrders } = await admin
+        .from('orders')
+        .select('id, status, listing_id')
+        .eq('purchase_group_id', groupId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const orders = (groupOrders ?? []) as any[];
+
+      if (payment.status === 'approved' && group.status === 'awaiting_payment') {
+        const now = new Date().toISOString();
+        const orderIds = orders.map(o => o.id);
+        const listingIds = orders.map(o => o.listing_id);
+        await Promise.all([
+          admin.from('purchase_groups').update({
+            status: 'paid', paid_at: now, mp_payment_id: paymentId,
+          }).eq('id', groupId),
+          admin.from('orders').update({
+            status: 'payment_confirmed', mp_payment_id: paymentId, paid_at: now,
+          }).in('id', orderIds),
+          admin.from('listings').update({ status: 'sold' }).in('id', listingIds),
+        ]);
+      } else if (['rejected', 'cancelled'].includes(payment.status ?? '') && group.status === 'awaiting_payment') {
+        const now = new Date().toISOString();
+        const orderIds = orders.map(o => o.id);
+        const listingIds = orders.map(o => o.listing_id);
+        await Promise.all([
+          admin.from('purchase_groups').update({ status: 'cancelled', cancelled_at: now }).eq('id', groupId),
+          admin.from('orders').update({
+            status: 'cancelled', cancelled_at: now,
+            cancellation_reason: `MP payment ${payment.status}`,
+          }).in('id', orderIds),
+          admin.from('listings').update({ status: 'active' }).in('id', listingIds),
+        ]);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // Legacy single-listing flow.
+    const orderId = extRef;
     const { data: order } = await admin
       .from('orders')
       .select('id, status, listing_id')

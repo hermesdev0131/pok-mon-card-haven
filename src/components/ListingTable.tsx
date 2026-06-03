@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Truck, ShoppingCart, Image as ImageIcon, Star, MessageCircle, Loader2, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { getQuestionsForListing, createOrder } from '@/lib/api';
+import { getQuestionsForListing } from '@/lib/api';
+import { useCart } from '@/contexts/CartContext';
 import { formatPrice } from '@/lib/utils';
 import { freeShippingLabel } from '@/lib/free-shipping';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,15 +36,19 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);
   const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(listings, 10);
+  const { addToCart } = useCart();
 
+  // Adds the listing to the cart and routes the buyer to the cart page.
+  // This replaces the previous direct-buy flow (one click → /checkout/[orderId])
+  // per client requirement that all purchases route through the cart.
   const handleBuy = async (listing: Listing) => {
     if (!user) { router.push('/login'); return; }
     setBuyingId(listing.id);
     setBuyError(null);
-    const result = await createOrder(listing.id);
+    const result = await addToCart(listing.id);
     setBuyingId(null);
     if (!result.success) { setBuyError(result.error); return; }
-    router.push(`/checkout/${result.orderId}`);
+    router.push('/cart');
   };
 
   useEffect(() => {
@@ -173,7 +178,7 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                       <Button
                         size="icon"
                         className={`h-8 w-8 ${isAvailable ? 'bg-accent text-accent-foreground hover:bg-accent/90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
-                        title={isAvailable ? 'Comprar' : 'Indisponível'}
+                        title={isAvailable ? 'Adicionar ao carrinho' : 'Indisponível'}
                         disabled={!isAvailable || buyingId === listing.id}
                         onClick={() => isAvailable && handleBuy(listing)}
                       >
@@ -282,9 +287,9 @@ export function ListingTable({ listings, sellers }: ListingTableProps) {
                   onClick={() => isAvailable && handleBuy(listing)}
                 >
                   {buyingId === listing.id ? (
-                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Comprando</>
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Adicionando</>
                   ) : isAvailable ? (
-                    <><ShoppingCart className="h-3.5 w-3.5" /> Comprar</>
+                    <><ShoppingCart className="h-3.5 w-3.5" /> Adicionar</>
                   ) : (
                     <><Lock className="h-3.5 w-3.5" /> Indisponível</>
                   )}

@@ -97,12 +97,18 @@ export default function Checkout() {
     }
   }, [params.orderId, tokenRefreshCount]);
 
+  // Cart-purchased orders already have shipping locked in at cart-checkout
+  // time and the delivery address snapshotted on the parent purchase_group;
+  // the legacy single-listing UI below must not run for them.
+  const isCartOrder = !!order?.purchaseGroupId;
+
   // Auto-fill buyer CEP from profile and auto-calculate shipping.
   // For free_shipping orders we still calculate shipping (the seller absorbs the cost
   // via reduced seller_payout) so the buyer just needs to provide their CEP.
   const autoCalcDone = useRef(false);
   useEffect(() => {
     if (!order || !profile || !isBuyer || order.status !== 'aguardando_pagamento') return;
+    if (isCartOrder) return;                  // shipping was set at cart checkout
     if (order.shippingCost > 0) return;
     if (autoCalcDone.current) return;
     if (profile.address_zip && !buyerCep) {
@@ -426,6 +432,28 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
+            {/* Delivery address (only present on cart orders; legacy single
+                orders read shipping/address via the older flow). Shown to
+                both buyer and seller after payment is confirmed so sellers
+                know where to ship. */}
+            {isCartOrder && order.deliveryAddress && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-2">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-accent" /> Endereço de entrega
+                  </p>
+                  <div className="rounded-md border border-border bg-card/40 p-3 space-y-1 text-sm">
+                    <p className="font-semibold">{order.deliveryAddress.recipientName}</p>
+                    <p>{order.deliveryAddress.addressLine}{order.deliveryAddress.addressNumber ? `, ${order.deliveryAddress.addressNumber}` : ''}{order.deliveryAddress.complement ? ` — ${order.deliveryAddress.complement}` : ''}</p>
+                    <p className="text-muted-foreground">
+                      {order.deliveryAddress.neighborhood ? `${order.deliveryAddress.neighborhood} · ` : ''}
+                      {order.deliveryAddress.city}/{order.deliveryAddress.state} · CEP {order.deliveryAddress.zip}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Payment confirmed — seller shipping flow */}
             {order.status === 'pago' && isSeller && (
               <Card className="glass mb-6">
@@ -734,10 +762,47 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {/* Shipping calculator — only for buyer, before payment.
-                Shown for both regular and free_shipping orders since the system
-                still needs the buyer's CEP (carrier + seller_payout calculation). */}
-            {isBuyer && !isPostPayment && (
+            {/* Cart-order banner: for orders that were created via the cart
+                checkout, shipping and address were already locked in there.
+                Show a read-only delivery address summary instead of the
+                shipping calculator UI below. Buyer is sent back to the cart
+                confirmation page to complete payment if needed. */}
+            {isCartOrder && order.deliveryAddress && (
+              <Card className="glass mb-6">
+                <CardContent className="p-4 space-y-3">
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-accent" /> Endereço de entrega
+                  </p>
+                  <div className="rounded-md border border-border bg-card/40 p-3 space-y-1 text-sm">
+                    <p className="font-semibold">{order.deliveryAddress.recipientName}</p>
+                    <p>{order.deliveryAddress.addressLine}{order.deliveryAddress.addressNumber ? `, ${order.deliveryAddress.addressNumber}` : ''}{order.deliveryAddress.complement ? ` — ${order.deliveryAddress.complement}` : ''}</p>
+                    <p className="text-muted-foreground">
+                      {order.deliveryAddress.neighborhood ? `${order.deliveryAddress.neighborhood} · ` : ''}
+                      {order.deliveryAddress.city}/{order.deliveryAddress.state} · CEP {order.deliveryAddress.zip}
+                    </p>
+                  </div>
+                  {isBuyer ? (
+                    <p className="text-[11px] text-muted-foreground">
+                      Este pedido faz parte de uma compra do carrinho. O pagamento é processado em conjunto com os outros vendedores.{' '}
+                      {order.purchaseGroupId && (
+                        <Link href={`/cart/confirmacao/${order.purchaseGroupId}`} className="text-accent hover:underline">
+                          Ver compra
+                        </Link>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      Aguardando confirmação do pagamento do comprador para este pedido.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Shipping calculator — only for buyer, before payment, on
+                legacy single-listing orders. Cart orders already had shipping
+                chosen at cart checkout, so this UI is skipped for them. */}
+            {isBuyer && !isPostPayment && !isCartOrder && (
               <Card className="glass mb-6">
                 <CardContent className="p-4 space-y-3">
                   <p className="text-sm font-medium flex items-center gap-2"><Truck className="h-4 w-4 text-accent" /> Calcular frete</p>
@@ -909,7 +974,16 @@ export default function Checkout() {
                   <p className="text-sm text-destructive mb-3 text-center">{payError}</p>
                 )}
 
-                {!isPostPayment && (
+                {/* Cart orders manage payment + cancellation at the
+                    purchase_group level via the cart confirmation page, so
+                    the legacy per-order Pagar/Cancelar buttons are hidden. */}
+                {!isPostPayment && isCartOrder && order.purchaseGroupId && (
+                  <Button asChild size="lg" className="w-full mb-3">
+                    <Link href={`/cart/confirmacao/${order.purchaseGroupId}`}>Ir para a página da compra</Link>
+                  </Button>
+                )}
+
+                {!isPostPayment && !isCartOrder && (
                   <>
                     {order.shippingCost === 0 && (
                       <p className="text-xs text-amber-400 text-center mb-3">Calcule o frete antes de pagar</p>
