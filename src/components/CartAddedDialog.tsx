@@ -32,7 +32,7 @@ export function CartAddedDialog() {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -42,14 +42,15 @@ export function CartAddedDialog() {
         <p className="text-sm text-muted-foreground">
           Você tem {count} {count === 1 ? 'item' : 'itens'} no carrinho. Quer continuar comprando ou ir para o checkout?
         </p>
-        {/* Plain flex row so each button gets equal width via flex-1.
-            Shadcn's DialogFooter has `sm:justify-end` baked in, which makes
-            buttons keep their natural width and overflow when labels are long. */}
-        <div className="flex gap-2 mt-2">
-          <Button variant="outline" className="flex-1" onClick={handleClose}>
+        {/* Mobile: stack vertically (each full width, no overflow possible
+            even on the narrowest phone). Desktop (>=sm): row, 50/50 split.
+            `flex-col-reverse` puts the primary action on TOP on mobile while
+            keeping it on the RIGHT on desktop — standard dialog pattern. */}
+        <div className="flex flex-col-reverse gap-2 mt-2 sm:flex-row">
+          <Button variant="outline" className="w-full sm:flex-1" onClick={handleClose}>
             Continuar comprando
           </Button>
-          <Button className="flex-1" onClick={goToCart}>
+          <Button className="w-full sm:flex-1" onClick={goToCart}>
             <ShoppingCart className="h-4 w-4 mr-2" /> Ir para o carrinho
           </Button>
         </div>
