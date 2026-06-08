@@ -42,3 +42,6 @@ quote-gradedbr.html
 docs/zh-cards-template.csv
 docs/zh-cards-upload-README.md
 docs/zh-cards-upload-guide.html
+
+# Separate git repo — landing page lives in its own remote
+gradedbr-vip-landing/
