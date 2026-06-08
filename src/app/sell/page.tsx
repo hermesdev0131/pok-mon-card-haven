@@ -45,6 +45,7 @@ export default function Sell() {
   // Step 3 — Images
   const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null, null]);
   const [imagePreviews, setImagePreviews] = useState<(string | null)[]>([null, null, null, null]);
+  const [imageSlotErrors, setImageSlotErrors] = useState<(string | null)[]>([null, null, null, null]);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Submission state
@@ -66,9 +67,20 @@ export default function Sell() {
     return () => clearTimeout(timer);
   }, [cardSearchQuery, selectedCardBase]);
 
+  const setSlotError = (index: number, msg: string | null) => {
+    setImageSlotErrors(prev => { const next = [...prev]; next[index] = msg; return next; });
+  };
+
   const handleImageUpload = (index: number, file: File) => {
-    if (file.size > 5 * 1024 * 1024) return;
-    if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setSlotError(index, 'Arquivo muito grande (máx 5 MB)');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setSlotError(index, 'Formato inválido (use PNG ou JPG)');
+      return;
+    }
+    setSlotError(index, null);
 
     setImageFiles(prev => {
       const next = [...prev];
@@ -265,13 +277,13 @@ export default function Sell() {
                     <SelectItem value="CGC">CGC</SelectItem>
                     <SelectItem value="TAG">TAG</SelectItem>
                     <SelectItem value="Beckett">Beckett</SelectItem>
-                    <SelectItem value="ManaFix">ManaFix</SelectItem>
+                    <SelectItem value="ManaFix">Manafix</SelectItem>
                     <SelectItem value="GBA">GBA</SelectItem>
                     <SelectItem value="ARS">ARS</SelectItem>
                     <SelectItem value="AGS">AGS</SelectItem>
                     <SelectItem value="Capy">Capy</SelectItem>
-                    <SelectItem value="Taverna">Taverna</SelectItem>
-                    <SelectItem value="OTHER">Outros</SelectItem>
+                    <SelectItem value="Taverna">Taberna</SelectItem>
+                    <SelectItem value="OTHER">Outras</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -444,7 +456,7 @@ export default function Sell() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-4 gap-2">
               {IMAGE_SLOTS.map((label, i) => (
-                <div key={label} className="relative">
+                <div key={label} className="relative flex flex-col gap-1">
                   <input
                     ref={(el) => { fileInputRefs.current[i] = el; }}
                     type="file"
@@ -480,6 +492,9 @@ export default function Sell() {
                         <span className="text-[9px] text-muted-foreground">Opcional</span>
                       )}
                     </button>
+                  )}
+                  {imageSlotErrors[i] && (
+                    <p className="text-[10px] text-destructive text-center leading-tight">{imageSlotErrors[i]}</p>
                   )}
                 </div>
               ))}

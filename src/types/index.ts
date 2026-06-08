@@ -65,6 +65,7 @@ export interface CardBaseWithStats {
   listingCount: number;
   lowestPrice: number;
   highestPrice: number;
+  lastSalePrice?: number; // most recent confirmed sale; only set when listingCount === 0
 }
 
 export interface Seller {

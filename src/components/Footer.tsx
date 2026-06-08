@@ -63,7 +63,7 @@ export function Footer() {
             </nav>
           </div>
           <div>
-            <h4 className="font-semibold text-sm mb-3 uppercase tracking-wider">Fale Conosco</h4>
+            <h4 className="font-semibold text-sm mb-3 tracking-wider">Fale Conosco</h4>
             <div className="flex items-center gap-3">
               {socialLinks.map(({ icon: Icon, href, label }) => (
                 <a

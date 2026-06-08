@@ -11,13 +11,14 @@ interface CardBaseCardProps {
 }
 
 export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardProps) {
-  const { cardBase, listingCount, lowestPrice } = item;
+  const { cardBase, listingCount, lowestPrice, lastSalePrice } = item;
   const href = gradingGroup ? `/card/${cardBase.id}?group=${gradingGroup}` : `/card/${cardBase.id}`;
   const effectiveVariant: SlabVariant = slabVariant ?? 'misto';
+  const inactive = listingCount === 0;
 
   return (
     <Link href={href} className="group block">
-      <div className="overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:border-accent/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1">
+      <div className={`overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:border-accent/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1${inactive ? ' opacity-50' : ''}`}>
         <div className="relative">
           <SlabFrame variant={effectiveVariant}>
             {cardBase.imageUrl ? (
@@ -43,15 +44,21 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
             </div>
           )}
 
-          {/* Listing count — top-right, solid accent */}
-          <div className="absolute top-2 right-2 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-semibold text-accent-foreground z-10">
-            {listingCount} {listingCount === 1 ? 'anúncio' : 'anúncios'}
-          </div>
+          {/* Listing count or inactive badge — top-right */}
+          {inactive ? (
+            <div className="absolute top-2 right-2 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold text-muted-foreground z-10">
+              Sem anúncios ativos
+            </div>
+          ) : (
+            <div className="absolute top-2 right-2 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-semibold text-accent-foreground z-10">
+              {listingCount} {listingCount === 1 ? 'anúncio' : 'anúncios'}
+            </div>
+          )}
 
           {/* Hover action */}
           <div className="absolute inset-x-3 bottom-3 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-10">
             <div className="flex items-center justify-center gap-2 rounded-xl bg-accent text-accent-foreground py-2.5 text-sm font-semibold shadow-lg shadow-accent/20">
-              Ver anúncios
+              {inactive ? 'Ver histórico' : 'Ver anúncios'}
             </div>
           </div>
         </div>
@@ -62,9 +69,15 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
           <p className="text-[11px] text-muted-foreground line-clamp-1">{cardBase.set}{cardBase.number && cardBase.number !== '0' ? ` · #${cardBase.number}` : ''}</p>
 
           <div className="pt-1">
-            <p className="text-sm font-bold text-accent">
-              a partir de R$ {formatPrice(lowestPrice)}
-            </p>
+            {inactive ? (
+              <p className="text-sm text-muted-foreground">
+                {lastSalePrice ? `Última venda: R$ ${formatPrice(lastSalePrice)}` : 'Sem histórico de vendas'}
+              </p>
+            ) : (
+              <p className="text-sm font-bold text-accent">
+                a partir de R$ {formatPrice(lowestPrice)}
+              </p>
+            )}
           </div>
         </div>
       </div>
