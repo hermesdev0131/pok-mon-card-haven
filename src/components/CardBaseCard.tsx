@@ -46,7 +46,7 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
 
           {/* Listing count or inactive badge — top-right */}
           {inactive ? (
-            <div className="absolute top-2 right-2 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold text-muted-foreground z-10">
+            <div className="absolute top-2 right-2 rounded-full bg-muted/50 border border-border px-2.5 py-0.5 text-[10px] font-semibold text-muted-foreground z-10">
               Sem anúncios ativos
             </div>
           ) : (

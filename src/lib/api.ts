@@ -754,30 +754,36 @@ export async function getAllSellers(): Promise<Seller[]> {
 }
 
 /** Global search across cards (with stats) and sellers */
-export async function searchAll(query: string): Promise<{
+export async function searchAll(query: string, page = 1, pageSize = 24): Promise<{
   cards: CardBaseWithStats[];
+  cardsTotal: number;
   sellers: Seller[];
 }> {
   const q = query.trim();
-  if (!q) return { cards: [], sellers: [] };
+  if (!q) return { cards: [], cardsTotal: 0, sellers: [] };
 
-  // Search cards using the existing function (handles name, set_name, number)
-  const cards = await getCardBasesWithStats({ search: q });
+  // Search the full catalog — every matching card, active first then dimmed
+  // inactive ones — so users can research any card, not only those for sale.
+  // Server-paginated for speed since a common term can match thousands of cards.
+  const { data: cards, total: cardsTotal } = await getCardCatalog({ search: q, availability: 'all', page, pageSize });
 
-  // Search sellers by store_name
-  const { data: sellerData, error: sellerErr } = await supabase
-    .from('seller_profiles')
-    .select('*')
-    .ilike('store_name', `%${q}%`);
-  logIfError('searchAll.sellers', sellerErr);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sellerRows = (sellerData ?? []) as any[];
-  const sellerProfiles = sellerRows.length
-    ? await fetchProfilesByIds(sellerRows.map(r => r.id))
-    : {};
-  const sellers = sellerRows.map(r => mapSeller({ ...r, profiles: sellerProfiles[r.id] ?? {} }));
+  // Sellers are only fetched on the first page (they're few and unpaginated).
+  let sellers: Seller[] = [];
+  if (page === 1) {
+    const { data: sellerData, error: sellerErr } = await supabase
+      .from('seller_profiles')
+      .select('*')
+      .ilike('store_name', `%${q}%`);
+    logIfError('searchAll.sellers', sellerErr);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sellerRows = (sellerData ?? []) as any[];
+    const sellerProfiles = sellerRows.length
+      ? await fetchProfilesByIds(sellerRows.map(r => r.id))
+      : {};
+    sellers = sellerRows.map(r => mapSeller({ ...r, profiles: sellerProfiles[r.id] ?? {} }));
+  }
 
-  return { cards, sellers };
+  return { cards, cardsTotal, sellers };
 }
 
 /** All sellers with active listing count (for vendedores page) */
