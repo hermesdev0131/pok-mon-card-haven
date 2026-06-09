@@ -8,7 +8,7 @@ interface GradeBadgeProps {
   className?: string;
 }
 
-const COMPANY_DISPLAY: Record<string, string> = { ManaFix: 'Manafix', Taverna: 'Taberna' };
+const COMPANY_DISPLAY: Record<string, string> = { ManaFix: 'Manafix', Taverna: 'Taberna', OTHER: 'Outras' };
 
 export function GradeBadge({ grade, company, pristine, className }: GradeBadgeProps) {
   const isPerfect = grade === 10;

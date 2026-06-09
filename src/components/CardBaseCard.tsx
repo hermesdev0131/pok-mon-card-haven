@@ -18,7 +18,7 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
 
   return (
     <Link href={href} className="group block">
-      <div className={`overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:border-accent/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1${inactive ? ' opacity-50' : ''}`}>
+      <div className={`overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:border-accent/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1${inactive ? ' opacity-70 hover:opacity-100' : ''}`}>
         <div className="relative">
           <SlabFrame variant={effectiveVariant}>
             {cardBase.imageUrl ? (

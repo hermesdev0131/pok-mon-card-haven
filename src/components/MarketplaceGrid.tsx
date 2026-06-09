@@ -21,7 +21,7 @@ interface MarketplaceGridProps {
   emptyMessage?: string;
 }
 
-const COMPANY_DISPLAY: Record<string, string> = { ManaFix: 'Manafix', Taverna: 'Taberna' };
+const COMPANY_DISPLAY: Record<string, string> = { ManaFix: 'Manafix', Taverna: 'Taberna', OTHER: 'Outras' };
 
 export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage }: MarketplaceGridProps) {
   const { tokenRefreshCount } = useAuth();
@@ -42,6 +42,13 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
   const activeGroup = gradingGroup ?? (group === 'all' ? undefined : group);
   const companies = activeGroup ? getCompaniesForGroup(activeGroup) : [];
 
+  // Inactive (no-listing) cards only make sense when NOT filtering by grading
+  // group — a card without listings has no grading company, so it can't be
+  // classified as Nacional/Internacional. Force "available" whenever a grading
+  // group is active; full catalog browsing lives on the combined view.
+  const showAvailabilityToggle = !activeGroup;
+  const effectiveAvailability = activeGroup ? 'available' : availability;
+
   // Reset to page 1 whenever filters or page size change
   useEffect(() => { setPage(1); }, [search, sort, group, company, language, availability, pageSize, tokenRefreshCount]);
 
@@ -53,7 +60,7 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
       gradingGroup: activeGroup,
       company: company === 'all' ? undefined : company,
       language: language === 'all' ? undefined : language as CardLanguage,
-      availability,
+      availability: effectiveAvailability,
       page,
       pageSize,
     }).then(({ data, total: t }) => {
@@ -63,7 +70,7 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
     }).catch(() => {
       setLoading(false);
     });
-  }, [search, sort, activeGroup, company, language, availability, page, pageSize, tokenRefreshCount]);
+  }, [search, sort, activeGroup, company, language, effectiveAvailability, page, pageSize, tokenRefreshCount]);
 
   useEffect(() => { setCompany('all'); }, [group]);
 
@@ -88,13 +95,15 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
               className="pl-9"
             />
           </div>
-          <Select value={availability} onValueChange={(v) => setAvailability(v as 'available' | 'all')}>
-            <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="available">Disponíveis</SelectItem>
-              <SelectItem value="all">Todos</SelectItem>
-            </SelectContent>
-          </Select>
+          {showAvailabilityToggle && (
+            <Select value={availability} onValueChange={(v) => setAvailability(v as 'available' | 'all')}>
+              <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="available">Disponíveis</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Select value={language} onValueChange={(v) => setLanguage(v as 'all' | CardLanguage)}>
             <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
