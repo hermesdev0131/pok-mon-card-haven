@@ -128,6 +128,7 @@ export type Database = {
           rarity: string | null;
           image_url: string | null;
           language_group: 'INT' | 'JP' | 'ZH' | 'KR';
+          has_active_listing: boolean;
           created_at: string;
         };
         Insert: {
@@ -140,6 +141,7 @@ export type Database = {
           rarity?: string | null;
           image_url?: string | null;
           language_group?: 'INT' | 'JP' | 'ZH' | 'KR';
+          has_active_listing?: boolean;
           created_at?: string;
         };
         Update: {

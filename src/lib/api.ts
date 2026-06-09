@@ -482,8 +482,14 @@ export async function getCardCatalog(filters?: {
   const total = count ?? 0;
   if (!total) return { data: [], total: 0 };
 
-  // Current page
-  let cbQ = supabase.from('card_bases').select('*').order('name').range(offset, offset + pageSize - 1);
+  // Current page — globally active-first via the has_active_listing flag
+  // (maintained by a trigger), then alphabetical. This makes every card with
+  // an active listing come before the research-only inactive cards across the
+  // whole catalog, not just within a page.
+  let cbQ = supabase.from('card_bases').select('*')
+    .order('has_active_listing', { ascending: false })
+    .order('name', { ascending: true })
+    .range(offset, offset + pageSize - 1);
   if (filters?.search) {
     const s = filters.search;
     cbQ = cbQ.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);

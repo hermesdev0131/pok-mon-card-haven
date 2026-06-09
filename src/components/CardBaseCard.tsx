@@ -87,7 +87,7 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
             "N anúncios" badge), layered OVER the dimmed card at full opacity
             so it stays clearly readable. */}
         {inactive && (
-          <div className="pointer-events-none absolute top-2 right-2 z-20">
+          <div className="pointer-events-none absolute top-1.5 right-2 z-20">
             <span className="rounded-full bg-background/95 border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground shadow-sm">
               Sem anúncios ativos
             </span>
