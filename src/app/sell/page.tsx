@@ -488,7 +488,9 @@ export default function Sell() {
                     >
                       <ImagePlus className="h-5 w-5 text-muted-foreground mb-1" />
                       <span className="text-[10px] font-medium text-muted-foreground">{label}</span>
-                      {i >= 2 && (
+                      {i < 2 ? (
+                        <span className="text-[9px] text-destructive/70">Obrigatória</span>
+                      ) : (
                         <span className="text-[9px] text-muted-foreground">Opcional</span>
                       )}
                     </button>

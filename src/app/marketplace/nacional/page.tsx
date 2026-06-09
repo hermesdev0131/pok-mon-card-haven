@@ -5,7 +5,7 @@ export default function MarketplaceNacional() {
     <MarketplaceGrid
       gradingGroup="nacional"
       title="Graduadas Nacionais"
-      description="Cartas graduadas por empresas nacionais (Manafix, GBA, Capy, Taberna)"
+      description="Cartas graduadas por empresas nacionais (Manafix, GBA, Capy, Taberna, etc)"
     />
   );
 }

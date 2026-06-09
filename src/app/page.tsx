@@ -350,7 +350,7 @@ export default function Home() {
                 { q: 'Como funciona o pagamento protegido?', a: 'O valor fica retido até que o comprador confirme o recebimento da carta. Assim, garantimos uma negociação segura para ambas as partes.' },
                 { q: 'Como sei que o vendedor é confiável?', a: 'Vendedores verificados passam por um processo de validação e têm histórico de vendas público.' },
                 { q: 'Posso devolver uma carta?', a: 'Em casos específicos, como divergência ou problema com o item, nossa equipe analisa a situação para garantir uma solução justa.' },
-                { q: 'Quais empresas de grading são aceitas?', a: 'Aceitamos cartas graduadas pelas principais grading companies, incluindo PSA, CGC, Beckett, TAG, ARS, AGS, Manafix, GBA.' },
+                { q: 'Quais empresas de grading são aceitas?', a: 'Aceitamos cartas graduadas pelas principais empresas de graduação nacionais e internacionais, como por exemplo: PSA, CGC, BGS, TAG, AGS, MGS, GBA e temos disponibilidade para adicionar novas conforme necessidade.' },
               ].map(({ q, a }, i) => (
                 <AccordionItem key={i} value={`item-${i}`}>
                   <AccordionTrigger className="text-sm font-medium">{q}</AccordionTrigger>

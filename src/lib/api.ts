@@ -299,26 +299,28 @@ export async function getCardBasesWithStats(filters?: {
 
   // Also show cards that have been sold but have no active listings.
   // These appear dimmed at the end of the catalog with their last sale price.
-  let salesQuery = supabase
-    .from('confirmed_sales')
-    .select('card_base_id, sale_price, sold_at')
-    .order('sold_at', { ascending: false });
+  // Use sold listings directly — confirmed_sales may lag or be empty on new deployments.
+  let soldQuery = supabase
+    .from('listings')
+    .select('card_base_id, price, grade_company, updated_at')
+    .eq('status', 'sold' as string)
+    .order('updated_at', { ascending: false });
 
   if (filters?.company) {
-    salesQuery = salesQuery.eq('grade_company', filters.company);
+    soldQuery = soldQuery.eq('grade_company', filters.company);
   } else if (filters?.gradingGroup) {
     const { getCompaniesForGroup: getCompanies } = await import('@/lib/grading-groups');
     const companies = getCompanies(filters.gradingGroup);
-    salesQuery = salesQuery.in('grade_company', companies);
+    soldQuery = soldQuery.in('grade_company', companies);
   }
 
-  const { data: salesRows } = await salesQuery;
+  const { data: soldRows } = await soldQuery;
 
-  // Build map of card_base_id -> most recent sale price (rows are desc by sold_at).
+  // Build map of card_base_id -> most recent sale price (rows are desc by updated_at).
   const lastSaleByCard: Record<string, number> = {};
-  for (const s of (salesRows ?? []) as { card_base_id: string; sale_price: number }[]) {
+  for (const s of (soldRows ?? []) as { card_base_id: string; price: number }[]) {
     if (!lastSaleByCard[s.card_base_id]) {
-      lastSaleByCard[s.card_base_id] = s.sale_price;
+      lastSaleByCard[s.card_base_id] = s.price;
     }
   }
 
@@ -355,6 +357,277 @@ export async function getCardBasesWithStats(filters?: {
   }));
 
   return [...activeStats, ...inactiveStats];
+}
+
+// ════════════════════════════════════════════════
+// Paginated catalog — powers MarketplaceGrid.
+//
+// Two modes:
+//   available (default) — only cards with active listings (bounded dataset,
+//     JS-sorted then sliced). Identical to the old getCardBasesWithStats path
+//     but returns { data, total } so the grid can drive Pagination without
+//     holding the full list in state.
+//   all — every card_base, server-side paginated. Listing stats are overlaid
+//     for the current page only (fast: 24 rows per page). Active-listing
+//     cards appear first in each page; dimmed/inactive cards follow.
+// ════════════════════════════════════════════════
+export async function getCardCatalog(filters?: {
+  search?: string;
+  type?: string;
+  sort?: string;
+  gradingGroup?: 'nacional' | 'internacional';
+  company?: string;
+  language?: CardLanguage;
+  availability?: 'available' | 'all';
+  page?: number;
+  pageSize?: number;
+}): Promise<{ data: CardBaseWithStats[]; total: number }> {
+  const page = Math.max(1, filters?.page ?? 1);
+  const pageSize = filters?.pageSize ?? 10;
+  const offset = (page - 1) * pageSize;
+  const availability = filters?.availability ?? 'available';
+  const lang = filters?.language;
+  // PT and EN are listing-level attributes (card_bases uses language_group='INT' for both).
+  // JP and ZH map directly to card_bases.language_group.
+  const isListingLangFilter = lang === 'PT' || lang === 'EN';
+
+  // ── available mode ──────────────────────────────────────────────────
+  if (availability === 'available') {
+    let listingsQuery = supabase
+      .from('listings')
+      .select('card_base_id, price, grade_company, created_at')
+      .eq('status', 'active' as string);
+
+    if (filters?.company) {
+      listingsQuery = listingsQuery.eq('grade_company', filters.company);
+    } else if (filters?.gradingGroup) {
+      const { getCompaniesForGroup: gcfg } = await import('@/lib/grading-groups');
+      listingsQuery = listingsQuery.in('grade_company', gcfg(filters.gradingGroup));
+    }
+    // PT/EN filter lives on listings.language, not on card_bases.language_group
+    if (isListingLangFilter) listingsQuery = listingsQuery.eq('language', lang as string);
+
+    const { data: listingRows } = await listingsQuery;
+    const listingsArr = (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price' | 'grade_company' | 'created_at'>[];
+
+    const listingsByCard: Record<string, number[]> = {};
+    const newestListingAt: Record<string, number> = {};
+    for (const l of listingsArr) {
+      if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
+      listingsByCard[l.card_base_id].push(l.price);
+      const ts = new Date(l.created_at).getTime();
+      if (!newestListingAt[l.card_base_id] || ts > newestListingAt[l.card_base_id]) {
+        newestListingAt[l.card_base_id] = ts;
+      }
+    }
+    const allIds = Object.keys(listingsByCard);
+    if (!allIds.length) return { data: [], total: 0 };
+
+    const CHUNK = 200;
+    const cardBaseRows: CardBaseRow[] = [];
+    for (let i = 0; i < allIds.length; i += CHUNK) {
+      const slice = allIds.slice(i, i + CHUNK);
+      let q = supabase.from('card_bases').select('*').in('id', slice);
+      if (filters?.search) {
+        const s = filters.search;
+        q = q.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+      }
+      if (filters?.type) q = q.eq('type', filters.type as string);
+      // JP/ZH filter on card_bases.language_group; PT/EN already filtered via listings above
+      if (lang === 'JP') q = q.eq('language_group', 'JP');
+      else if (lang === 'ZH') q = q.eq('language_group', 'ZH');
+      const { data } = await q;
+      if (data) cardBaseRows.push(...(data as CardBaseRow[]));
+    }
+
+    const allStats: CardBaseWithStats[] = cardBaseRows.map(row => {
+      const prices = listingsByCard[row.id] ?? [];
+      return {
+        cardBase: mapCardBase(row),
+        listingCount: prices.length,
+        lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
+        highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
+      };
+    });
+
+    if (filters?.sort === 'price_asc') allStats.sort((a, b) => a.lowestPrice - b.lowestPrice);
+    else if (filters?.sort === 'price_desc') allStats.sort((a, b) => b.lowestPrice - a.lowestPrice);
+    else allStats.sort((a, b) => (newestListingAt[b.cardBase.id] ?? 0) - (newestListingAt[a.cardBase.id] ?? 0));
+
+    return { data: allStats.slice(offset, offset + pageSize), total: allStats.length };
+  }
+
+  // ── all mode (server-side paginated) ───────────────────────────────
+  // For PT/EN, start from all listings (active + sold) to find card_base_ids,
+  // then paginate those card_bases in JS (bounded by listing count, not full catalog).
+  if (isListingLangFilter) {
+    const { data: langRows } = await supabase
+      .from('listings')
+      .select('card_base_id')
+      .eq('language', lang as string);
+    const langIdSet: Record<string, true> = {};
+    for (const r of (langRows ?? []) as { card_base_id: string }[]) langIdSet[r.card_base_id] = true;
+    const langIds = Object.keys(langIdSet);
+    if (!langIds.length) return { data: [], total: 0 };
+
+    const CHUNK = 200;
+    const cardBaseRows: CardBaseRow[] = [];
+    for (let i = 0; i < langIds.length; i += CHUNK) {
+      const slice = langIds.slice(i, i + CHUNK);
+      let q = supabase.from('card_bases').select('*').in('id', slice);
+      if (filters?.search) {
+        const s = filters.search;
+        q = q.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+      }
+      if (filters?.type) q = q.eq('type', filters.type as string);
+      const { data } = await q;
+      if (data) cardBaseRows.push(...(data as CardBaseRow[]));
+    }
+    cardBaseRows.sort((a, b) => a.name.localeCompare(b.name));
+    const total = cardBaseRows.length;
+    const pageIds = cardBaseRows.slice(offset, offset + pageSize).map(r => r.id);
+    const cbRows = cardBaseRows.slice(offset, offset + pageSize);
+
+    // Active listing stats for this page
+    let listingsQ = supabase
+      .from('listings')
+      .select('card_base_id, price, grade_company, created_at')
+      .eq('status', 'active' as string)
+      .in('card_base_id', pageIds);
+    if (filters?.company) listingsQ = listingsQ.eq('grade_company', filters.company);
+    else if (filters?.gradingGroup) {
+      const { getCompaniesForGroup: gcfg } = await import('@/lib/grading-groups');
+      listingsQ = listingsQ.in('grade_company', gcfg(filters.gradingGroup));
+    }
+    const { data: activeRows } = await listingsQ;
+    const listingsByCard: Record<string, number[]> = {};
+    for (const l of (activeRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price'>[]) {
+      if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
+      listingsByCard[l.card_base_id].push(l.price);
+    }
+
+    // Last sale for inactive
+    const inactivePageIds = pageIds.filter(id => !listingsByCard[id]);
+    const lastSaleByCard: Record<string, number> = {};
+    if (inactivePageIds.length > 0) {
+      const { data: soldRows } = await supabase
+        .from('listings').select('card_base_id, price, updated_at')
+        .eq('status', 'sold' as string).in('card_base_id', inactivePageIds)
+        .order('updated_at', { ascending: false });
+      for (const s of (soldRows ?? []) as { card_base_id: string; price: number }[]) {
+        if (!lastSaleByCard[s.card_base_id]) lastSaleByCard[s.card_base_id] = s.price;
+      }
+    }
+
+    const activeItems: CardBaseWithStats[] = [];
+    const inactiveItems: CardBaseWithStats[] = [];
+    for (const row of cbRows as CardBaseRow[]) {
+      const prices = listingsByCard[row.id] ?? [];
+      if (prices.length > 0) {
+        activeItems.push({ cardBase: mapCardBase(row), listingCount: prices.length, lowestPrice: Math.min(...prices), highestPrice: Math.max(...prices) });
+      } else {
+        inactiveItems.push({ cardBase: mapCardBase(row), listingCount: 0, lowestPrice: 0, highestPrice: 0, lastSalePrice: lastSaleByCard[row.id] });
+      }
+    }
+    if (filters?.sort === 'price_asc') activeItems.sort((a, b) => a.lowestPrice - b.lowestPrice);
+    else if (filters?.sort === 'price_desc') activeItems.sort((a, b) => b.lowestPrice - a.lowestPrice);
+    return { data: [...activeItems, ...inactiveItems], total };
+  }
+
+  // JP/ZH (or no language filter): query card_bases directly
+  // Count
+  let countQ = supabase.from('card_bases').select('*', { count: 'exact', head: true });
+  if (filters?.search) {
+    const s = filters.search;
+    countQ = countQ.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+  }
+  if (filters?.type) countQ = countQ.eq('type', filters.type as string);
+  if (lang === 'JP') countQ = countQ.eq('language_group', 'JP');
+  else if (lang === 'ZH') countQ = countQ.eq('language_group', 'ZH');
+  const { count } = await countQ;
+  const total = count ?? 0;
+  if (!total) return { data: [], total: 0 };
+
+  // Current page
+  let cbQ = supabase.from('card_bases').select('*').order('name').range(offset, offset + pageSize - 1);
+  if (filters?.search) {
+    const s = filters.search;
+    cbQ = cbQ.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+  }
+  if (filters?.type) cbQ = cbQ.eq('type', filters.type as string);
+  if (lang === 'JP') cbQ = cbQ.eq('language_group', 'JP');
+  else if (lang === 'ZH') cbQ = cbQ.eq('language_group', 'ZH');
+  const { data: cbRows } = await cbQ;
+  if (!cbRows?.length) return { data: [], total };
+
+  const pageIds = (cbRows as CardBaseRow[]).map(r => r.id);
+
+  // Active listing stats for this page
+  let listingsQ = supabase
+    .from('listings')
+    .select('card_base_id, price, grade_company, created_at')
+    .eq('status', 'active' as string)
+    .in('card_base_id', pageIds);
+  if (filters?.company) {
+    listingsQ = listingsQ.eq('grade_company', filters.company);
+  } else if (filters?.gradingGroup) {
+    const { getCompaniesForGroup: gcfg } = await import('@/lib/grading-groups');
+    listingsQ = listingsQ.in('grade_company', gcfg(filters.gradingGroup));
+  }
+  const { data: listingRows } = await listingsQ;
+  const listingsByCard: Record<string, number[]> = {};
+  for (const l of (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price'>[]) {
+    if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
+    listingsByCard[l.card_base_id].push(l.price);
+  }
+
+  // Last sale price for inactive cards on this page
+  const inactivePageIds = pageIds.filter(id => !listingsByCard[id]);
+  const lastSaleByCard: Record<string, number> = {};
+  if (inactivePageIds.length > 0) {
+    let soldQ = supabase
+      .from('listings')
+      .select('card_base_id, price, updated_at')
+      .eq('status', 'sold' as string)
+      .in('card_base_id', inactivePageIds)
+      .order('updated_at', { ascending: false });
+    if (filters?.company) soldQ = soldQ.eq('grade_company', filters.company);
+    else if (filters?.gradingGroup) {
+      const { getCompaniesForGroup: gcfg } = await import('@/lib/grading-groups');
+      soldQ = soldQ.in('grade_company', gcfg(filters.gradingGroup));
+    }
+    const { data: soldRows } = await soldQ;
+    for (const s of (soldRows ?? []) as { card_base_id: string; price: number }[]) {
+      if (!lastSaleByCard[s.card_base_id]) lastSaleByCard[s.card_base_id] = s.price;
+    }
+  }
+
+  // Active first, then inactive
+  const activeItems: CardBaseWithStats[] = [];
+  const inactiveItems: CardBaseWithStats[] = [];
+  for (const row of cbRows as CardBaseRow[]) {
+    const prices = listingsByCard[row.id] ?? [];
+    if (prices.length > 0) {
+      activeItems.push({
+        cardBase: mapCardBase(row),
+        listingCount: prices.length,
+        lowestPrice: Math.min(...prices),
+        highestPrice: Math.max(...prices),
+      });
+    } else {
+      inactiveItems.push({
+        cardBase: mapCardBase(row),
+        listingCount: 0,
+        lowestPrice: 0,
+        highestPrice: 0,
+        lastSalePrice: lastSaleByCard[row.id],
+      });
+    }
+  }
+  if (filters?.sort === 'price_asc') activeItems.sort((a, b) => a.lowestPrice - b.lowestPrice);
+  else if (filters?.sort === 'price_desc') activeItems.sort((a, b) => b.lowestPrice - a.lowestPrice);
+
+  return { data: [...activeItems, ...inactiveItems], total };
 }
 
 export async function getCardBase(id: string): Promise<CardBase | null> {

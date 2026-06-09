@@ -57,7 +57,7 @@ function SearchPageContent() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar cartas, sets, vendedores..."
+            placeholder="Buscar cartas, sets ou vendedores"
             className="w-full h-11 rounded-full bg-secondary border border-border pl-11 pr-28 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
           />
           {query && (
