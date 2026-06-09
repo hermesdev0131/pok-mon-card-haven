@@ -83,11 +83,12 @@ export function CardBaseCard({ item, gradingGroup, slabVariant }: CardBaseCardPr
           </div>
         </div>
 
-        {/* Inactive status pill — layered OVER the dimmed card at full opacity,
-            dark text on a light pill so it stays clearly readable. */}
+        {/* Inactive status badge — top-right corner (same slot as the active
+            "N anúncios" badge), layered OVER the dimmed card at full opacity
+            so it stays clearly readable. */}
         {inactive && (
-          <div className="pointer-events-none absolute inset-0 flex items-start justify-center pt-[28%] z-20">
-            <span className="rounded-full bg-background/95 border border-border px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
+          <div className="pointer-events-none absolute top-2 right-2 z-20">
+            <span className="rounded-full bg-background/95 border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground shadow-sm">
               Sem anúncios ativos
             </span>
           </div>
