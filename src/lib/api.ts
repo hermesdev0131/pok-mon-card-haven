@@ -238,7 +238,6 @@ export async function getCardBasesWithStats(filters?: {
   const { data: listingRows, error: lErr } = await listingsQuery;
   logIfError('getCardBasesWithStats.listings', lErr);
   const listingsArr = (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price' | 'grade_company' | 'created_at'>[];
-  if (!listingsArr.length) return [];
 
   // Aggregate prices and track the freshest listing timestamp per card.
   // "Mais recentes" sorts by this — that way a new listing on an existing
@@ -257,27 +256,29 @@ export async function getCardBasesWithStats(filters?: {
 
   // Fetch the referenced card_bases, applying catalog-level filters here.
   // Chunk the .in() lookup to stay well clear of any URL/length limits.
-  const cardBaseRows: CardBaseRow[] = [];
   const CHUNK = 200;
-  for (let i = 0; i < cardBaseIds.length; i += CHUNK) {
-    const slice = cardBaseIds.slice(i, i + CHUNK);
-    let cbQuery = supabase.from('card_bases').select('*').in('id', slice);
-    if (filters?.search) {
-      const s = filters.search;
-      cbQuery = cbQuery.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+  const cardBaseRows: CardBaseRow[] = [];
+  if (cardBaseIds.length > 0) {
+    for (let i = 0; i < cardBaseIds.length; i += CHUNK) {
+      const slice = cardBaseIds.slice(i, i + CHUNK);
+      let cbQuery = supabase.from('card_bases').select('*').in('id', slice);
+      if (filters?.search) {
+        const s = filters.search;
+        cbQuery = cbQuery.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+      }
+      if (filters?.type) {
+        cbQuery = cbQuery.eq('type', filters.type as string);
+      }
+      if (filters?.language) {
+        cbQuery = cbQuery.eq('language_group', filters.language as string);
+      }
+      const { data, error } = await cbQuery;
+      logIfError('getCardBasesWithStats.card_bases', error);
+      if (data) cardBaseRows.push(...(data as CardBaseRow[]));
     }
-    if (filters?.type) {
-      cbQuery = cbQuery.eq('type', filters.type as string);
-    }
-    if (filters?.language) {
-      cbQuery = cbQuery.eq('language_group', filters.language as string);
-    }
-    const { data, error } = await cbQuery;
-    logIfError('getCardBasesWithStats.card_bases', error);
-    if (data) cardBaseRows.push(...(data as CardBaseRow[]));
   }
 
-  const stats: CardBaseWithStats[] = cardBaseRows.map(row => {
+  const activeStats: CardBaseWithStats[] = cardBaseRows.map(row => {
     const prices = listingsByCard[row.id] ?? [];
     return {
       cardBase: mapCardBase(row),
@@ -288,15 +289,286 @@ export async function getCardBasesWithStats(filters?: {
   });
 
   if (filters?.sort === 'price_asc') {
-    stats.sort((a, b) => a.lowestPrice - b.lowestPrice);
+    activeStats.sort((a, b) => a.lowestPrice - b.lowestPrice);
   } else if (filters?.sort === 'price_desc') {
-    stats.sort((a, b) => b.lowestPrice - a.lowestPrice);
+    activeStats.sort((a, b) => b.lowestPrice - a.lowestPrice);
   } else {
     // Default / "newest": freshest listing per card wins.
-    stats.sort((a, b) => (newestListingAt[b.cardBase.id] ?? 0) - (newestListingAt[a.cardBase.id] ?? 0));
+    activeStats.sort((a, b) => (newestListingAt[b.cardBase.id] ?? 0) - (newestListingAt[a.cardBase.id] ?? 0));
   }
 
-  return stats;
+  // Also show cards that have been sold but have no active listings.
+  // These appear dimmed at the end of the catalog with their last sale price.
+  // Use sold listings directly — confirmed_sales may lag or be empty on new deployments.
+  let soldQuery = supabase
+    .from('listings')
+    .select('card_base_id, price, grade_company, updated_at')
+    .eq('status', 'sold' as string)
+    .order('updated_at', { ascending: false });
+
+  if (filters?.company) {
+    soldQuery = soldQuery.eq('grade_company', filters.company);
+  } else if (filters?.gradingGroup) {
+    const { getCompaniesForGroup: getCompanies } = await import('@/lib/grading-groups');
+    const companies = getCompanies(filters.gradingGroup);
+    soldQuery = soldQuery.in('grade_company', companies);
+  }
+
+  const { data: soldRows } = await soldQuery;
+
+  // Build map of card_base_id -> most recent sale price (rows are desc by updated_at).
+  const lastSaleByCard: Record<string, number> = {};
+  for (const s of (soldRows ?? []) as { card_base_id: string; price: number }[]) {
+    if (!lastSaleByCard[s.card_base_id]) {
+      lastSaleByCard[s.card_base_id] = s.price;
+    }
+  }
+
+  const activeIdSet = new Set(cardBaseRows.map(r => r.id));
+  const inactiveIds = Object.keys(lastSaleByCard).filter(id => !activeIdSet.has(id));
+
+  const inactiveCardBases: CardBaseRow[] = [];
+  if (inactiveIds.length > 0) {
+    for (let i = 0; i < inactiveIds.length; i += CHUNK) {
+      const slice = inactiveIds.slice(i, i + CHUNK);
+      let cbQuery = supabase.from('card_bases').select('*').in('id', slice);
+      if (filters?.search) {
+        const s = filters.search;
+        cbQuery = cbQuery.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+      }
+      if (filters?.type) {
+        cbQuery = cbQuery.eq('type', filters.type as string);
+      }
+      if (filters?.language) {
+        cbQuery = cbQuery.eq('language_group', filters.language as string);
+      }
+      const { data, error } = await cbQuery;
+      logIfError('getCardBasesWithStats.inactive_card_bases', error);
+      if (data) inactiveCardBases.push(...(data as CardBaseRow[]));
+    }
+  }
+
+  const inactiveStats: CardBaseWithStats[] = inactiveCardBases.map(row => ({
+    cardBase: mapCardBase(row),
+    listingCount: 0,
+    lowestPrice: 0,
+    highestPrice: 0,
+    lastSalePrice: lastSaleByCard[row.id],
+  }));
+
+  return [...activeStats, ...inactiveStats];
+}
+
+// ════════════════════════════════════════════════
+// Paginated catalog — powers MarketplaceGrid.
+//
+// Two modes:
+//   available (default) — only cards with active listings (bounded dataset,
+//     JS-sorted then sliced). Identical to the old getCardBasesWithStats path
+//     but returns { data, total } so the grid can drive Pagination without
+//     holding the full list in state.
+//   all — every card_base, server-side paginated. Listing stats are overlaid
+//     for the current page only (fast: 24 rows per page). Active-listing
+//     cards appear first in each page; dimmed/inactive cards follow.
+// ════════════════════════════════════════════════
+export async function getCardCatalog(filters?: {
+  search?: string;
+  type?: string;
+  sort?: string;
+  gradingGroup?: 'nacional' | 'internacional';
+  company?: string;
+  language?: CardLanguage;
+  availability?: 'available' | 'all';
+  page?: number;
+  pageSize?: number;
+}): Promise<{ data: CardBaseWithStats[]; total: number }> {
+  const page = Math.max(1, filters?.page ?? 1);
+  const pageSize = filters?.pageSize ?? 10;
+  const offset = (page - 1) * pageSize;
+  const availability = filters?.availability ?? 'available';
+  const lang = filters?.language;
+  // PT and EN are listing-level attributes (card_bases uses language_group='INT' for both).
+  // JP and ZH map directly to card_bases.language_group.
+  const isListingLangFilter = lang === 'PT' || lang === 'EN';
+
+  // ── available mode ──────────────────────────────────────────────────
+  if (availability === 'available') {
+    let listingsQuery = supabase
+      .from('listings')
+      .select('card_base_id, price, grade_company, created_at')
+      .eq('status', 'active' as string);
+
+    if (filters?.company) {
+      listingsQuery = listingsQuery.eq('grade_company', filters.company);
+    } else if (filters?.gradingGroup) {
+      const { getCompaniesForGroup: gcfg } = await import('@/lib/grading-groups');
+      listingsQuery = listingsQuery.in('grade_company', gcfg(filters.gradingGroup));
+    }
+    // PT/EN filter lives on listings.language, not on card_bases.language_group
+    if (isListingLangFilter) listingsQuery = listingsQuery.eq('language', lang as string);
+
+    const { data: listingRows } = await listingsQuery;
+    const listingsArr = (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price' | 'grade_company' | 'created_at'>[];
+
+    const listingsByCard: Record<string, number[]> = {};
+    const newestListingAt: Record<string, number> = {};
+    for (const l of listingsArr) {
+      if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
+      listingsByCard[l.card_base_id].push(l.price);
+      const ts = new Date(l.created_at).getTime();
+      if (!newestListingAt[l.card_base_id] || ts > newestListingAt[l.card_base_id]) {
+        newestListingAt[l.card_base_id] = ts;
+      }
+    }
+    const allIds = Object.keys(listingsByCard);
+    if (!allIds.length) return { data: [], total: 0 };
+
+    const CHUNK = 200;
+    const cardBaseRows: CardBaseRow[] = [];
+    for (let i = 0; i < allIds.length; i += CHUNK) {
+      const slice = allIds.slice(i, i + CHUNK);
+      let q = supabase.from('card_bases').select('*').in('id', slice);
+      if (filters?.search) {
+        const s = filters.search;
+        q = q.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+      }
+      if (filters?.type) q = q.eq('type', filters.type as string);
+      // JP/ZH filter on card_bases.language_group; PT/EN already filtered via listings above
+      if (lang === 'JP') q = q.eq('language_group', 'JP');
+      else if (lang === 'ZH') q = q.eq('language_group', 'ZH');
+      const { data } = await q;
+      if (data) cardBaseRows.push(...(data as CardBaseRow[]));
+    }
+
+    const allStats: CardBaseWithStats[] = cardBaseRows.map(row => {
+      const prices = listingsByCard[row.id] ?? [];
+      return {
+        cardBase: mapCardBase(row),
+        listingCount: prices.length,
+        lowestPrice: prices.length > 0 ? Math.min(...prices) : 0,
+        highestPrice: prices.length > 0 ? Math.max(...prices) : 0,
+      };
+    });
+
+    if (filters?.sort === 'price_asc') allStats.sort((a, b) => a.lowestPrice - b.lowestPrice);
+    else if (filters?.sort === 'price_desc') allStats.sort((a, b) => b.lowestPrice - a.lowestPrice);
+    else allStats.sort((a, b) => (newestListingAt[b.cardBase.id] ?? 0) - (newestListingAt[a.cardBase.id] ?? 0));
+
+    return { data: allStats.slice(offset, offset + pageSize), total: allStats.length };
+  }
+
+  // ── all mode (server-side paginated) ───────────────────────────────
+  // Resolve the catalog language_group to page through:
+  //   JP/ZH  → their own card-level group
+  //   PT/EN  → 'INT' (one INT card_base = both PT and EN prints; the catalog
+  //            can't tell them apart, so PT and EN both browse the full INT
+  //            catalog and only the "available" highlight differs by the
+  //            actual listing language).
+  //   none   → whole catalog.
+  const cardLangGroup = lang === 'JP' ? 'JP' : lang === 'ZH' ? 'ZH' : isListingLangFilter ? 'INT' : null;
+  // When filtering PT/EN, a card counts as "available" only if it has an active
+  // listing in that exact language; sold-history likewise prefers that language.
+  const listingLang = isListingLangFilter ? (lang as string) : null;
+
+  // Count
+  let countQ = supabase.from('card_bases').select('*', { count: 'exact', head: true });
+  if (filters?.search) {
+    const s = filters.search;
+    countQ = countQ.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+  }
+  if (filters?.type) countQ = countQ.eq('type', filters.type as string);
+  if (cardLangGroup) countQ = countQ.eq('language_group', cardLangGroup);
+  const { count } = await countQ;
+  const total = count ?? 0;
+  if (!total) return { data: [], total: 0 };
+
+  // Current page — globally active-first via the has_active_listing flag
+  // (maintained by a trigger), then alphabetical. This makes every card with
+  // an active listing come before the research-only inactive cards across the
+  // whole catalog, not just within a page.
+  let cbQ = supabase.from('card_bases').select('*')
+    .order('has_active_listing', { ascending: false })
+    .order('name', { ascending: true })
+    .range(offset, offset + pageSize - 1);
+  if (filters?.search) {
+    const s = filters.search;
+    cbQ = cbQ.or(`name.ilike.%${s}%,set_name.ilike.%${s}%,number.ilike.%${s}%`);
+  }
+  if (filters?.type) cbQ = cbQ.eq('type', filters.type as string);
+  if (cardLangGroup) cbQ = cbQ.eq('language_group', cardLangGroup);
+  const { data: cbRows } = await cbQ;
+  if (!cbRows?.length) return { data: [], total };
+
+  const pageIds = (cbRows as CardBaseRow[]).map(r => r.id);
+
+  // Active listing stats for this page
+  let listingsQ = supabase
+    .from('listings')
+    .select('card_base_id, price, grade_company, created_at')
+    .eq('status', 'active' as string)
+    .in('card_base_id', pageIds);
+  if (listingLang) listingsQ = listingsQ.eq('language', listingLang);
+  if (filters?.company) {
+    listingsQ = listingsQ.eq('grade_company', filters.company);
+  } else if (filters?.gradingGroup) {
+    const { getCompaniesForGroup: gcfg } = await import('@/lib/grading-groups');
+    listingsQ = listingsQ.in('grade_company', gcfg(filters.gradingGroup));
+  }
+  const { data: listingRows } = await listingsQ;
+  const listingsByCard: Record<string, number[]> = {};
+  for (const l of (listingRows ?? []) as Pick<ListingRow, 'card_base_id' | 'price'>[]) {
+    if (!listingsByCard[l.card_base_id]) listingsByCard[l.card_base_id] = [];
+    listingsByCard[l.card_base_id].push(l.price);
+  }
+
+  // Last sale price for inactive cards on this page
+  const inactivePageIds = pageIds.filter(id => !listingsByCard[id]);
+  const lastSaleByCard: Record<string, number> = {};
+  if (inactivePageIds.length > 0) {
+    let soldQ = supabase
+      .from('listings')
+      .select('card_base_id, price, updated_at')
+      .eq('status', 'sold' as string)
+      .in('card_base_id', inactivePageIds)
+      .order('updated_at', { ascending: false });
+    if (listingLang) soldQ = soldQ.eq('language', listingLang);
+    if (filters?.company) soldQ = soldQ.eq('grade_company', filters.company);
+    else if (filters?.gradingGroup) {
+      const { getCompaniesForGroup: gcfg } = await import('@/lib/grading-groups');
+      soldQ = soldQ.in('grade_company', gcfg(filters.gradingGroup));
+    }
+    const { data: soldRows } = await soldQ;
+    for (const s of (soldRows ?? []) as { card_base_id: string; price: number }[]) {
+      if (!lastSaleByCard[s.card_base_id]) lastSaleByCard[s.card_base_id] = s.price;
+    }
+  }
+
+  // Active first, then inactive
+  const activeItems: CardBaseWithStats[] = [];
+  const inactiveItems: CardBaseWithStats[] = [];
+  for (const row of cbRows as CardBaseRow[]) {
+    const prices = listingsByCard[row.id] ?? [];
+    if (prices.length > 0) {
+      activeItems.push({
+        cardBase: mapCardBase(row),
+        listingCount: prices.length,
+        lowestPrice: Math.min(...prices),
+        highestPrice: Math.max(...prices),
+      });
+    } else {
+      inactiveItems.push({
+        cardBase: mapCardBase(row),
+        listingCount: 0,
+        lowestPrice: 0,
+        highestPrice: 0,
+        lastSalePrice: lastSaleByCard[row.id],
+      });
+    }
+  }
+  if (filters?.sort === 'price_asc') activeItems.sort((a, b) => a.lowestPrice - b.lowestPrice);
+  else if (filters?.sort === 'price_desc') activeItems.sort((a, b) => b.lowestPrice - a.lowestPrice);
+
+  return { data: [...activeItems, ...inactiveItems], total };
 }
 
 export async function getCardBase(id: string): Promise<CardBase | null> {
@@ -423,30 +695,36 @@ export async function getAllSellers(): Promise<Seller[]> {
 }
 
 /** Global search across cards (with stats) and sellers */
-export async function searchAll(query: string): Promise<{
+export async function searchAll(query: string, page = 1, pageSize = 24): Promise<{
   cards: CardBaseWithStats[];
+  cardsTotal: number;
   sellers: Seller[];
 }> {
   const q = query.trim();
-  if (!q) return { cards: [], sellers: [] };
+  if (!q) return { cards: [], cardsTotal: 0, sellers: [] };
 
-  // Search cards using the existing function (handles name, set_name, number)
-  const cards = await getCardBasesWithStats({ search: q });
+  // Search the full catalog — every matching card, active first then dimmed
+  // inactive ones — so users can research any card, not only those for sale.
+  // Server-paginated for speed since a common term can match thousands of cards.
+  const { data: cards, total: cardsTotal } = await getCardCatalog({ search: q, availability: 'all', page, pageSize });
 
-  // Search sellers by store_name
-  const { data: sellerData, error: sellerErr } = await supabase
-    .from('seller_profiles')
-    .select('*')
-    .ilike('store_name', `%${q}%`);
-  logIfError('searchAll.sellers', sellerErr);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const sellerRows = (sellerData ?? []) as any[];
-  const sellerProfiles = sellerRows.length
-    ? await fetchProfilesByIds(sellerRows.map(r => r.id))
-    : {};
-  const sellers = sellerRows.map(r => mapSeller({ ...r, profiles: sellerProfiles[r.id] ?? {} }));
+  // Sellers are only fetched on the first page (they're few and unpaginated).
+  let sellers: Seller[] = [];
+  if (page === 1) {
+    const { data: sellerData, error: sellerErr } = await supabase
+      .from('seller_profiles')
+      .select('*')
+      .ilike('store_name', `%${q}%`);
+    logIfError('searchAll.sellers', sellerErr);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sellerRows = (sellerData ?? []) as any[];
+    const sellerProfiles = sellerRows.length
+      ? await fetchProfilesByIds(sellerRows.map(r => r.id))
+      : {};
+    sellers = sellerRows.map(r => mapSeller({ ...r, profiles: sellerProfiles[r.id] ?? {} }));
+  }
 
-  return { cards, sellers };
+  return { cards, cardsTotal, sellers };
 }
 
 /** All sellers with active listing count (for vendedores page) */

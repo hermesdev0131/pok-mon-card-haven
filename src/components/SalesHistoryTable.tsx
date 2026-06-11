@@ -18,6 +18,7 @@ type GradingFilter = 'all' | 'nacional' | 'internacional';
 type LanguageFilter = 'all' | 'PT' | 'EN' | 'JP';
 
 const ALL_COMPANIES = ['PSA', 'CGC', 'Beckett', 'TAG', 'AGS', 'ARS', 'ManaFix', 'GBA', 'Capy', 'Taverna'];
+const COMPANY_DISPLAY: Record<string, string> = { ManaFix: 'Manafix', Taverna: 'Taberna' };
 
 export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
   const [gradingFilter, setGradingFilter] = useState<GradingFilter>('all');
@@ -98,7 +99,7 @@ export function SalesHistoryTable({ sales }: { sales: SaleRecord[] }) {
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
               {ALL_COMPANIES.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+                <SelectItem key={c} value={c}>{COMPANY_DISPLAY[c] ?? c}</SelectItem>
               ))}
             </SelectContent>
           </Select>

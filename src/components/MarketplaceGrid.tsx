@@ -7,13 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getCardBasesWithStats } from '@/lib/api';
+import { getCardCatalog } from '@/lib/api';
 import { getCompaniesForGroup } from '@/lib/grading-groups';
-import { ACTIVE_LANGUAGE_GROUPS, languageGroupLabel } from '@/lib/card-languages';
+import { CATALOG_LANGUAGE_LABELS, CATALOG_LANGUAGES_NACIONAL, CATALOG_LANGUAGES_INTERNACIONAL } from '@/lib/card-languages';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePagination } from '@/hooks/usePagination';
 import { Pagination } from '@/components/Pagination';
-import type { CardBaseWithStats, CardLanguageGroup } from '@/types';
+import type { CardBaseWithStats, CardLanguage } from '@/types';
 
 interface MarketplaceGridProps {
   gradingGroup?: 'nacional' | 'internacional';
@@ -22,40 +21,60 @@ interface MarketplaceGridProps {
   emptyMessage?: string;
 }
 
+const COMPANY_DISPLAY: Record<string, string> = { ManaFix: 'Manafix', Taverna: 'Taberna', OTHER: 'Outras' };
+
 export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage }: MarketplaceGridProps) {
   const { tokenRefreshCount } = useAuth();
   const [items, setItems] = useState<CardBaseWithStats[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
-  const { page, setPage, totalPages, paged, total, pageSize, setPageSize } = usePagination(items, 10);
+
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('newest');
   const [group, setGroup] = useState<'all' | 'nacional' | 'internacional'>('all');
   const [company, setCompany] = useState<string>('all');
-  const [language, setLanguage] = useState<'all' | CardLanguageGroup>('all');
+  const [language, setLanguage] = useState<'all' | CardLanguage>('all');
+  const [availability, setAvailability] = useState<'available' | 'all'>('available');
   const [showFilters, setShowFilters] = useState(false);
 
   const activeGroup = gradingGroup ?? (group === 'all' ? undefined : group);
   const companies = activeGroup ? getCompaniesForGroup(activeGroup) : [];
 
-  useEffect(() => {
-    setCompany('all');
-  }, [group]);
+  // Inactive (no-listing) cards only make sense when NOT filtering by grading
+  // group — a card without listings has no grading company, so it can't be
+  // classified as Nacional/Internacional. Force "available" whenever a grading
+  // group is active; full catalog browsing lives on the combined view.
+  const showAvailabilityToggle = !activeGroup;
+  const effectiveAvailability = activeGroup ? 'available' : availability;
+
+  // Reset to page 1 whenever filters or page size change
+  useEffect(() => { setPage(1); }, [search, sort, group, company, language, availability, pageSize, tokenRefreshCount]);
 
   useEffect(() => {
     setLoading(true);
-    getCardBasesWithStats({
+    getCardCatalog({
       search,
       sort: sort === 'price_asc' ? 'price_asc' : sort === 'price_desc' ? 'price_desc' : undefined,
       gradingGroup: activeGroup,
       company: company === 'all' ? undefined : company,
-      language: language === 'all' ? undefined : language,
-    }).then((data) => {
+      language: language === 'all' ? undefined : language as CardLanguage,
+      availability: effectiveAvailability,
+      page,
+      pageSize,
+    }).then(({ data, total: t }) => {
       setItems(data);
+      setTotal(t);
       setLoading(false);
     }).catch(() => {
       setLoading(false);
     });
-  }, [search, sort, activeGroup, company, language, tokenRefreshCount]);
+  }, [search, sort, activeGroup, company, language, effectiveAvailability, page, pageSize, tokenRefreshCount]);
+
+  useEffect(() => { setCompany('all'); }, [group]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -76,12 +95,21 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
               className="pl-9"
             />
           </div>
-          <Select value={language} onValueChange={(v) => setLanguage(v as 'all' | CardLanguageGroup)}>
+          {showAvailabilityToggle && (
+            <Select value={availability} onValueChange={(v) => setAvailability(v as 'available' | 'all')}>
+              <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="available">Disponíveis</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={language} onValueChange={(v) => setLanguage(v as 'all' | CardLanguage)}>
             <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os idiomas</SelectItem>
-              {ACTIVE_LANGUAGE_GROUPS.map((lg) => (
-                <SelectItem key={lg} value={lg}>{languageGroupLabel(lg)}</SelectItem>
+              {(gradingGroup === 'nacional' ? CATALOG_LANGUAGES_NACIONAL : CATALOG_LANGUAGES_INTERNACIONAL).map((lg) => (
+                <SelectItem key={lg} value={lg}>{CATALOG_LANGUAGE_LABELS[lg]}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -101,7 +129,7 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 {companies.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                  <SelectItem key={c} value={c}>{COMPANY_DISPLAY[c] ?? c}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -142,18 +170,23 @@ export function MarketplaceGrid({ gradingGroup, title, description, emptyMessage
       ) : (
         <>
           <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {paged.map((item) => (
+            {items.map((item) => (
               <CardBaseCard
                 key={item.cardBase.id}
                 item={item}
                 gradingGroup={activeGroup}
-                // Slab is determined by the PAGE (where the user is browsing), not by the active filter.
-                // Combined /marketplace page uses the "misto" slab regardless of filter selection.
                 slabVariant={gradingGroup ?? 'misto'}
               />
             ))}
           </div>
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} total={total} pageSize={pageSize} onPageSizeChange={setPageSize} />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            total={total}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
         </>
       )}
     </div>

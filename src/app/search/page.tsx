@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { CardBaseCard } from '@/components/CardBaseCard';
 import { SellerCard } from '@/components/SellerCard';
+import { Pagination } from '@/components/Pagination';
 import { searchAll } from '@/lib/api';
 import type { CardBaseWithStats, Seller } from '@/types';
 
@@ -15,22 +16,33 @@ function SearchPageContent() {
 
   const [query, setQuery] = useState(queryParam);
   const [cards, setCards] = useState<CardBaseWithStats[]>([]);
+  const [cardsTotal, setCardsTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Reset to first page on a new query or page-size change
+  useEffect(() => { setPage(1); }, [queryParam, pageSize]);
 
   useEffect(() => {
     if (!queryParam.trim()) {
       setCards([]);
+      setCardsTotal(0);
       setSellers([]);
       return;
     }
     setLoading(true);
-    searchAll(queryParam).then(({ cards, sellers }) => {
+    searchAll(queryParam, page, pageSize).then(({ cards, cardsTotal, sellers }) => {
       setCards(cards);
-      setSellers(sellers);
+      setCardsTotal(cardsTotal);
+      // Sellers only come back on page 1; keep the existing list on later pages
+      if (page === 1) setSellers(sellers);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [queryParam]);
+  }, [queryParam, page, pageSize]);
+
+  const cardsTotalPages = Math.max(1, Math.ceil(cardsTotal / pageSize));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +57,7 @@ function SearchPageContent() {
     router.push('/search');
   }
 
-  const totalResults = cards.length + sellers.length;
+  const totalResults = cardsTotal + sellers.length;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -57,7 +69,7 @@ function SearchPageContent() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar cartas, sets, vendedores..."
+            placeholder="Buscar cartas, sets ou vendedores"
             className="w-full h-11 rounded-full bg-secondary border border-border pl-11 pr-28 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all duration-200 focus:bg-background focus:border-accent/40 focus:shadow-[0_0_0_3px_hsl(var(--accent)/0.10)]"
           />
           {query && (
@@ -100,7 +112,7 @@ function SearchPageContent() {
             <p className="text-sm text-muted-foreground mt-1">
               {totalResults === 0
                 ? 'Nenhum resultado encontrado.'
-                : `${cards.length} ${cards.length === 1 ? 'carta' : 'cartas'} · ${sellers.length} ${sellers.length === 1 ? 'vendedor' : 'vendedores'}`}
+                : `${cardsTotal} ${cardsTotal === 1 ? 'carta' : 'cartas'} · ${sellers.length} ${sellers.length === 1 ? 'vendedor' : 'vendedores'}`}
             </p>
           </div>
 
@@ -120,13 +132,21 @@ function SearchPageContent() {
               {cards.length > 0 && (
                 <section>
                   <h2 className="text-xl font-bold mb-4">
-                    Cartas <span className="text-muted-foreground font-normal text-sm">({cards.length})</span>
+                    Cartas <span className="text-muted-foreground font-normal text-sm">({cardsTotal})</span>
                   </h2>
                   <div className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                     {cards.map((item) => (
                       <CardBaseCard key={item.cardBase.id} item={item} slabVariant="misto" />
                     ))}
                   </div>
+                  <Pagination
+                    page={page}
+                    totalPages={cardsTotalPages}
+                    onPageChange={setPage}
+                    total={cardsTotal}
+                    pageSize={pageSize}
+                    onPageSizeChange={setPageSize}
+                  />
                 </section>
               )}
 
