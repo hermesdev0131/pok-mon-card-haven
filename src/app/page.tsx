@@ -126,9 +126,9 @@ export default function Home() {
                 1º marketplace brasileiro dedicado a cartas graduadas
               </div>
               <h1 className="text-3xl font-bold tracking-tight md:text-5xl lg:text-6xl leading-[1.05]">
-                O maior marketplace de{' '}
+                Mais do que um marketplace. Uma referência para{' '}
                 <span className="text-accent">cartas graduadas</span>{' '}
-                do Brasil.
+                no Brasil.
               </h1>
             </div>
 
@@ -177,7 +177,7 @@ export default function Home() {
             {/* Subtitle + Buttons (mobile order 3, desktop bottom-left) */}
             <div className="space-y-5 lg:space-y-8 order-3 lg:col-start-1 lg:row-start-2">
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-lg">
-                Compre e venda com segurança, transparência e as melhores condições do mercado.
+                Histórico de preços, gráficos de mercado e um ambiente seguro e transparente para comprar, vender e colecionar.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 glow-accent" asChild>
