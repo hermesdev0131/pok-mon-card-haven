@@ -217,6 +217,17 @@ export interface Message {
   isOwn: boolean;
 }
 
+// In-app notification shown in the bell dropdown and /me/notificacoes.
+export interface AppNotification {
+  id: string;
+  type: string;       // 'new_order' | 'payment_confirmed' | 'dispute_opened' | ...
+  title: string;
+  body: string;
+  link?: string;      // relative URL to the relevant page
+  read: boolean;
+  createdAt: string;
+}
+
 export type DisputeStatus = 'open' | 'resolved_buyer' | 'resolved_seller' | 'escalated' | 'closed';
 
 export interface Dispute {

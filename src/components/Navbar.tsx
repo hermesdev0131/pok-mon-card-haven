@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Search, Menu, X, User, ShoppingBag, ShoppingCart, Sparkles, LogOut, ShieldCheck } from 'lucide-react';
+import { Search, Menu, X, User, ShoppingBag, ShoppingCart, Sparkles, LogOut, ShieldCheck, Bell } from 'lucide-react';
 import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useNotifications } from '@/contexts/NotificationContext';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const categories = [
   { label: 'Graduadas Nacionais', href: '/marketplace/nacional' },
@@ -37,6 +39,7 @@ function NavbarInner() {
   const searchParamsHook = useSearchParams();
   const { isAuthenticated, isAdmin, profile, signOut } = useAuth();
   const { count: cartCount } = useCart();
+  const { unreadCount } = useNotifications();
 
   // Sync the search inputs with the URL query when on /search, otherwise clear them
   useEffect(() => {
@@ -117,6 +120,8 @@ function NavbarInner() {
             <Button variant="ghost" size="sm" className="text-foreground hover:text-accent gap-1.5 text-sm" asChild>
               <Link href="/sell"><ShoppingBag className="h-4 w-4" /> Anunciar</Link>
             </Button>
+            {/* Notification bell (only when signed in). */}
+            {isAuthenticated && <NotificationBell />}
             {/* Cart icon with item count badge (only when signed in). */}
             <Button
               variant="ghost"
@@ -253,6 +258,16 @@ function NavbarInner() {
               {cartCount > 0 && (
                 <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center">
                   {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
+            </Link>
+          )}
+          {isAuthenticated && (
+            <Link href="/me/notificacoes" className="text-sm font-medium flex items-center gap-2" onClick={() => setMobileOpen(false)}>
+              <Bell className="h-3.5 w-3.5" /> Notificações
+              {unreadCount > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </Link>

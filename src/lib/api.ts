@@ -18,6 +18,7 @@ import type {
   CardLanguage,
   Address,
   CartItem,
+  AppNotification,
 } from '@/types';
 import type { Database } from '@/types/database';
 
@@ -3016,4 +3017,71 @@ export async function checkoutCart(
   const result = data as { success: boolean; purchase_group_id?: string; error?: string; unavailable?: string[] };
   if (!result.success) return { success: false, error: result.error ?? 'Erro ao iniciar checkout', unavailable: result.unavailable };
   return { success: true, purchaseGroupId: result.purchase_group_id! };
+}
+
+// ════════════════════════════════════════════════
+// Notifications (4.1)
+// ════════════════════════════════════════════════
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapNotification(row: any): AppNotification {
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    link: row.link ?? undefined,
+    read: row.read_at != null,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getMyNotifications(limit = 30): Promise<AppNotification[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('notifications')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  logIfError('getMyNotifications', error);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[]).map(mapNotification);
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count } = await (supabase as any)
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .is('read_at', null);
+  return count ?? 0;
+}
+
+export async function markNotificationRead(
+  notificationId: string,
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: 'Não autenticado' };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', notificationId)
+    .eq('user_id', user.id)
+    .is('read_at', null);
+  if (error) { logIfError('markNotificationRead', error); return { success: false, error: error.message }; }
+  return { success: true };
+}
+
+export async function markAllNotificationsRead(): Promise<{ success: true } | { success: false; error: string }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).rpc('mark_all_notifications_read');
+  if (error) { logIfError('markAllNotificationsRead', error); return { success: false, error: error.message }; }
+  return { success: true };
 }
